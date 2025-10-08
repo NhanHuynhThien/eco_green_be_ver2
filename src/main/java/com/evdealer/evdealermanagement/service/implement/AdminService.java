@@ -47,7 +47,7 @@ public class AdminService {
             List<Account> accountList = accountRepository.findAll()
                             .stream().sorted(Comparator.comparing(Account::getCreatedAt)).toList();
             log.debug("Fetching all accounts");
-            return accountRepository.findAll();
+            return accountList;
         } catch (Exception e) {
             log.error("Error fetching all accounts", e);
             return List.of();

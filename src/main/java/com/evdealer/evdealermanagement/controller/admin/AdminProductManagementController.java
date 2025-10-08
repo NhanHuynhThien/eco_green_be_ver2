@@ -22,7 +22,7 @@ public class AdminProductManagementController {
     }
 
     @GetMapping("/all")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ApiResponse<List<ProductDetail>> getAllProducts() {
         List<ProductDetail> products = adminService.getAllProducts();
         return new ApiResponse<>(200, "Fetched all products", products);

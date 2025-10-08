@@ -3,6 +3,7 @@ package com.evdealer.evdealermanagement.configurations;
 import com.evdealer.evdealermanagement.service.implement.AccountDetailsService;
 import com.evdealer.evdealermanagement.service.implement.JwtService;
 import com.evdealer.evdealermanagement.service.implement.RedisService;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,14 +13,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -66,20 +69,40 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String username = jwtService.extractUsername(token);
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
                 if (jwtService.validateToken(token, userDetails)) {
+                    // Extract roles from JWT token
+                    Claims claims = jwtService.extractAllClaims(token);
+                    List<String> roles = claims.get("roles", List.class);
+
+                    // Convert roles to authorities
+                    List<SimpleGrantedAuthority> authorities = roles != null
+                            ? roles.stream()
+                            .map(SimpleGrantedAuthority::new)
+                            .collect(Collectors.toList())
+                            : List.of(); // Fallback to userDetails authorities if roles not in token
+
+                    // Debug logging
+                    logger.info("Authenticated user: {}, Roles from token: {}", username, roles);
+
                     UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    authorities.isEmpty() ? userDetails.getAuthorities() : authorities
+                            );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+
+                    logger.info("Authentication set successfully for user: {} with authorities: {}",
+                            username, authToken.getAuthorities());
                 }
             }
         } catch (Exception e) {
             SecurityContextHolder.clearContext();
             logger.error("JWT filter error: {}", e.getMessage());
-            // Đừng throw tiếp → vì đây là filter, cho phép các API public đi qua
         }
 
         filterChain.doFilter(request, response);
-
     }
 }

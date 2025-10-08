@@ -1,6 +1,7 @@
 package com.evdealer.evdealermanagement.dto.account.custom;
 
 import com.evdealer.evdealermanagement.entity.account.Account;
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -8,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.List;
 
+@Getter
 public class CustomAccountDetails implements UserDetails {
 
     private final Account account;
@@ -18,7 +20,8 @@ public class CustomAccountDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + account.getRole()));
+        // FIX: Thêm .name() để convert enum thành String
+        return List.of(new SimpleGrantedAuthority("ROLE_" + account.getRole().name()));
     }
 
     public Long getId() {
@@ -27,10 +30,6 @@ public class CustomAccountDetails implements UserDetails {
 
     public String getAccountId() {
         return account.getId();
-    }
-
-    public Account getAccount() { // Thêm phương thức getAccount
-        return account;
     }
 
     @Override
@@ -60,7 +59,6 @@ public class CustomAccountDetails implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        // Replace 'getEmailVerified()' with the correct method or property from Account, e.g., 'isEmailVerified()'
-        return true; // Assuming all accounts are enabled for simplicity
+        return Account.Status.ACTIVE.equals(account.getStatus());
     }
 }
