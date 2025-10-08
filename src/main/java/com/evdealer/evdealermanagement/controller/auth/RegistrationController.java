@@ -5,6 +5,7 @@ import com.evdealer.evdealermanagement.dto.account.register.AccountRegisterReque
 import com.evdealer.evdealermanagement.dto.account.register.AccountRegisterResponse;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import com.evdealer.evdealermanagement.service.implement.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,7 +21,7 @@ public class RegistrationController {
 
     @PostMapping("/register")
     @ResponseBody
-    public ApiResponse<AccountRegisterResponse> register(@RequestBody AccountRegisterRequest request){
+    public ApiResponse<AccountRegisterResponse> register(@Valid @RequestBody AccountRegisterRequest request){
         AccountRegisterResponse response = authService.register(request);
         return new ApiResponse<>(ErrorCode.SUCCESS.getCode(), ErrorCode.SUCCESS.getMessage(), response);
     }
