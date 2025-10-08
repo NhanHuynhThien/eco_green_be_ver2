@@ -46,11 +46,11 @@ public class ProductSearchController {
      * GET /api/v1/product/{id}
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ProductDetail> getProductById(@PathVariable Long id) {
+    public ResponseEntity<ProductDetail> getProductById(@PathVariable String id) {
         try {
             log.info("Request to get product by ID: {}", id);
 
-            if (id == null || id <= 0) {
+            if (id == null || id.trim().isEmpty()) {
                 log.warn("Invalid product ID: {}", id);
                 return ResponseEntity.badRequest().build();
             }

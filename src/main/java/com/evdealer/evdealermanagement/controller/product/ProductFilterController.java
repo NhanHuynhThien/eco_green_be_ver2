@@ -12,7 +12,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("products/filter")
+@RequestMapping("product/filter")
 @RequiredArgsConstructor
 public class ProductFilterController {
 

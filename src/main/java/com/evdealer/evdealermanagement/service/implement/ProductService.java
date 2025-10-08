@@ -48,7 +48,7 @@ public class ProductService implements IProductService {
 
 
     @Override
-    public Optional<ProductDetail> getProductById(Long id) {
+    public Optional<ProductDetail> getProductById(String id) {
         if (id == null) {
             log.warn("Invalid product ID: null");
             return Optional.empty();
