@@ -173,4 +173,9 @@ public class Product extends BaseEntity {
     public enum Status {
         DRAFT, ACTIVE, SOLD, PENDING_REVIEW, PENDING_PAYMENT, REJECTED, EXPIRED, HIDDEN
     }
+
+    public enum SaleType {
+        AUCTION, FIXED_PRICE
+    }
+
 }
