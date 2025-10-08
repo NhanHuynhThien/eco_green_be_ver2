@@ -12,26 +12,18 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/products")
+@RequestMapping("products/filter")
 @RequiredArgsConstructor
 public class ProductFilterController {
 
     private final ProductService productService;
 
-    /**
-     * Lấy sản phẩm mới nhất
-     * GET /api/v1/products/new
-     */
     @GetMapping("/new")
     public ResponseEntity<List<ProductDetail>> getNewProducts() {
         List<ProductDetail> newProducts = productService.getNewProducts();
         return ResponseEntity.ok(newProducts);
     }
 
-    /**
-     * Tìm kiếm sản phẩm theo tiêu chí chung (name, brand, type)
-     * GET /api/v1/products/search?name=...&brand=...&type=...
-     */
     @GetMapping("/search")
     public ResponseEntity<List<ProductDetail>> searchProducts(
             @RequestParam(required = false) String name,
@@ -67,10 +59,6 @@ public class ProductFilterController {
         }
     }
 
-    /**
-     * Tìm sản phẩm theo tên
-     * GET /api/v1/products/by-name?name=...
-     */
     @GetMapping("/by-name")
     public ResponseEntity<List<ProductDetail>> getProductsByName(@RequestParam String name) {
         try {
@@ -86,10 +74,6 @@ public class ProductFilterController {
         }
     }
 
-    /**
-     * Tìm sản phẩm theo hãng
-     * GET /api/v1/products/by-brand?brand=...
-     */
     @GetMapping("/by-brand")
     public ResponseEntity<List<ProductDetail>> getProductsByBrand(@RequestParam String brand) {
         try {
@@ -105,10 +89,6 @@ public class ProductFilterController {
         }
     }
 
-    /**
-     * Tìm sản phẩm theo loại (VEHICLE hoặc BATTERY)
-     * GET /api/v1/products/by-type?type=VEHICLE
-     */
     @GetMapping("/by-type")
     public ResponseEntity<List<ProductDetail>> getProductsByType(@RequestParam String type) {
         try {

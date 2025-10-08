@@ -44,6 +44,8 @@ public class AdminService {
 
     public List<Account> getAllAccounts() {
         try {
+            List<Account> accountList = accountRepository.findAll()
+                            .stream().sorted(Comparator.comparing(Account::getCreatedAt)).toList();
             log.debug("Fetching all accounts");
             return accountRepository.findAll();
         } catch (Exception e) {
@@ -51,4 +53,34 @@ public class AdminService {
             return List.of();
         }
     }
+
+    public boolean deleteAccount(String id) {
+        try {
+            log.debug("Deleting account with id: {}", id);
+            if (accountRepository.existsById(id)) {
+                accountRepository.deleteById(id);
+                return true;
+            } else {
+                log.warn("Account with id: {} not found", id);
+                return false;
+            }
+        } catch (Exception e) {
+            log.error("Error deleting account with id: {}", id, e);
+            return false;
+        }
+    }
+
+    public boolean changeStatusAccount(String id, Account.Status status) {
+        Account account = accountRepository.findById(id).orElse(null);
+        if (account != null) {
+            log.warn("Account with id: {}", id);
+            account.setStatus(status);
+            return true;
+        }
+        else {
+            log.warn("Account with id: {} not found", id);
+            return false;
+        }
+    }
+
 }
