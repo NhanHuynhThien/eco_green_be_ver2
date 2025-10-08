@@ -126,11 +126,6 @@ public class Product extends BaseEntity {
     @Column(name = "seller_phone", length = 255)
     private String sellerPhone;
 
-    // Kiểu bán: ENUM('AUCTION','FIXED_PRICE')
-    @Enumerated(EnumType.STRING)
-    @Column(name = "sale_type", length = 20)
-    private SaleType saleType;
-
     @Column(name = "auction_end_time")
     private LocalDateTime auctionEndTime;
 
