@@ -12,98 +12,93 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("product/filter")
+@RequestMapping("/product/filter")
 @RequiredArgsConstructor
 public class ProductFilterController {
 
     private final ProductService productService;
 
+    /**
+     * Lấy danh sách sản phẩm mới nhất
+     * GET /product/filter/new
+     */
     @GetMapping("/new")
     public ResponseEntity<List<ProductDetail>> getNewProducts() {
-        List<ProductDetail> newProducts = productService.getNewProducts();
-        return ResponseEntity.ok(newProducts);
+        try {
+            log.info("Request → Get new products");
+            List<ProductDetail> newProducts = productService.getNewProducts();
+
+            if (newProducts.isEmpty()) {
+                log.info("No new products found");
+                return ResponseEntity.noContent().build();
+            }
+
+            return ResponseEntity.ok(newProducts);
+        } catch (Exception e) {
+            log.error("Error getting new products", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
-    @GetMapping("/search")
-    public ResponseEntity<List<ProductDetail>> searchProducts(
+    /**
+     * Lọc sản phẩm với multiple filters (có thể kết hợp name, brand, type)
+     * GET /product/filter?name=xxx&brand=xxx&type=xxx
+     *
+     * Examples:
+     * - /product/filter (get all active products)
+     * - /product/filter?name=LG (search by name)
+     * - /product/filter?brand=LG (filter by brand)
+     * - /product/filter?type=BATTERY (filter by type)
+     * - /product/filter?brand=LG&type=BATTERY (combine filters)
+     * - /product/filter?name=RESU&brand=LG&type=BATTERY (all filters)
+     */
+    @GetMapping
+    public ResponseEntity<List<ProductDetail>> filterProducts(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String brand,
             @RequestParam(required = false) String type) {
 
         try {
-            log.info("Search products - name: {}, brand: {}, type: {}", name, brand, type);
+            log.info("Request → Filter products (name: {}, brand: {}, type: {})", name, brand, type);
 
-            List<ProductDetail> products;
-
-            if (name != null && !name.trim().isEmpty()) {
-                products = productService.getProductByName(name.trim());
-            } else if (brand != null && !brand.trim().isEmpty()) {
-                products = productService.getProductByBrand(brand.trim());
-            } else if (type != null && !type.trim().isEmpty()) {
+            // Validate type if provided
+            if (type != null && !type.trim().isEmpty()) {
                 String normalizedType = type.trim().toUpperCase();
                 if (!normalizedType.equals("VEHICLE") && !normalizedType.equals("BATTERY")) {
                     log.warn("Invalid product type: {}", type);
                     return ResponseEntity.badRequest().build();
                 }
-                products = productService.getProductByType(normalizedType);
+            }
+
+            // Check if any filter is provided
+            boolean hasFilters = (name != null && !name.trim().isEmpty()) ||
+                    (brand != null && !brand.trim().isEmpty()) ||
+                    (type != null && !type.trim().isEmpty());
+
+            List<ProductDetail> products;
+
+            if (hasFilters) {
+                // Use multiple filters
+                products = productService.filterProducts(name, brand, type);
             } else {
-                log.info("No search criteria → return all ACTIVE products");
+                // No filters → return all ACTIVE products
+                log.info("No filter applied → return all ACTIVE products");
                 products = productService.getAllProductsWithStatusActive();
             }
 
-            if (products.isEmpty()) return ResponseEntity.noContent().build();
+            if (products.isEmpty()) {
+                log.info("No products found with given filters");
+                return ResponseEntity.noContent().build();
+            }
+
+            log.info("Found {} products matching filters", products.size());
             return ResponseEntity.ok(products);
+
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid filter parameters: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
-            log.error("Error searching products", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    @GetMapping("/by-name")
-    public ResponseEntity<List<ProductDetail>> getProductsByName(@RequestParam String name) {
-        try {
-            if (name == null || name.trim().isEmpty()) return ResponseEntity.badRequest().build();
-
-            List<ProductDetail> products = productService.getProductByName(name.trim());
-            if (products.isEmpty()) return ResponseEntity.noContent().build();
-
-            return ResponseEntity.ok(products);
-        } catch (Exception e) {
-            log.error("Error searching by name: {}", name, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    @GetMapping("/by-brand")
-    public ResponseEntity<List<ProductDetail>> getProductsByBrand(@RequestParam String brand) {
-        try {
-            if (brand == null || brand.trim().isEmpty()) return ResponseEntity.badRequest().build();
-
-            List<ProductDetail> products = productService.getProductByBrand(brand.trim());
-            if (products.isEmpty()) return ResponseEntity.noContent().build();
-
-            return ResponseEntity.ok(products);
-        } catch (Exception e) {
-            log.error("Error searching by brand: {}", brand, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    @GetMapping("/by-type")
-    public ResponseEntity<List<ProductDetail>> getProductsByType(@RequestParam String type) {
-        try {
-            if (type == null || type.trim().isEmpty()) return ResponseEntity.badRequest().build();
-
-            String normalizedType = type.trim().toUpperCase();
-            if (!normalizedType.equals("VEHICLE") && !normalizedType.equals("BATTERY"))
-                return ResponseEntity.badRequest().build();
-
-            List<ProductDetail> products = productService.getProductByType(normalizedType);
-            if (products.isEmpty()) return ResponseEntity.noContent().build();
-
-            return ResponseEntity.ok(products);
-        } catch (Exception e) {
-            log.error("Error searching by type: {}", type, e);
+            log.error("Error filtering products", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

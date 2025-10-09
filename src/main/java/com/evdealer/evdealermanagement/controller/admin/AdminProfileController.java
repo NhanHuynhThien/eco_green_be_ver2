@@ -18,10 +18,9 @@ public class AdminProfileController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<AccountProfileResponse> updateUserProfile(
+    public ResponseEntity<AccountProfileResponse> updateAdminProfile(
             @PathVariable String id,
             @Valid @RequestBody AccountUpdateRequest request) {
         return ResponseEntity.ok(accountService.updateProfile(id, request));
     }
-
 }

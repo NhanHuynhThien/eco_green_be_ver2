@@ -25,4 +25,16 @@ public class PriceSerializer extends JsonSerializer<BigDecimal> {
 
         gen.writeString(formatter.format(value));
     }
+
+    public static String formatPrice(BigDecimal value) {
+        if (value == null) {
+            return null;
+        }
+
+        NumberFormat formatter = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
+        formatter.setGroupingUsed(true); // sử dụng dấu phân cách hàng nghìn
+        formatter.setMaximumFractionDigits(0); // không có chữ số thập phân
+
+        return formatter.format(value);
+    }
 }

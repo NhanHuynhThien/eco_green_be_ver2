@@ -6,13 +6,16 @@ import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.mapper.product.ProductMapper;
 import com.evdealer.evdealermanagement.repository.AccountRepository;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
+import com.evdealer.evdealermanagement.utils.PriceSerializer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -83,4 +86,21 @@ public class AdminService {
         }
     }
 
+    public String getTotalFee() {
+        try {
+            List<Product> productList = productRepository.findAll();
+
+            BigDecimal totalFee = productList.stream()
+                    .map(Product::getPostingFee)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            log.debug("Total import fee calculated: " + totalFee);
+            return PriceSerializer.formatPrice(totalFee);
+
+        } catch (Exception e) {
+            log.error("Error calculating total import fee", e);
+            return "0";
+        }
+    }
 }

@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @Slf4j
 @RestController
-@RequestMapping("/product")
+@RequestMapping("/product/search")
 @RequiredArgsConstructor
 public class ProductSearchController {
 
@@ -25,11 +25,11 @@ public class ProductSearchController {
     @GetMapping("/all")
     public ResponseEntity<List<ProductDetail>> getAllProductsWithActiveStatus() {
         try {
-            log.info("Request to get all products");
+            log.info("Request → Get all ACTIVE products");
             List<ProductDetail> products = productService.getAllProductsWithStatusActive();
 
             if (products.isEmpty()) {
-                log.info("No products found");
+                log.info("No ACTIVE products found");
                 return ResponseEntity.noContent().build();
             }
 
@@ -43,31 +43,52 @@ public class ProductSearchController {
 
     /**
      * Tìm sản phẩm theo ID
-     * GET /api/v1/product/{id}
      */
     @GetMapping("/{id}")
     public ResponseEntity<ProductDetail> getProductById(@PathVariable String id) {
         try {
-            log.info("Request to get product by ID: {}", id);
-
             if (id == null || id.trim().isEmpty()) {
-                log.warn("Invalid product ID: {}", id);
+                log.warn("Invalid product ID");
                 return ResponseEntity.badRequest().build();
             }
 
+            log.info("Request → Get product by ID: {}", id);
             Optional<ProductDetail> product = productService.getProductById(id);
 
-            if (product.isPresent()) {
-                log.info("Found product with ID: {}", id);
-                return ResponseEntity.ok(product.get());
-            } else {
-                log.info("Product not found with ID: {}", id);
-                return ResponseEntity.notFound().build();
-            }
+            return product.map(ResponseEntity::ok)
+                    .orElseGet(() -> {
+                        log.info("Product not found with ID: {}", id);
+                        return ResponseEntity.notFound().build();
+                    });
         } catch (Exception e) {
             log.error("Error getting product by ID: {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
+    /**
+     * Tìm sản phẩm theo tên
+     */
+    @GetMapping("/by-name")
+    public ResponseEntity<List<ProductDetail>> getProductsByName(@RequestParam String name) {
+        try {
+            if (name == null || name.trim().isEmpty()) {
+                log.warn("Invalid name parameter");
+                return ResponseEntity.badRequest().build();
+            }
+
+            log.info("Request → Search products by name: {}", name);
+            List<ProductDetail> products = productService.getProductByName(name.trim());
+
+            if (products.isEmpty()) {
+                log.info("No products found with name: {}", name);
+                return ResponseEntity.noContent().build();
+            }
+
+            return ResponseEntity.ok(products);
+        } catch (Exception e) {
+            log.error("Error searching products by name: {}", name, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }

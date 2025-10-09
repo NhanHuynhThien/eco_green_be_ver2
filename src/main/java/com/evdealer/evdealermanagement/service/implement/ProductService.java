@@ -46,7 +46,6 @@ public class ProductService implements IProductService {
         }
     }
 
-
     @Override
     public Optional<ProductDetail> getProductById(String id) {
         if (id == null) {
@@ -126,25 +125,25 @@ public class ProductService implements IProductService {
         try {
             log.debug("Fetching products by brand: {}", brand);
 
-            List<String> vehicleProductIds = vehicleService.getVehicleIdByBrand(brand)
-                    .stream()
-                    .map(String::valueOf)
-                    .toList();
-            List<String> batteryProductIds = batteryService.getBatteryIdByBrand(brand);
-
-            List<String> allProductIds = Stream.concat(
-                    vehicleProductIds.stream(),
-                    batteryProductIds.stream()).distinct().toList();
+            List<String> allProductIds = getProductIdsByBrand(brand);
 
             if (allProductIds.isEmpty()) {
                 log.debug("No products found for brand: {}", brand);
                 return List.of();
             }
 
-            return productRepository.findAllById(allProductIds)
+            // Filter ACTIVE và sort theo createdAt
+            List<ProductDetail> products = productRepository.findAllById(allProductIds)
                     .stream()
+                    .filter(product -> product.getStatus() == Product.Status.ACTIVE)
                     .map(ProductMapper::toDetailDto)
                     .toList();
+
+            // Sắp xếp theo createdAt
+            List<ProductDetail> sortedList = new ArrayList<>(products);
+            sortedList.sort(Comparator.comparing(ProductDetail::getCreatedAt));
+
+            return sortedList;
 
         } catch (Exception e) {
             log.error("Error fetching products by brand: {}", brand, e);
@@ -161,5 +160,104 @@ public class ProductService implements IProductService {
         return products.stream()
                 .map(ProductDetail::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    // ============================================
+    // NEW METHOD: Filter với multiple filters
+    // ============================================
+    public List<ProductDetail> filterProducts(String name, String brand, String type) {
+        try {
+            log.debug("Filtering products with name: {}, brand: {}, type: {}", name, brand, type);
+
+            // Start with all ACTIVE products
+            List<Product> products = productRepository.findAll()
+                    .stream()
+                    .filter(product -> product.getStatus() == Product.Status.ACTIVE)
+                    .collect(Collectors.toList());
+
+            if (products.isEmpty()) {
+                log.debug("No active products found");
+                return List.of();
+            }
+
+            // Apply name filter
+            if (name != null && !name.trim().isEmpty()) {
+                String searchName = name.trim().toLowerCase();
+                products = products.stream()
+                        .filter(p -> p.getTitle() != null &&
+                                p.getTitle().toLowerCase().contains(searchName))
+                        .collect(Collectors.toList());
+                log.debug("After name filter '{}': {} products", name, products.size());
+            }
+
+            // Apply type filter
+            if (type != null && !type.trim().isEmpty()) {
+                try {
+                    Product.ProductType enumType = Product.ProductType.valueOf(type.trim().toUpperCase());
+                    products = products.stream()
+                            .filter(p -> p.getType() == enumType)
+                            .collect(Collectors.toList());
+                    log.debug("After type filter '{}': {} products", type, products.size());
+                } catch (IllegalArgumentException e) {
+                    log.warn("Invalid product type: {}", type);
+                    throw e;
+                }
+            }
+
+            // Apply brand filter
+            if (brand != null && !brand.trim().isEmpty()) {
+                List<String> productIdsByBrand = getProductIdsByBrand(brand.trim());
+                products = products.stream()
+                        .filter(p -> productIdsByBrand.contains(p.getId()))
+                        .collect(Collectors.toList());
+                log.debug("After brand filter '{}': {} products", brand, products.size());
+            }
+
+            // Convert to DTO and sort by createdAt
+            List<ProductDetail> result = products.stream()
+                    .map(ProductMapper::toDetailDto)
+                    .collect(Collectors.toList());
+
+            result.sort(Comparator.comparing(ProductDetail::getCreatedAt));
+
+            log.info("Filter completed: {} products found", result.size());
+            return result;
+
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid filter parameter: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error filtering products with name: {}, brand: {}, type: {}", name, brand, type, e);
+            return List.of();
+        }
+    }
+
+    // ============================================
+    // HELPER METHOD: Get product IDs by brand
+    // ============================================
+    private List<String> getProductIdsByBrand(String brand) {
+        try {
+            // Get vehicle product IDs
+            List<String> vehicleProductIds = vehicleService.getVehicleIdByBrand(brand)
+                    .stream()
+                    .map(String::valueOf)
+                    .toList();
+
+            // Get battery product IDs
+            List<String> batteryProductIds = batteryService.getBatteryIdByBrand(brand);
+
+            // Merge and remove duplicates
+            List<String> allProductIds = Stream.concat(
+                    vehicleProductIds.stream(),
+                    batteryProductIds.stream()
+            ).distinct().collect(Collectors.toList());
+
+            log.debug("Found {} product IDs for brand '{}'", allProductIds.size(), brand);
+            return allProductIds;
+
+        } catch (Exception e) {
+            log.error("Error getting product IDs for brand: {}", brand, e);
+            return List.of();
+        }
     }
 }
