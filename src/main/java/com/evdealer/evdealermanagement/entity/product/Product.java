@@ -70,45 +70,31 @@ public class Product extends BaseEntity {
     @Column(name = "ward", length = 255)
     private String ward;
 
-    // Số điện thoại người bán
     @Column(name = "seller_phone", length = 255)
     private String sellerPhone;
 
-    // Kiểu bán: ENUM('AUCTION','FIXED_PRICE')
-    @Enumerated(EnumType.STRING)
-    @Column(name = "sale_type", length = 20)
-    private SaleType saleType;
-
-    // Thời điểm kết thúc đấu giá (nếu sale_type = AUCTION)
     @Column(name = "auction_end_time")
     private LocalDateTime auctionEndTime;
 
-    // Có thương lượng giá hay không: BIT(1)
     @Column(name = "is_negotiable", columnDefinition = "BIT")
     private Boolean isNegotiable;
 
-    // Phí đăng tin DECIMAL(8,2)
     @Column(name = "posting_fee", precision = 8, scale = 2)
     private BigDecimal postingFee;
 
-    // Lý do bị từ chối (nếu có)
     @Column(name = "reject_reason", length = 255)
     private String rejectReason;
 
-    // Thời điểm hết hạn tin
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
-    // Người duyệt (approved_by VARCHAR(36)) – giả định tham chiếu Account
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "approved_by")
     private Account approvedBy;
 
-    // Quan hệ ảnh sản phẩm
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductImages> images;
 
-    // ====== Enums khớp DB ======
     public enum ProductType {
         BATTERY, VEHICLE
     }

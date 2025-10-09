@@ -10,23 +10,19 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/products")
+@RequestMapping("products")
 @RequiredArgsConstructor
 public class ProductManagementController {
 
     private final ProductService productService;
 
-    /**
-     * Kiểm tra sản phẩm có tồn tại không
-     * GET /api/v1/products/{id}/exists
-     */
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_STAFF')")
     @GetMapping("/{id}/exists")
-    public ResponseEntity<Boolean> checkProductExists(@PathVariable Long id) {
+    public ResponseEntity<Boolean> checkProductExists(@PathVariable String id) {
         try {
             log.info("Checking if product exists with ID: {}", id);
 
-            if (id == null || id <= 0) {
+            if (id == null || id.trim().isEmpty()) {
                 log.warn("Invalid product ID: {}", id);
                 return ResponseEntity.badRequest().build();
             }

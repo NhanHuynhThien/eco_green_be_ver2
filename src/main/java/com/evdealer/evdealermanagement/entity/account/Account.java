@@ -1,6 +1,7 @@
 package com.evdealer.evdealermanagement.entity.account;
 
 import com.evdealer.evdealermanagement.entity.BaseEntity;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -73,11 +74,9 @@ public class Account extends BaseEntity {
     private Status status = Status.PENDING;
 
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private java.util.List<AuthProvider> providers = new java.util.ArrayList<>();
 
-    // =============================
-    // ENUM định nghĩa theo DB
-    // =============================
     public enum Gender {
         MALE, FEMALE, OTHER
     }

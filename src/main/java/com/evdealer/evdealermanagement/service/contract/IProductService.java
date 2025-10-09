@@ -22,7 +22,7 @@ public interface IProductService {
      * @return Optional containing the product detail if found, empty Optional otherwise
      * @throws IllegalArgumentException if id is null or invalid
      */
-    Optional<ProductDetail> getProductById(Long id);
+    Optional<ProductDetail> getProductById(String id);
 
     /**
      * Searches for products by name (supports partial matching)
@@ -72,7 +72,7 @@ public interface IProductService {
      * @param id the product ID to check
      * @return true if product exists, false otherwise
      */
-    default boolean existsById(Long id) {
+    default boolean existsById(String id) {
         return getProductById(id).isPresent();
     }
 

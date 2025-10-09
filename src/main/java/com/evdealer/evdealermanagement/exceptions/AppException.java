@@ -1,19 +1,20 @@
 package com.evdealer.evdealermanagement.exceptions;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
-@EqualsAndHashCode(callSuper = true)
-@Data
-@NoArgsConstructor
-public class AppException extends RuntimeException{
+@Getter
+public class AppException extends RuntimeException {
+    private final ErrorCode errorCode;
 
-    private ErrorCode errorCode;
-
-    public AppException(ErrorCode errorCode, String s) {
+    // Constructor chỉ với ErrorCode
+    public AppException(ErrorCode errorCode) {
         super(errorCode.getMessage());
         this.errorCode = errorCode;
     }
 
+    // Constructor với ErrorCode và custom message
+    public AppException(ErrorCode errorCode, String customMessage) {
+        super(customMessage);
+        this.errorCode = errorCode;
+    }
 }

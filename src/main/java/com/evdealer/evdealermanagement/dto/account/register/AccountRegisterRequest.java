@@ -2,6 +2,7 @@ package com.evdealer.evdealermanagement.dto.account.register;
 
 import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.utils.REGREX;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -18,19 +19,23 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AccountRegisterRequest {
-//    private String username;
-    @NotBlank(message = "Full name is required")
-    @Size(min = 4, max = 50, message = "Full name must be less than 50 characters")
+
+    @NotBlank(message = "MISSING_FULL_NAME")
+    @Size(min = 4, max = 50, message = "FULLNAME_INVALID_LENGTH")
     private String fullName;
 
-    @NotBlank
-    @Pattern(regexp = REGREX.PASSWORD_REGEX, message = "Invalid password")
+    @NotBlank(message = "PASSWORD_REQUIRED")
+    @Pattern(regexp = REGREX.PASSWORD_REGEX, message = "PASSWORD_INVALID")
     private String password;
 
-    @NotBlank(message = "Phone number is required")
-    @Pattern(regexp = REGREX.PHONE_REGEX, message = "Invalid VietNam phone number")
+    @NotBlank(message = "PHONE_REQUIRED")
+    @Pattern(regexp = REGREX.PHONE_REGEX, message = "INVALID_PHONE_FORMAT")
     private String phone;
-    private String email;
+
+//    @NotBlank(message = "EMAIL_REQUIRED")
+//    @Email(message = "EMAIL_INVALID")
+//    private String email;
+
     private LocalDate dateOfBirth;
     private Account.Gender gender;
     private String address;

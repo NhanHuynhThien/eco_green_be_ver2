@@ -40,13 +40,20 @@ public class JwtService implements IJwtService {
             throw new IllegalArgumentException("UserDetails or username cannot be null");
         }
 
+        var roles = userDetails.getAuthorities()
+                .stream()
+                .map(auth -> auth.getAuthority())
+                .toList();
+
         return Jwts.builder()
                 .setSubject(userDetails.getUsername())
+                .claim("roles", roles) // ✅ thêm claim roles
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
+
 
     @Override
     public Claims extractAllClaims(String token) {
