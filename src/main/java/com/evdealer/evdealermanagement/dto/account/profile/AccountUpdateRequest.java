@@ -29,25 +29,15 @@ public class AccountUpdateRequest {
     @Email(message = "Email format is invalid")
     private String email;
 
-    @Size(max = 50, message = "Identity number must not exceed 50 characters")
-    private String identityNumber; // CCCD/CMND/Hộ chiếu
+    @Size(max = 50, message = "National ID must not exceed 50 characters")
+    private String nationalId;
 
-    private Gender gender; // Enum giới tính
+    private Gender gender;
 
-    private LocalDate dateOfBirth; // Ngày sinh
+    private LocalDate dateOfBirth;
 
     @Size(max = 50, message = "Tax code must not exceed 50 characters")
     private String taxCode;
-
-    // @Size(min = 3, max = 50, message = "Username must be between 3 and 50
-    // characters")
-    // private String username;
-
-    // private Status status; // Sử dụng enum Status
-
-    // public enum Status {
-    // ACTIVE, INACTIVE
-    // }
 
     public enum Gender {
         MALE, FEMALE, OTHER
