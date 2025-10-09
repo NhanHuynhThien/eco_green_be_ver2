@@ -75,7 +75,6 @@ public class Account extends BaseEntity {
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
     private java.util.List<AuthProvider> providers = new java.util.ArrayList<>();
 
-
     // =============================
     // ENUM định nghĩa theo DB
     // =============================
