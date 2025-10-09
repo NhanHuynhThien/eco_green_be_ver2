@@ -37,8 +37,8 @@ public final class AccountMapper {
         }
 
         // CCCD/CMND/Hộ chiếu
-        if (hasText(req.getIdentityNumber())) {
-            account.setNationalId(trimToNull(req.getIdentityNumber()));
+        if (hasText(req.getNationalId())) {
+            account.setNationalId(trimToNull(req.getNationalId()));
         }
 
         // Tax code
