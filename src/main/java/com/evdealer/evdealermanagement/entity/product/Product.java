@@ -73,6 +73,10 @@ public class Product extends BaseEntity {
     @Column(name = "seller_phone", length = 255)
     private String sellerPhone;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sale_type", length = 20)
+    private SaleType saleType;
+
     @Column(name = "auction_end_time")
     private LocalDateTime auctionEndTime;
 
@@ -110,4 +114,5 @@ public class Product extends BaseEntity {
     public enum SaleType {
         AUCTION, FIXED_PRICE, NEGOTIATION
     }
+
 }
