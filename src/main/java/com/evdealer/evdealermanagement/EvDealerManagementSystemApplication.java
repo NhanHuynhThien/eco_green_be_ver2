@@ -9,24 +9,33 @@ import org.springframework.data.redis.repository.configuration.EnableRedisReposi
 
 @SpringBootApplication
 @EnableJpaRepositories(basePackages = "com.evdealer.evdealermanagement.repository")
-// Tắt auto-scan Redis repositories
 @EnableRedisRepositories(
 		basePackages = "com.evdealer.evdealermanagement.redis",
 		enableKeyspaceEvents = RedisKeyValueAdapter.EnableKeyspaceEvents.OFF,
 		considerNestedRepositories = false
 )
 public class EvDealerManagementSystemApplication {
-	public static void main(String[] args) {
-		// Load .env file
-		Dotenv dotenv = Dotenv.configure()
-				.ignoreIfMissing() // Không throw error nếu .env không tồn tại
-				.load();
 
-		// Set các biến môi trường từ .env vào System properties
-		dotenv.entries().forEach(entry ->
-				System.setProperty(entry.getKey(), entry.getValue())
-		);
+	public static void main(String[] args) {
+		// Chỉ load .env nếu không chạy test
+		if (!isTestEnvironment()) {
+			Dotenv dotenv = Dotenv.configure()
+					.ignoreIfMissing()
+					.load();
+
+			dotenv.entries().forEach(entry ->
+					System.setProperty(entry.getKey(), entry.getValue())
+			);
+		}
 
 		SpringApplication.run(EvDealerManagementSystemApplication.class, args);
+	}
+
+	private static boolean isTestEnvironment() {
+		String[] activeProfiles = System.getProperty("spring.profiles.active", "").split(",");
+		for (String profile : activeProfiles) {
+			if (profile.trim().equalsIgnoreCase("test")) return true;
+		}
+		return false;
 	}
 }
