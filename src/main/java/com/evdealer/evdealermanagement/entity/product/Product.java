@@ -115,4 +115,11 @@ public class Product extends BaseEntity {
         AUCTION, FIXED_PRICE, NEGOTIATION
     }
 
+    @PrePersist
+    protected void onCreate() {
+        if(createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
+
 }

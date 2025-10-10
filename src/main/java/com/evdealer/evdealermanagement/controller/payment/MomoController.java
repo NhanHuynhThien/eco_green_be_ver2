@@ -29,29 +29,9 @@ public class MomoController {
     private MomoReturnService momoReturnService;
 
     @PostMapping
-    public ResponseEntity<String> createPayment(@RequestBody MomoRequest paymentRequest) {
-        // Gọi service tạo thanh toán
-        String response = momoService.createPaymentRequest(
-                paymentRequest.getAmount(),
-                paymentRequest.getProductId());
-        return ResponseEntity.ok(response);
-        // // Nếu MoMo phản hồi thành công (resultCode == 0)
-        // if (response.getResultCode() != null && response.getResultCode() == 0) {
-        // return ResponseEntity.ok(response);
-        // }
-
-        // // Trường hợp MoMo báo lỗi
-        // return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-
-        // } catch (IllegalArgumentException ex) {
-        // return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-        // .body(new MomoResponse(null, null, null, -1,
-        // ex.getMessage(), null, null));
-        // } catch (Exception ex) {
-        // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-        // .body(new MomoResponse(null, null, null, -1,
-        // "Đã xảy ra lỗi khi tạo yêu cầu thanh toán MoMo!", null, null));
-        // }
+    public String createPayment(@RequestBody MomoRequest paymentRequest) {
+        String response = momoService.createPaymentRequest(paymentRequest);
+        return response;
     }
 
     @GetMapping("/order-status/{orderId}")

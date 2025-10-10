@@ -9,6 +9,7 @@ import java.util.Date;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import com.evdealer.evdealermanagement.dto.payment.MomoRequest;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
@@ -31,14 +32,15 @@ public class MomoService {
     // private static final String REQUEST_TYPE = "captureWallet";
     private static final String REQUEST_TYPE = "payWithMethod";
 
-    public String createPaymentRequest(String amount, String productId) {
+    public String createPaymentRequest(MomoRequest momoRequest) {
         try {
             // Generate requestId and orderId
             String requestId = PARTNER_CODE + new Date().getTime();
-            String orderId = requestId;
+            String orderId = momoRequest.getId();
+            String amount = momoRequest.getAmount();
             String orderInfo = "SN Mobile";
             // String extraData = "";
-            String extraDataJson = "{\"productId\":" + productId + "}";
+            String extraDataJson = "{\"productId\":" + momoRequest.getProductId() + "}";
             String extraData = Base64.getEncoder().encodeToString(extraDataJson.getBytes(StandardCharsets.UTF_8));
 
             // Generate raw signature

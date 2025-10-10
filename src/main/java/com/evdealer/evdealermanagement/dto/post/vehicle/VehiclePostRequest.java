@@ -1,8 +1,5 @@
-package com.evdealer.evdealermanagement.dto.post.battery;
+package com.evdealer.evdealermanagement.dto.post.vehicle;
 
-import com.evdealer.evdealermanagement.entity.BaseEntity;
-import com.evdealer.evdealermanagement.entity.battery.BatteryBrands;
-import com.evdealer.evdealermanagement.entity.battery.BatteryTypes;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.*;
@@ -17,8 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class BatteryPostRequest {
-
+public class VehiclePostRequest {
 
     @NotBlank
     @Size(max = 255)
@@ -53,21 +49,35 @@ public class BatteryPostRequest {
     @Future
     LocalDateTime expiresAt;
 
-    String batteryTypeId;
-
+    // ID references
+    String categoryId;
     String brandId;
 
-    @Positive
-    @Digits(integer = 10, fraction = 2)
-    BigDecimal capacityKwh;
+    // Battery information
+    Double builtInBatteryCapacityAh;
+    Double builtInBatteryVoltageV;
+    Boolean removableBattery;
+    Short batteryHealthPercent;
 
-    @Min(0) @Max(100)
-    Integer healthPercent;
+    // Performance
+    Integer motorPowerW;
+    Short maxSpeedKmh;
+    Integer mileageKm;
+    Short rangeKm;
+    Double chargingTimeHours;
 
-    @Size(max = 50)
+    // Vehicle info
+    String model;
+    Short year;
+    String color;
     String origin;
+    Double weightKg;
+    Byte warrantyMonths;
+    Byte ownersCount;
 
-    @Positive
-    Integer voltageV;
+    // Legal / registration
+    Boolean hasInsurance;
+    Boolean hasRegistration;
+    String licensePlate;
 
 }

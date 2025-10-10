@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class BatteryDetails {
 
     @Id
@@ -43,4 +44,6 @@ public class BatteryDetails {
 
     private String origin;
     // ---------------------------------------------
+
+
 }

@@ -1,7 +1,7 @@
 package com.evdealer.evdealermanagement.repository;
 
 import com.evdealer.evdealermanagement.entity.product.Product;
-import org.jetbrains.annotations.NotNull;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

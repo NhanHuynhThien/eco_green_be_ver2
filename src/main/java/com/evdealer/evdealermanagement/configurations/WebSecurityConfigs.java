@@ -52,8 +52,7 @@ public class WebSecurityConfigs {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/oauth2/**", "/vehicle/**", "/battery/**", "/product/**")
-                        .permitAll()
+                        .requestMatchers("/auth/**", "/oauth2/**", "/vehicle/**", "/battery/**", "/product/**","/gemini/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/member/**", "/profile/me").hasAnyRole("MEMBER", "ADMIN")
                         .requestMatchers(

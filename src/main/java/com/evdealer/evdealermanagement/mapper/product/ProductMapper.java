@@ -1,7 +1,9 @@
 package com.evdealer.evdealermanagement.mapper.product;
 
+import com.evdealer.evdealermanagement.dto.post.common.ProductImageResponse;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
 import com.evdealer.evdealermanagement.entity.product.Product;
+import com.evdealer.evdealermanagement.entity.product.ProductImages;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.UUID;
@@ -25,6 +27,20 @@ public class ProductMapper {
                 .sellerId(product.getSeller() != null ? product.getSeller().getId() : null)
                 .sellerName(product.getSeller() != null ? product.getSeller().getFullName() : null)
                 .sellerPhone(product.getSeller() != null ? product.getSeller().getPhone() : null)
+                .build();
+    }
+
+
+    public static ProductImageResponse toMapDto(ProductImages  productImages) {
+        if (productImages == null) return null;
+
+        return ProductImageResponse.builder()
+                .id(productImages.getId())
+                .url(productImages.getImageUrl())
+                .width(productImages.getWidth())
+                .height(productImages.getHeight())
+                .position(productImages.getPosition())
+                .isPrimary(productImages.getIsPrimary())
                 .build();
     }
 

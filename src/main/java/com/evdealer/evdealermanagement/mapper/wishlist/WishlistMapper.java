@@ -21,7 +21,7 @@ public class WishlistMapper {
         if (product == null || product.getImages() == null) {
             return null;
         }
-        return product.getImages().stream()
+        String imageUrl =  product.getImages().stream()
                 .filter(ProductImages::getIsPrimary)
                 .map(ProductImages::getImageUrl)
                 .findFirst()
@@ -31,5 +31,10 @@ public class WishlistMapper {
                                 .findFirst()
                                 .orElse(null)
                 );
+
+        if(imageUrl.contains("res.cloudinary.com")) {
+            return  imageUrl.replace("upload", "upload/w_108,h_108,c_fill,q_auto,f_auto/");
+        }
+        return imageUrl;
     }
 }
