@@ -5,8 +5,8 @@ import com.evdealer.evdealermanagement.entity.product.Product;
 
 public class PostVerifyMapper {
 
-    public static PostVerifyResponse mapToVerificationActionResponse(Product product,
-                                                                     Product.Status previousStatus) {
+    public static PostVerifyResponse mapToPostVerifyResponse(Product product,
+            Product.Status previousStatus) {
 
         if (product == null) {
             return null;
@@ -17,6 +17,7 @@ public class PostVerifyMapper {
                 .previousStatus(previousStatus)
                 .newStatus(product.getStatus())
                 .rejectReason(product.getRejectReason())
+                .updateAt(product.getUpdatedAt())
                 .build();
     }
 }

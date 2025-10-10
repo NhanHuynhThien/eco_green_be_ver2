@@ -8,6 +8,9 @@ import com.evdealer.evdealermanagement.mapper.post.PostVerifyMapper;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+
+import java.time.LocalDateTime;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -52,11 +55,12 @@ public class PostVerifyService {
         }
 
         product.setApprovedBy(staff);
+        product.setUpdatedAt(LocalDateTime.now());
 
         // 7) Lưu DB
         productRepository.save(product);
 
         // 8) Map response
-        return PostVerifyMapper.mapToVerificationActionResponse(product, previous);
+        return PostVerifyMapper.mapToPostVerifyResponse(product, previous);
     }
 }

@@ -2,6 +2,8 @@ package com.evdealer.evdealermanagement.dto.post;
 
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 import com.evdealer.evdealermanagement.entity.product.Product.Status;
 
 @Getter
@@ -15,5 +17,6 @@ public class PostVerifyResponse {
     private Status previousStatus;
     private Status newStatus;
     private String rejectReason;
+    private LocalDateTime updateAt;
 
 }
