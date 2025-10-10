@@ -1,4 +1,4 @@
-package com.evdealer.evdealermanagement.dto.verification;
+package com.evdealer.evdealermanagement.dto.post;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -8,7 +8,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class VerificationActionRequest {
+public class PostVerifyRequest {
 
     @NotNull(message = "Action must not be null")
     private ActionType action;

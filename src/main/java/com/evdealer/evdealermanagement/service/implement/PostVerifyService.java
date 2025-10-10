@@ -1,10 +1,10 @@
 package com.evdealer.evdealermanagement.service.implement;
 
-import com.evdealer.evdealermanagement.dto.verification.VerificationActionRequest;
-import com.evdealer.evdealermanagement.dto.verification.VerificationActionResponse;
+import com.evdealer.evdealermanagement.dto.post.PostVerifyRequest;
+import com.evdealer.evdealermanagement.dto.post.PostVerifyResponse;
 import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.entity.product.Product;
-import com.evdealer.evdealermanagement.mapper.verification.VerificationActionMapper;
+import com.evdealer.evdealermanagement.mapper.post.PostVerifyMapper;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -14,14 +14,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
-public class ProductVerificationService {
+public class PostVerifyService {
 
     private final ProductRepository productRepository;
     private final UserContextService userContextService;
 
     @Transactional
-    public VerificationActionResponse verifyProduct(String productId,
-            VerificationActionRequest request) {
+    public PostVerifyResponse verifyPost(String productId,
+            PostVerifyRequest request) {
 
         // 1) Load product
         Product product = productRepository.findById(productId)
@@ -43,7 +43,7 @@ public class ProductVerificationService {
             }
             case REJECT -> {
                 product.setStatus(
-                        request.getAction() == VerificationActionRequest.ActionType.REJECT
+                        request.getAction() == PostVerifyRequest.ActionType.REJECT
                                 ? Product.Status.REJECTED
                                 : Product.Status.ACTIVE);
                 product.setRejectReason(request.getRejectReason());
@@ -57,6 +57,6 @@ public class ProductVerificationService {
         productRepository.save(product);
 
         // 8) Map response
-        return VerificationActionMapper.mapToVerificationActionResponse(product, previous);
+        return PostVerifyMapper.mapToVerificationActionResponse(product, previous);
     }
 }

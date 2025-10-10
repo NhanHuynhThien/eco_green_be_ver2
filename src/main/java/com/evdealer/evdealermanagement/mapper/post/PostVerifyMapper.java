@@ -1,18 +1,18 @@
-package com.evdealer.evdealermanagement.mapper.verification;
+package com.evdealer.evdealermanagement.mapper.post;
 
-import com.evdealer.evdealermanagement.dto.verification.VerificationActionResponse;
+import com.evdealer.evdealermanagement.dto.post.PostVerifyResponse;
 import com.evdealer.evdealermanagement.entity.product.Product;
 
-public class VerificationActionMapper {
+public class PostVerifyMapper {
 
-    public static VerificationActionResponse mapToVerificationActionResponse(Product product,
-            Product.Status previousStatus) {
+    public static PostVerifyResponse mapToVerificationActionResponse(Product product,
+                                                                     Product.Status previousStatus) {
 
         if (product == null) {
             return null;
         }
 
-        return VerificationActionResponse.builder()
+        return PostVerifyResponse.builder()
                 .productId(product.getId() != null ? product.getId().toString() : null)
                 .previousStatus(previousStatus)
                 .newStatus(product.getStatus())

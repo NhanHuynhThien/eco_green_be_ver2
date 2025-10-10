@@ -1,4 +1,4 @@
-package com.evdealer.evdealermanagement.dto.verification;
+package com.evdealer.evdealermanagement.dto.post;
 
 import lombok.*;
 
@@ -9,7 +9,7 @@ import com.evdealer.evdealermanagement.entity.product.Product.Status;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class VerificationActionResponse {
+public class PostVerifyResponse {
 
     private String productId;
     private Status previousStatus;
