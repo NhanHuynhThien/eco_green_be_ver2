@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "ecogreen-474613",
+  "private_key_id": "864a355614c35518cbb9f14fb963868e9b0d2131",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDo29NKPKbeXNsm\nQj3MsMpI1kyi+LJRpuQ3ZoTSlDxqDazTETM6B/uH+JSs+rwVeo3NWNE7izFq0Yn3\nlB04nh3UcjoZ0FneB64glFq4E1rt2QNpiVNF9B7i7irj7Z5EBHdWxuTT8yEHygE3\neSTJB8pctfNTzptSiDx/dVNItTGo6Z+d6a7S9Pc2eSadR5O4KmNeUJx2SYxL6uRJ\nfyKHvK85oOdrUqehOIvA+ZRDpzO/kvb4+pO8GKMvl1WgipcT/39fMofoNq7g3sjT\n/361oLrLechOfilkeJjBTOOOdOUIuXpsIVwtKoHJPdpjMhWEWE9sUQqOnmyJk+Yh\n5HRKtMxjAgMBAAECggEAXr8jJ6+qDgwmN1j4oFLG3AAmSqF6nPKVJV2Xab9bHaPW\n0ELNXy1kURz6EbAr22l0TTt4Vwv53YbI5m3jvefIJ2sa7Onzxv3FAgibKQ7nDqQg\nWU7BDVOZRai21usWXIKctDhVX1Ar/mlZOWMXbpy24CZAjbchR+GbDBmG+6yOOjWe\nISFdlxgCAy5zecYlLb+ECNj14UAzhvULta+QRKTMizYiNsmnddw8AtXnpuIuswIJ\nT3n3hfag3qFV1oHU2KF7I/wA8t0KC8FYanHHb8uRY/Apzl/Mg+M1z9+6fH/KLy6Q\njGasTDef8+oSA+j8He8Mp9VvPVCV3JmQ1VqjuO65gQKBgQD9q1y2la+GjNRoAirF\nGghqdqS51Trw72TC2K0JCa2Lwe7cIegjkOeYgyWlJONFM59nVI+ZyIQ4F+t2+l6f\nqIc1xchyfmktfh6ufv6QF7LIwWtfkCT8BFmR5xllDNcTYRsoZ6ejHC2/kyy4KH+T\n6DhPHpr+Pl0iLnIbInkfyYhJwwKBgQDq/4QNwjgfoA7b+wDce0IKBz8lXjNAzQOZ\nb8p1Tp+rGYK4bYiP7y3aWPCTlXvHyeeACXUucj5uOrDqOn+l/HMWG9UPTJlUN/VY\nGh0obwNXteelVclMrN4/SpYCJIK9XqZAtWVr2kkxsZBu/jTIAls6oEqhXBCk86Cx\nwmylBCyo4QKBgQCLuNGueDBgSj3MtDTesAImsgb1nO+EOjgj4rkcm0oOCtoIQlzd\nCjmmlcYsem78dPy+K6OVLw803mgB9tIb2vXutmw8NEi2mBtKPgT1VThSv8bmsjzM\n25CCfupL8JCeygPtc3qwqxq/xM8C+LucunIZkmAI3kzqQO705z4UNitthQKBgQDp\noNwlXZi0gEkllHa3vGbcV3YE7ZEg9HGGouhyFZeR4EvglSz2hABfGpsa7rtf1jAs\nT7rLUVMV/Y2TYFM1rzSvnz4D9tBdNUDatSOV5kA5fCRvcEkvzJEr9TgLq0a7hBTf\nMjhBsIOiPvjsEBhjXExcja2EnGYDyB5Te4rNx8eqoQKBgF/I8TEbQs+irFAztMY4\nfmcvU8XF3raMr9LtPIG1MwBQHqNWjT64/dh2KtGJPqp+zQaYK8DLqrtbxGyS1H/i\nTsLtHAFoDm33rEvyPGFo9TtsP+B4qOGXGR95Lx2But9AGqqsdI+q/wIACLnz/8GE\nlK5/O6FiuzGp6KK0eRn4wRnB\n-----END PRIVATE KEY-----\n",
+  "client_email": "gemini-ai-service@ecogreen-474613.iam.gserviceaccount.com",
+  "client_id": "110883101525599940982",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/gemini-ai-service%40ecogreen-474613.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
