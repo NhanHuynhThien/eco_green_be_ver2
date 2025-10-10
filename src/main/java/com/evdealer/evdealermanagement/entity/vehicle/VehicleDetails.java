@@ -6,9 +6,10 @@ import lombok.*;
 
 @Entity
 @Table(name = "vehicle_details")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class VehicleDetails {
 
     @Id
