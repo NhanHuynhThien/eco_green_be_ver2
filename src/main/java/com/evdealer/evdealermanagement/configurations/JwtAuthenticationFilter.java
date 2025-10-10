@@ -43,7 +43,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/vehicle/",
             "/battery/",
             "/api/vnpayment/return",
-            "/api/vnpayment/ipn"
+            "/api/vnpayment/ipn",
+            "/gemini/suggest-price"
     );
 
     public JwtAuthenticationFilter(JwtService jwtService, AccountDetailsService userDetailsService, RedisService redisService) {
