@@ -25,14 +25,14 @@ public class AdminProductManagementController {
     }
 
     @GetMapping("/all")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ProductDetail>> getAllProducts() {
         List<ProductDetail> products = adminService.getAllProducts();
         return ResponseEntity.ok().body(products);
     }
 
     @GetMapping("/all-posting-fee")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> getAllPostingFee() {
         try {
             String totalPostingFee = adminService.getTotalFee();

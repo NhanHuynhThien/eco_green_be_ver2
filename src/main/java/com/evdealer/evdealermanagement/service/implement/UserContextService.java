@@ -23,7 +23,6 @@ public class UserContextService implements IUserContextService {
         if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
             return Optional.empty();
         }
-        // auth.getName() = principal username do Spring Security set khi xác thực JWT
         return Optional.ofNullable(auth.getName());
     }
 

@@ -11,6 +11,7 @@ import com.evdealer.evdealermanagement.service.implement.JwtService;
 import com.evdealer.evdealermanagement.service.implement.RedisService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +36,7 @@ public class AuthenticationController {
 
     // ======================= LOGOUT =======================
     @PostMapping("/logout")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_MEMBER') or hasRole('ROLE_STAFF') ")
     public ResponseEntity<String> logout(@RequestHeader(value = "Authorization", required = false) String authHeader) {
         // Check header invalid (missing or not Bearer)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
