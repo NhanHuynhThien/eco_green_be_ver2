@@ -110,4 +110,12 @@ public class Product extends BaseEntity {
     public enum SaleType {
         AUCTION, FIXED_PRICE, NEGOTIATION
     }
+
+    @PrePersist
+    protected void onCreate() {
+        if(createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
+
 }

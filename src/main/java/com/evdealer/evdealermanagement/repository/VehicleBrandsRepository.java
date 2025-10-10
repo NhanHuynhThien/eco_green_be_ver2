@@ -1,4 +1,7 @@
 package com.evdealer.evdealermanagement.repository;
 
-public interface VehicleBrandsRepository {
+import com.evdealer.evdealermanagement.entity.vehicle.VehicleBrands;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface VehicleBrandsRepository extends JpaRepository<VehicleBrands, String> {
 }
