@@ -28,7 +28,7 @@ public class PostVerifyService {
 
         // 1) Load product
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found")); // APP
 
         // 3) Lưu trạng thái trước khi đổi
         Product.Status previous = product.getStatus();

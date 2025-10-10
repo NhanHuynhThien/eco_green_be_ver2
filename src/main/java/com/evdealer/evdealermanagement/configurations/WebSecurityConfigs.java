@@ -33,7 +33,8 @@ public class WebSecurityConfigs {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:4173", "api-eco-green-be.huanops.com", "https://d3k8h5w5waqdh2.cloudfront.net"));
+        config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:4173",
+                "api-eco-green-be.huanops.com", "https://d3k8h5w5waqdh2.cloudfront.net"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization"));
@@ -57,7 +58,7 @@ public class WebSecurityConfigs {
                         .requestMatchers("/member/**", "/profile/me").hasAnyRole("MEMBER", "ADMIN")
                         .requestMatchers(
                                 "/api/vnpayment/return",
-                                "/api/vnpayment/ipn")
+                                "/api/vnpayment/ipn", "/api/momo", "/api/momo/return")
                         .permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(exception -> exception
