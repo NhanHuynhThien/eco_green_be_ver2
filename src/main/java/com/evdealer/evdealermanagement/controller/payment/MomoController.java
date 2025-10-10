@@ -20,7 +20,7 @@ public class MomoController {
 
     @PostMapping
     public String createPayment(@RequestBody MomoRequest paymentRequest) {
-        String response = momoService.createPaymentRequest(paymentRequest.getAmount());
+        String response = momoService.createPaymentRequest(paymentRequest);
         return response;
     }
 
