@@ -3,18 +3,15 @@ package com.evdealer.evdealermanagement.mapper.account;
 import com.evdealer.evdealermanagement.dto.account.profile.AccountProfileResponse;
 import com.evdealer.evdealermanagement.dto.account.profile.AccountUpdateRequest;
 import com.evdealer.evdealermanagement.entity.account.Account;
-import lombok.Data;
 import org.springframework.util.StringUtils;
 
-@Data
 public final class AccountMapper {
 
     private AccountMapper() {
     }
 
     public static void updateAccountFromRequest(AccountUpdateRequest req, Account account) {
-        if (req == null || account == null)
-            return;
+        if (req == null || account == null) return;
 
         // Họ và tên
         if (hasText(req.getFullName())) {
@@ -41,7 +38,7 @@ public final class AccountMapper {
             account.setNationalId(trimToNull(req.getNationalId()));
         }
 
-        // Tax code
+        // Tax code — cho phép xóa nếu gửi rỗng
         if (req.getTaxCode() != null) {
             account.setTaxCode(trimToNull(req.getTaxCode()));
         }
@@ -56,18 +53,17 @@ public final class AccountMapper {
             account.setDateOfBirth(req.getDateOfBirth());
         }
 
-        // Avatar
+        // Avatar — cho phép xóa nếu null
         if (req.getAvatarUrl() != null) {
-            account.setAvatarUrl(req.getAvatarUrl());
+            account.setAvatarUrl(trimToNull(req.getAvatarUrl()));
         }
-
     }
 
-    private static boolean hasText(String s) {// Kiểm tra xem có phải là text ko
+    private static boolean hasText(String s) {
         return StringUtils.hasText(s);
     }
 
-    private static String trimToNull(String s) { // Loại bỏ khoảng trắng
+    private static String trimToNull(String s) {
         return s == null ? null : s.trim();
     }
 

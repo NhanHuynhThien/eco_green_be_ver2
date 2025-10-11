@@ -108,6 +108,7 @@ public class AuthService {
                 .createdAt(saved.getCreatedAt())
                 .updateAt(saved.getUpdatedAt())
                 .address(saved.getAddress())
+                .email(null)
                 .build();
     }
 
