@@ -22,11 +22,7 @@ public class PasswordController {
     private final ChangePasswordService changePasswordService;
 
     @PutMapping("/change-password")
-<<<<<<< HEAD
-    @PreAuthorize("hasRole('MEMBER')")
-=======
     @PreAuthorize("hasAnyRole('ADMIN', 'MEMBER', 'STAFF')")
->>>>>>> 6a1e1487c410c85a24db0bb9490839aeade0c004
     public PasswordResponse changePassword(@Valid @RequestBody ChangePasswordRequest req,
             Authentication auth) {
         return changePasswordService.changePassword(auth.getName(), req);
