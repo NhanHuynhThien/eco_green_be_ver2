@@ -2,11 +2,9 @@ package com.evdealer.evdealermanagement.controller.payment;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.evdealer.evdealermanagement.dto.payment.VnpayRequest;
@@ -16,7 +14,7 @@ import com.evdealer.evdealermanagement.service.implement.VnpayService;
 import lombok.AllArgsConstructor;
 
 @RestController
-@RequestMapping("/api/vnpay")
+@RequestMapping("/api/vnpayment")
 @AllArgsConstructor
 public class VnpayController {
 
@@ -36,8 +34,4 @@ public class VnpayController {
         }
     }
 
-    @GetMapping("/return")
-    public ResponseEntity<String> returnPayment(@RequestParam("vnp_ResponseCode") String responseCode) {
-        return vnpayService.handlePaymentReturn(responseCode);
-    }
 }

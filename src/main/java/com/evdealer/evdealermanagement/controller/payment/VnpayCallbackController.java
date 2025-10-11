@@ -5,7 +5,6 @@ import java.util.Map;
 import com.evdealer.evdealermanagement.service.implement.PostPackageService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -42,12 +41,4 @@ public class VnpayCallbackController {
         return ResponseEntity.badRequest().body("Thanh toán thất bại! Mã lỗi: " + code);
     }
 
-    @PostMapping("/ipn")
-    public ResponseEntity<String> handleIpn(@RequestParam Map<String, String> params) {
-        if (!VnpayConfig.isValidSignature(params)) {
-            return ResponseEntity.ok("INVALID_SIGNATURE");
-        }
-        // TODO: cập nhật trạng thái đơn hàng (idempotent)
-        return ResponseEntity.ok("OK");
-    }
 }

@@ -1,4 +1,4 @@
-package com.evdealer.evdealermanagement.dto.post;
+package com.evdealer.evdealermanagement.dto.post.verification;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.*;

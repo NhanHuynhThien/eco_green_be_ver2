@@ -52,12 +52,14 @@ public class WebSecurityConfigs {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/oauth2/**", "/vehicle/**", "/battery/**", "/product/**","/gemini/**").permitAll()
+                        .requestMatchers("/auth/**", "/oauth2/**", "/vehicle/**", "/battery/**", "/product/**",
+                                "/gemini/**")
+                        .permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/member/**", "/profile/me").hasAnyRole("MEMBER", "ADMIN")
                         .requestMatchers(
-                                "/api/vnpayment/return",
-                                "/api/vnpayment/ipn", "/api/momo", "/api/momo/return")
+                                "/api/vnpayment", "/api/vnpayment/return",
+                                "/api/momo", "/api/momo/return")
                         .permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(exception -> exception
