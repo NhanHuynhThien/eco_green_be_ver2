@@ -1,6 +1,7 @@
 package com.evdealer.evdealermanagement.service.implement;
 
 import com.evdealer.evdealermanagement.dto.payment.MomoRequest;
+import com.evdealer.evdealermanagement.dto.payment.MomoResponse;
 import com.evdealer.evdealermanagement.dto.payment.VnpayRequest;
 import com.evdealer.evdealermanagement.dto.payment.VnpayResponse;
 import com.evdealer.evdealermanagement.dto.post.packages.PackageRequest;
@@ -23,7 +24,7 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
-public class PostPackageService {
+public class PaymentService {
 
     private final ProductRepository productRepository;
     private final PostPackageRepository postPackageRepository;
@@ -88,7 +89,8 @@ public class PostPackageService {
             }
         } else if ("MOMO".equalsIgnoreCase(request.getPaymentMethod())) {
             MomoRequest momoReq = new MomoRequest(payment.getId(), totalPayable.toString());
-            paymentUrl = momoService.createPaymentRequest(momoReq);
+            MomoResponse res = momoService.createPaymentRequest(momoReq);
+            paymentUrl = res.getPayUrl();
         } else {
             throw new IllegalArgumentException("Unsupported payment method: " + request.getPaymentMethod());
         }
