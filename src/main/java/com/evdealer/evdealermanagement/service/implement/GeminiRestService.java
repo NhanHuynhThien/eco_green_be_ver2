@@ -154,21 +154,55 @@ public class GeminiRestService {
                 return generateFallback(title);
             }
 
-            // Lấy text từ response
+            // Lấy candidates từ response
             JsonNode candidates = root.path("candidates");
-            if (candidates.isArray() && candidates.size() > 0) {
-                JsonNode textNode = candidates.get(0)
-                        .path("content")
-                        .path("parts")
-                        .get(0)
-                        .path("text");
 
-                if (textNode != null && !textNode.asText().isEmpty()) {
-                    String text = textNode.asText();
-                    log.info("✅ Gemini response received");
-                    log.debug("Raw response: {}", text);
-                    return parseResponse(text, title);
+            if (candidates.isArray() && candidates.size() > 0) {
+                JsonNode firstCandidate = candidates.get(0);
+
+                // 🔍 Kiểm tra finishReason để biết tại sao bị block
+                JsonNode finishReason = firstCandidate.path("finishReason");
+                if (!finishReason.isMissingNode()) {
+                    String reason = finishReason.asText();
+                    log.info("Finish Reason: {}", reason);
+
+                    // Nếu bị block bởi safety
+                    if (!"STOP".equals(reason)) {
+                        log.warn("⚠️ Response blocked/filtered. Reason: {}", reason);
+
+                        // Kiểm tra safety ratings nếu có
+                        JsonNode safetyRatings = firstCandidate.path("safetyRatings");
+                        if (safetyRatings.isArray()) {
+                            log.info("Safety ratings: {}", safetyRatings);
+                        }
+
+                        return generateFallback(title);
+                    }
                 }
+
+                // Lấy content
+                JsonNode content = firstCandidate.path("content");
+
+                if (!content.isMissingNode()) {
+                    JsonNode parts = content.path("parts");
+
+                    // ✅ FIX: Kiểm tra parts có phần tử không
+                    if (parts.isArray() && parts.size() > 0) {
+                        JsonNode textNode = parts.get(0).path("text");
+
+                        if (!textNode.isMissingNode() && !textNode.asText().isEmpty()) {
+                            String text = textNode.asText();
+                            log.info("✅ Gemini response text received");
+                            return parseResponse(text, title);
+                        }
+                    } else {
+                        log.error("❌ Parts is empty or not an array");
+                    }
+                } else {
+                    log.error("❌ Content node is missing");
+                }
+            } else {
+                log.error("❌ Candidates array is empty or missing");
             }
 
             log.error("❌ Unexpected response format: no text content found");

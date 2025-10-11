@@ -2,11 +2,17 @@ package com.evdealer.evdealermanagement.mapper.product;
 
 import com.evdealer.evdealermanagement.dto.post.common.ProductImageResponse;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
+import com.evdealer.evdealermanagement.dto.product.detail.ProductImageDto;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.product.ProductImages;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class ProductMapper {
@@ -14,6 +20,21 @@ public class ProductMapper {
     // Entity -> DTO
     public static ProductDetail toDetailDto(Product product) {
         if (product == null) return null;
+
+        // ✅ Initialize images để tránh lazy loading exception
+        Hibernate.initialize(product.getImages());
+
+        // ✅ FIX: Map ProductImages sang ProductImageDto
+        List<ProductImageDto> imagesList = Collections.emptyList();
+        if (product.getImages() != null && !product.getImages().isEmpty()) {
+            imagesList = product.getImages().stream()
+                    .sorted(Comparator.comparing(
+                            ProductImages::getPosition,
+                            Comparator.nullsLast(Integer::compareTo)
+                    ))
+                    .map(ProductImageDto::fromEntity)  // ✅ Convert sang DTO
+                    .collect(Collectors.toList());
+        }
 
         return ProductDetail.builder()
                 .id(product.getId())
@@ -24,14 +45,24 @@ public class ProductMapper {
                 .conditionType(product.getConditionType() != null ? product.getConditionType().name() : null)
                 .status(product.getStatus() != null ? product.getStatus().name() : null)
                 .createdAt(product.getCreatedAt())
+
+                // ✅ Seller info
                 .sellerId(product.getSeller() != null ? product.getSeller().getId() : null)
                 .sellerName(product.getSeller() != null ? product.getSeller().getFullName() : null)
                 .sellerPhone(product.getSeller() != null ? product.getSeller().getPhone() : null)
+
+                // ✅ Address info
+                .addressDetail(product.getAddressDetail())
+                .city(product.getCity())
+                .district(product.getDistrict())
+                .ward(product.getWard())
+
+                // ✅ Product images - Sử dụng biến đã convert
+                .productImagesList(imagesList)
                 .build();
     }
 
-
-    public static ProductImageResponse toMapDto(ProductImages  productImages) {
+    public static ProductImageResponse toMapDto(ProductImages productImages) {
         if (productImages == null) return null;
 
         return ProductImageResponse.builder()
@@ -95,6 +126,11 @@ public class ProductMapper {
                 .status(status)
                 .conditionType(conditionType != null ? conditionType : Product.ConditionType.USED)
                 .createdAt(dto.getCreatedAt())
+                // ✅ Address info khi map ngược
+                .addressDetail(dto.getAddressDetail())
+                .city(dto.getCity())
+                .district(dto.getDistrict())
+                .ward(dto.getWard())
                 .build();
     }
 }
