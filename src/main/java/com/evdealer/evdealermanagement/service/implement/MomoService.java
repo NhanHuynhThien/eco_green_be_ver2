@@ -10,15 +10,17 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 import com.evdealer.evdealermanagement.dto.payment.MomoRequest;
+import com.evdealer.evdealermanagement.dto.payment.MomoResponse;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 
 import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 
-import net.minidev.json.JSONObject;
+
 
 @Service
 public class MomoService {
@@ -26,38 +28,48 @@ public class MomoService {
     private static final String PARTNER_CODE = "MOMO";
     private static final String ACCESS_KEY = "F8BBA842ECF85";
     private static final String SECRET_KEY = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
-    // private static final String REDIRECT_URL = "https://momo.vn/return";
     private static final String REDIRECT_URL = "http://localhost:8080/api/momo/return";
     private static final String IPN_URL = "https://callback.url/notify";
     // private static final String REQUEST_TYPE = "captureWallet";
     private static final String REQUEST_TYPE = "payWithMethod";
 
-    public String createPaymentRequest(MomoRequest momoRequest) {
+    public MomoResponse createPaymentRequest(MomoRequest paymentRequest) {
         try {
-            // Generate requestId and orderId
-            String requestId = PARTNER_CODE + new Date().getTime();
-            String orderId = momoRequest.getId();
-            String amount = momoRequest.getAmount();
-            String orderInfo = "SN Mobile";
-            // String extraData = "";
-            String extraDataJson = "{\"productId\":" + momoRequest.getProductId() + "}";
-            String extraData = Base64.getEncoder().encodeToString(extraDataJson.getBytes(StandardCharsets.UTF_8));
+            // Validate amount là số nguyên dương
+            long amt;
+            try {
+                amt = Long.parseLong(paymentRequest.getAmount());
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Amount phải là số nguyên VND.");
+            }
+            if (amt <= 0)
+                throw new IllegalArgumentException("Amount phải > 0.");
 
-            // Generate raw signature
+            // Generate requestId & orderId
+            String requestId = PARTNER_CODE + new Date().getTime();
+            String orderId = paymentRequest.getId();
+            String orderInfo = "SN Mobile";
+
+            // extraData = Base64(JSON) để mang productId
+            String extraDataJson = "{\"productId\":" + paymentRequest.getId() + "}";
+            String extraData = Base64.getEncoder()
+                    .encodeToString(extraDataJson.getBytes(StandardCharsets.UTF_8));
+
+            // Raw signature (đúng thứ tự tham số MoMo yêu cầu)
             String rawSignature = String.format(
                     "accessKey=%s&amount=%s&extraData=%s&ipnUrl=%s&orderId=%s&orderInfo=%s&partnerCode=%s&redirectUrl=%s&requestId=%s&requestType=%s",
-                    ACCESS_KEY, amount, extraData, IPN_URL, orderId, orderInfo, PARTNER_CODE, REDIRECT_URL,
-                    requestId, REQUEST_TYPE);
+                    ACCESS_KEY, String.valueOf(amt), extraData, IPN_URL, orderId, orderInfo,
+                    PARTNER_CODE, REDIRECT_URL, requestId, REQUEST_TYPE);
 
-            // Sign with HMAC SHA256
+            // Ký HMAC SHA256
             String signature = signHmacSHA256(rawSignature, SECRET_KEY);
-            System.out.println("Generated Signature: " + signature);
 
+            // Body JSON gửi MoMo
             JSONObject requestBody = new JSONObject();
             requestBody.put("partnerCode", PARTNER_CODE);
             requestBody.put("accessKey", ACCESS_KEY);
             requestBody.put("requestId", requestId);
-            requestBody.put("amount", amount);
+            requestBody.put("amount", String.valueOf(amt));
             requestBody.put("orderId", orderId);
             requestBody.put("orderInfo", orderInfo);
             requestBody.put("redirectUrl", REDIRECT_URL);
@@ -80,12 +92,24 @@ public class MomoService {
                 while ((line = reader.readLine()) != null) {
                     result.append(line);
                 }
-                System.out.println("Response from MoMo: " + result.toString());
-                return result.toString();
+                // Parse JSON MoMo trả về -> build MomoResponse
+                JSONObject res = new JSONObject(result.toString());
+
+                Integer resultCode = res.has("resultCode") ? res.getInt("resultCode") : null;
+                String message = res.optString("message", null);
+                String payUrl = res.optString("payUrl", null);
+                String deeplink = res.optString("deeplink", null);
+                String qrCodeUrl = res.optString("qrCodeUrl", null);
+
+                return new MomoResponse(payUrl, deeplink, qrCodeUrl, resultCode, message, orderId, requestId);
             }
+        } catch (IllegalArgumentException e) {
+            // Lỗi dữ liệu vào -> trả resultCode -1 + message
+            return new MomoResponse(null, null, null, -1, e.getMessage(), null, null);
         } catch (Exception e) {
             e.printStackTrace();
-            return "{\"error\": \"Failed to create payment request: " + e.getMessage() + "\"}";
+            return new MomoResponse(null, null, null, -1,
+                    "Failed to create payment request: " + e.getMessage(), null, null);
         }
     }
 

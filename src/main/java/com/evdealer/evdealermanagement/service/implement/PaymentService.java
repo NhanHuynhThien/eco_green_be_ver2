@@ -1,6 +1,7 @@
 package com.evdealer.evdealermanagement.service.implement;
 
 import com.evdealer.evdealermanagement.dto.payment.MomoRequest;
+import com.evdealer.evdealermanagement.dto.payment.MomoResponse;
 import com.evdealer.evdealermanagement.dto.payment.VnpayRequest;
 import com.evdealer.evdealermanagement.dto.payment.VnpayResponse;
 import com.evdealer.evdealermanagement.dto.post.packages.PackageRequest;
@@ -23,7 +24,7 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
-public class PostPackageService {
+public class PaymentService {
 
     private final ProductRepository productRepository;
     private final PostPackageRepository postPackageRepository;
@@ -78,8 +79,8 @@ public class PostPackageService {
         postPaymentRepository.save(payment);
 
         String paymentUrl;
-        if ("VNPAY".equalsIgnoreCase(request.getPaymentMethod())) {
-            VnpayRequest vnpayReq = new VnpayRequest(payment.getId(), totalPayable.toString());
+        if("VNPAY".equalsIgnoreCase(request.getPaymentMethod())) {
+            VnpayRequest vnpayReq =  new VnpayRequest(payment.getId(), totalPayable.toString());
             try {
                 VnpayResponse res = vnpayService.createPayment(vnpayReq);
                 paymentUrl = res.getPaymentUrl();
@@ -87,8 +88,9 @@ public class PostPackageService {
                 throw new RuntimeException("Encoding error when creating VNPay payment", e);
             }
         } else if ("MOMO".equalsIgnoreCase(request.getPaymentMethod())) {
-            MomoRequest momoReq = new MomoRequest(payment.getId(), totalPayable.toString(), payment.getProductId());
-            paymentUrl = momoService.createPaymentRequest(momoReq);
+            MomoRequest momoReq = new MomoRequest(payment.getId(), totalPayable.toString());
+            MomoResponse res = momoService.createPaymentRequest(momoReq);
+            paymentUrl = res.getPayUrl();
         } else {
             throw new IllegalArgumentException("Unsupported payment method: " + request.getPaymentMethod());
         }
@@ -114,7 +116,7 @@ public class PostPackageService {
             return;
         }
 
-        if (success) {
+        if(success) {
             payment.setPaymentStatus(PostPayment.PaymentStatus.COMPLETED);
 
             product.setStatus(Product.Status.PENDING_REVIEW);

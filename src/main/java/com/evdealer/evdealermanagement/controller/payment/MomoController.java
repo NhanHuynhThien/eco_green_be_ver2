@@ -1,7 +1,8 @@
 package com.evdealer.evdealermanagement.controller.payment;
 
-import java.util.Map;
-
+import com.evdealer.evdealermanagement.dto.payment.MomoResponse;
+import com.evdealer.evdealermanagement.service.implement.PaymentService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,14 +11,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.evdealer.evdealermanagement.dto.payment.MomoRequest;
-import com.evdealer.evdealermanagement.service.implement.MomoReturnService;
 import com.evdealer.evdealermanagement.service.implement.MomoService;
 
-import lombok.RequiredArgsConstructor;
+import java.util.Map;
 
 @RequestMapping("/api/momo")
 @RestController
@@ -26,12 +25,15 @@ public class MomoController {
 
     @Autowired
     private MomoService momoService;
-    private MomoReturnService momoReturnService;
+    private final PaymentService paymentService;
 
     @PostMapping
-    public String createPayment(@RequestBody MomoRequest paymentRequest) {
-        String response = momoService.createPaymentRequest(paymentRequest);
-        return response;
+    public ResponseEntity<MomoResponse> createPayment(@RequestBody MomoRequest paymentRequest) {
+        MomoResponse res = momoService.createPaymentRequest(paymentRequest);
+        if (res.getResultCode() != null && res.getResultCode() == 0) {
+            return ResponseEntity.ok(res);
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(res);
     }
 
     @GetMapping("/order-status/{orderId}")
@@ -40,23 +42,16 @@ public class MomoController {
         return response;
     }
 
-    @GetMapping("/return")
-    public ResponseEntity<String> handleMomoReturn(@RequestParam Map<String, String> params) {
-        String result = momoReturnService.handleReturnAndUpdateProduct(params);
+    @PostMapping("/return")
+    public ResponseEntity<String> handleMomoCallback(@RequestBody Map<String, Object> payload) {
+        String orderId = (String) payload.get("orderId"); // chính là PostPayment.id
+        String resultCode = String.valueOf(payload.get("resultCode")); // "0" = success
 
-        switch (result) {
-            case "OK":
-            case "OK_ALREADY_UPDATED":
-                return ResponseEntity.ok("Thanh toán thành công qua MoMo!"); // có thể 302 về trang FE
-            case "INVALID_SIGNATURE":
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid signature");
-            case "MISSING_EXTRA_DATA":
-            case "INVALID_EXTRA_DATA":
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Thiếu/ sai extraData");
-            default:
-                // PAYMENT_FAILED_<code>
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Thanh toán thất bại: " + result);
-        }
+        boolean success = "0".equals(resultCode);
+        paymentService.handlePaymentCallback(orderId, success);
+
+        return ResponseEntity.ok(success ? "Thanh toán thành công!" : "Thanh toán thất bại!");
     }
 
 }
+
