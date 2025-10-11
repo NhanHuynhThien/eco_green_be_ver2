@@ -2,7 +2,7 @@ package com.evdealer.evdealermanagement.controller.payment;
 
 import java.util.Map;
 
-import com.evdealer.evdealermanagement.service.implement.PostPackageService;
+import com.evdealer.evdealermanagement.service.implement.PaymentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,10 +16,10 @@ import com.evdealer.evdealermanagement.utils.VnpSigner;
 @RequestMapping("/api/vnpayment")
 public class VnpayCallbackController {
 
-    private final PostPackageService postPackageService;
+    private final PaymentService paymentService;
 
-    public VnpayCallbackController(PostPackageService postPackageService) {
-        this.postPackageService = postPackageService;
+    public VnpayCallbackController(PaymentService paymentService) {
+        this.paymentService = paymentService;
     }
 
     @GetMapping("/return")
@@ -32,7 +32,7 @@ public class VnpayCallbackController {
         String code = params.getOrDefault("vnp_ResponseCode", "");
         boolean success = "00".equalsIgnoreCase(code);
 
-        postPackageService.handlePaymentCallback(paymentId, success);
+        paymentService.handlePaymentCallback(paymentId, success);
 
         if ("00".equals(code)) {
             // TODO: cập nhật đơn hàng theo vnp_TxnRef

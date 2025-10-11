@@ -24,7 +24,7 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
-public class PostPackageService {
+public class PaymentService {
 
     private final ProductRepository productRepository;
     private final PostPackageRepository postPackageRepository;
@@ -79,8 +79,8 @@ public class PostPackageService {
         postPaymentRepository.save(payment);
 
         String paymentUrl;
-        if ("VNPAY".equalsIgnoreCase(request.getPaymentMethod())) {
-            VnpayRequest vnpayReq = new VnpayRequest(payment.getId(), totalPayable.toString());
+        if("VNPAY".equalsIgnoreCase(request.getPaymentMethod())) {
+            VnpayRequest vnpayReq =  new VnpayRequest(payment.getId(), totalPayable.toString());
             try {
                 VnpayResponse res = vnpayService.createPayment(vnpayReq);
                 paymentUrl = res.getPaymentUrl();
@@ -116,7 +116,7 @@ public class PostPackageService {
             return;
         }
 
-        if (success) {
+        if(success) {
             payment.setPaymentStatus(PostPayment.PaymentStatus.COMPLETED);
 
             product.setStatus(Product.Status.PENDING_REVIEW);

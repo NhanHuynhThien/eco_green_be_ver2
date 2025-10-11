@@ -151,11 +151,19 @@
 			<version>1.38.0</version>
 		</dependency>
 
+<<<<<<< HEAD
 		<dependency>
 			<groupId>org.json</groupId>
 			<artifactId>json</artifactId>
 			<version>20240303</version>
 		</dependency>
+=======
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20240303</version>
+        </dependency>
+>>>>>>> 6a1e1487c410c85a24db0bb9490839aeade0c004
 	</dependencies>
 
 	<build>

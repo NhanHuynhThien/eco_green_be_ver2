@@ -68,6 +68,7 @@ public class AuthService {
     public AccountRegisterResponse register(AccountRegisterRequest request) {
         String phone = request.getPhone().trim();
         String fullName = request.getFullName().trim();
+        //String email = request.getEmail().trim();
 
         // Check duplicate phone
         if (accountRepository.findByPhone(phone).isPresent()) {
@@ -91,6 +92,7 @@ public class AuthService {
                 .status(Account.Status.ACTIVE)
                 .passwordHash(hashedPassword)
                 .address(request.getAddress())
+                .email(null)
                 .build();
 
         Account saved = accountRepository.save(account);
@@ -106,6 +108,7 @@ public class AuthService {
                 .createdAt(saved.getCreatedAt())
                 .updateAt(saved.getUpdatedAt())
                 .address(saved.getAddress())
+                .email(null)
                 .build();
     }
 
