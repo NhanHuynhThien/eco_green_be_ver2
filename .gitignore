@@ -8,6 +8,7 @@ target/
 src/main/resources/.env
 *.env
 !pom.xml
+src/main/resources/ecogreen-474613-864a355614c3.json
 
 ### STS ###
 .apt_generated

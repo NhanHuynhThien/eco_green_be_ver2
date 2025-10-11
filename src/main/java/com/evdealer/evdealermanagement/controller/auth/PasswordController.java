@@ -1,5 +1,6 @@
 package com.evdealer.evdealermanagement.controller.auth;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,6 +22,7 @@ public class PasswordController {
     private final ChangePasswordService changePasswordService;
 
     @PutMapping("/change-password")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEMBER', 'STAFF')")
     public PasswordResponse changePassword(@Valid @RequestBody ChangePasswordRequest req,
             Authentication auth) {
         return changePasswordService.changePassword(auth.getName(), req);
