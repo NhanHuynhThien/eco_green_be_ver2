@@ -70,6 +70,10 @@ public enum ErrorCode {
     PAYMENT_FAILED(1501, "Payment processing failed", HttpStatus.BAD_REQUEST),
     INSUFFICIENT_FUNDS(1502, "Insufficient balance", HttpStatus.BAD_REQUEST),
     TRANSACTION_DECLINED(1503, "Transaction was declined", HttpStatus.BAD_REQUEST),
+    PRODUCT_NOT_DRAFT(1504, "Product is not in DRAFT state", HttpStatus.BAD_REQUEST),
+    DURATION_DAYS_MORE_THAN_ZERO(1505, "Duration days must be more than 0", HttpStatus.BAD_REQUEST),
+    PACKAGE_NOT_FOUND(1506, "Package not found", HttpStatus.NOT_FOUND),
+    PAYMENT_NOT_FOUND(1507, "Payment not found", HttpStatus.NOT_FOUND),
 
     // --- Wishlist Errors (Codes 1600 - 1699) ---
     WISHLIST_NOT_FOUND(1601, "Wishlist not found", HttpStatus.NOT_FOUND),

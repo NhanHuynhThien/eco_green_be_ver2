@@ -31,4 +31,10 @@ public class UserContextService implements IUserContextService {
         return getCurrentUsername()
                 .flatMap(u -> accountRepository.findByUsername(u).map(Account::getId));
     }
+
+    @Override
+    public Optional<Account> getCurrentUser() {
+        return getCurrentUsername()
+                .flatMap(accountRepository::findByUsername);
+    }
 }
