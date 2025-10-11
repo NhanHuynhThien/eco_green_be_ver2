@@ -44,9 +44,9 @@ public class GeminiRestService {
     @PostConstruct
     public void init() {
         this.apiKey = dotenv.get("GEMINI_API_KEY");
-        this.modelName = dotenv.get("GEMINI_MODEL", "gemini-1.5-flash");
-        this.maxTokens = Integer.parseInt(dotenv.get("GEMINI_MAX_TOKENS", "500"));
-        this.temperature = Float.parseFloat(dotenv.get("GEMINI_TEMPERATURE", "0.2"));
+        this.modelName = dotenv.get("GEMINI_MODEL", "gemini-2.5-flash");
+        this.maxTokens = Integer.parseInt(dotenv.get("GEMINI_MAX_TOKENS", "4096")); // ✅ Tăng từ 1000 lên 4096
+        this.temperature = Float.parseFloat(dotenv.get("GEMINI_TEMPERATURE", "0.5"));
 
         log.info("=== GEMINI REST SERVICE INITIALIZED ===");
         log.info("Model: {}", modelName);
@@ -119,21 +119,14 @@ public class GeminiRestService {
      */
     private String buildPrompt(String title) {
         return String.format(
-                "Bạn là chuyên gia thẩm định giá các sản phẩm CŨ tại Việt Nam (xe điện, pin, linh kiện điện, thiết bị điện tử, v.v.).\n" +
-                        "Nhiệm vụ: Đưa ra **giá gợi ý hợp lý** và **mô tả ngắn gọn về tình trạng sản phẩm** dựa trên thông tin người bán cung cấp.\n\n" +
-                        "Sản phẩm: %s\n\n" +
-                        "Yêu cầu phản hồi:\n" +
-                        "1️⃣ Chỉ trả về đúng định dạng sau (không markdown, không ký tự đặc biệt):\n" +
-                        "Giá gợi ý: [khoảng giá hoặc số cụ thể] VNĐ\n" +
-                        "Mô tả ngắn gọn: [1 câu đánh giá tổng quan tình trạng, độ mới, hiệu suất hoặc giá trị sử dụng]\n\n" +
-                        "Ví dụ:\n" +
-                        "Giá gợi ý: Khoảng 58–62 triệu VNĐ\n" +
-                        "Mô tả ngắn gọn: Pin xe điện còn 90%%, giữ hiệu suất tốt, thích hợp để tái sử dụng.\n\n" +
-                        "Hoặc:\n" +
-                        "Giá gợi ý: 12.500.000 VNĐ\n" +
-                        "Mô tả ngắn gọn: Bộ sạc xe điện hoạt động ổn định, bề ngoài hơi trầy nhưng hiệu năng tốt.\n\n" +
-                        "Chỉ trả về đúng format trên, không thêm lời giải thích.",
-                title
+                "Bạn là chuyên gia thẩm định giá sản phẩm cũ tại Việt Nam. "
+                        + "Hãy dựa trên tiêu đề sản phẩm để đưa ra: "
+                        + "1. Giá gợi ý hợp lý (đơn vị VNĐ) "
+                        + "2. Mô tả ngắn gọn tình trạng (1 câu). "
+                        + "Chỉ trả lời đúng format sau:\n"
+                        + "Giá gợi ý: [giá hoặc khoảng giá] VNĐ\n"
+                        + "Mô tả ngắn gọn trong 1-2 câu: [mô tả]\n\n"
+                        + "Sản phẩm: %s", title
         );
     }
 
@@ -160,7 +153,7 @@ public class GeminiRestService {
             if (candidates.isArray() && candidates.size() > 0) {
                 JsonNode firstCandidate = candidates.get(0);
 
-                // 🔍 Kiểm tra finishReason để biết tại sao bị block
+                // Kiểm tra finishReason để biết tại sao bị block
                 JsonNode finishReason = firstCandidate.path("finishReason");
                 if (!finishReason.isMissingNode()) {
                     String reason = finishReason.asText();
@@ -186,7 +179,7 @@ public class GeminiRestService {
                 if (!content.isMissingNode()) {
                     JsonNode parts = content.path("parts");
 
-                    // ✅ FIX: Kiểm tra parts có phần tử không
+                    // Kiểm tra parts có phần tử không
                     if (parts.isArray() && parts.size() > 0) {
                         JsonNode textNode = parts.get(0).path("text");
 
@@ -329,6 +322,6 @@ public class GeminiRestService {
             return BigDecimal.valueOf(0.70);
         }
 
-        return BigDecimal.ONE; // Mặc định 100%
+        return BigDecimal.ONE;
     }
 }
