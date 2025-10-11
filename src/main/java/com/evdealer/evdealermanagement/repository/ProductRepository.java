@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, String> {
@@ -19,4 +20,6 @@ public interface ProductRepository extends JpaRepository<Product, String> {
     List<Product> findTitlesByTitleContainingIgnoreCase(@Param("title") String title);
 
     List<Product> findTop12ByStatusOrderByCreatedAtDesc(Product.Status status);
+
+    Optional<Product> findById(@NotNull String productId);
 }

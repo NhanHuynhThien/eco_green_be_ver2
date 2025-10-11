@@ -3,6 +3,7 @@ package com.evdealer.evdealermanagement.service.implement;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Date;
 
 import javax.crypto.Mac;
@@ -25,7 +26,8 @@ public class MomoService {
     private static final String PARTNER_CODE = "MOMO";
     private static final String ACCESS_KEY = "F8BBA842ECF85";
     private static final String SECRET_KEY = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
-    private static final String REDIRECT_URL = "https://momo.vn/return";
+    // private static final String REDIRECT_URL = "https://momo.vn/return";
+    private static final String REDIRECT_URL = "http://localhost:8080/api/momo/return";
     private static final String IPN_URL = "https://callback.url/notify";
     // private static final String REQUEST_TYPE = "captureWallet";
     private static final String REQUEST_TYPE = "payWithMethod";
@@ -37,7 +39,9 @@ public class MomoService {
             String orderId = momoRequest.getId();
             String amount = momoRequest.getAmount();
             String orderInfo = "SN Mobile";
-            String extraData = "";
+            // String extraData = "";
+            String extraDataJson = "{\"productId\":" + momoRequest.getProductId() + "}";
+            String extraData = Base64.getEncoder().encodeToString(extraDataJson.getBytes(StandardCharsets.UTF_8));
 
             // Generate raw signature
             String rawSignature = String.format(

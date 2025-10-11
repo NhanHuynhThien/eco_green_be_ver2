@@ -36,17 +36,17 @@ public class PostPackageService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
-        if(product.getStatus() != Product.Status.DRAFT) {
+        if (product.getStatus() != Product.Status.DRAFT) {
             throw new AppException(ErrorCode.PRODUCT_NOT_DRAFT);
         }
 
         PostPackage pkg = postPackageRepository.findById(request.getPackageId())
                 .orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
 
-        if(request.getDurationDays() == null || request.getDurationDays() <= 0) {
+        if (request.getDurationDays() == null || request.getDurationDays() <= 0) {
             throw new AppException(ErrorCode.DURATION_DAYS_MORE_THAN_ZERO);
         }
-        int duration =  request.getDurationDays();
+        int duration = request.getDurationDays();
 
         BigDecimal totalPayable;
 
@@ -60,8 +60,8 @@ public class PostPackageService {
             case "e88dd6bb-a5ae-11f0-82a9-a2aad89b694c":
                 totalPayable = new BigDecimal("35000").multiply(BigDecimal.valueOf(duration));
                 break;
-                default:
-                    throw new AppException(ErrorCode.PACKAGE_NOT_FOUND);
+            default:
+                throw new AppException(ErrorCode.PACKAGE_NOT_FOUND);
         }
 
         product.setStatus(Product.Status.PENDING_PAYMENT);
@@ -78,8 +78,8 @@ public class PostPackageService {
         postPaymentRepository.save(payment);
 
         String paymentUrl;
-        if("VNPAY".equalsIgnoreCase(request.getPaymentMethod())) {
-            VnpayRequest vnpayReq =  new VnpayRequest(payment.getId(), totalPayable.toString());
+        if ("VNPAY".equalsIgnoreCase(request.getPaymentMethod())) {
+            VnpayRequest vnpayReq = new VnpayRequest(payment.getId(), totalPayable.toString());
             try {
                 VnpayResponse res = vnpayService.createPayment(vnpayReq);
                 paymentUrl = res.getPaymentUrl();
@@ -87,7 +87,7 @@ public class PostPackageService {
                 throw new RuntimeException("Encoding error when creating VNPay payment", e);
             }
         } else if ("MOMO".equalsIgnoreCase(request.getPaymentMethod())) {
-            MomoRequest momoReq = new MomoRequest(payment.getId(), totalPayable.toString());
+            MomoRequest momoReq = new MomoRequest(payment.getId(), totalPayable.toString(), payment.getProductId());
             paymentUrl = momoService.createPaymentRequest(momoReq);
         } else {
             throw new IllegalArgumentException("Unsupported payment method: " + request.getPaymentMethod());
@@ -114,7 +114,7 @@ public class PostPackageService {
             return;
         }
 
-        if(success) {
+        if (success) {
             payment.setPaymentStatus(PostPayment.PaymentStatus.COMPLETED);
 
             product.setStatus(Product.Status.PENDING_REVIEW);
@@ -123,7 +123,7 @@ public class PostPackageService {
                     .orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
 
             int durationDays;
-            if(pkg.getPrice().compareTo(BigDecimal.ZERO) > 0) {
+            if (pkg.getPrice().compareTo(BigDecimal.ZERO) > 0) {
                 durationDays = payment.getAmount().divide(pkg.getPrice(), 0, RoundingMode.DOWN).intValue();
             } else {
                 durationDays = 1;

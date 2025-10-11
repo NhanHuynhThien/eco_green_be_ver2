@@ -13,7 +13,6 @@ import jakarta.validation.constraints.Pattern;
 @Setter
 public class AccountUpdateRequest {
 
-    @NotBlank(message = "Full name is required")
     @Size(max = 120, message = "Full name must not exceed 120 characters")
     private String fullName;
 

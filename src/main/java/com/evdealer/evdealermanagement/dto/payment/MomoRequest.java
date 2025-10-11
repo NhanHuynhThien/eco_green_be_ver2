@@ -10,4 +10,5 @@ import lombok.NoArgsConstructor;
 public class MomoRequest {
     private String id;
     private String amount;
+    private String productId;
 }
