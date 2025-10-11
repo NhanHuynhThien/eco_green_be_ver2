@@ -8,6 +8,7 @@ import com.evdealer.evdealermanagement.service.contract.IProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ public class ProductService implements IProductService {
     private final BatteryService batteryService;
 
     @Override
+    @Transactional(readOnly = true)
     public List<ProductDetail> getAllProductsWithStatusActive() {
         try {
             log.debug("Fetching all products");
@@ -47,6 +49,7 @@ public class ProductService implements IProductService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<ProductDetail> getProductById(String id) {
         if (id == null) {
             log.warn("Invalid product ID: null");
@@ -63,6 +66,7 @@ public class ProductService implements IProductService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ProductDetail> getProductByName(String name) {
         if (name == null || name.trim().isEmpty()) {
             log.warn("Product name is null or empty");
@@ -92,6 +96,7 @@ public class ProductService implements IProductService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ProductDetail> getProductByType(String type) {
         if (type == null || type.trim().isEmpty()) {
             log.warn("Product type is null or empty");
@@ -116,6 +121,7 @@ public class ProductService implements IProductService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ProductDetail> getProductByBrand(String brand) {
         if (brand == null || brand.trim().isEmpty()) {
             log.warn("Brand name is null or empty");
@@ -152,19 +158,27 @@ public class ProductService implements IProductService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ProductDetail> getNewProducts() {
-        LocalDateTime threeDaysAgo = LocalDateTime.now().minusDays(3);
+        try {
+            log.debug("Fetching new products");
+            LocalDateTime threeDaysAgo = LocalDateTime.now().minusDays(3);
 
-        List<Product> products = productRepository.findTop12ByStatusOrderByCreatedAtDesc(Product.Status.ACTIVE);
+            List<Product> products = productRepository.findTop12ByStatusOrderByCreatedAtDesc(Product.Status.ACTIVE);
 
-        return products.stream()
-                .map(ProductDetail::fromEntity)
-                .collect(Collectors.toList());
+            return products.stream()
+                    .map(ProductDetail::fromEntity)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("Error fetching new products", e);
+            return List.of();
+        }
     }
 
     // ============================================
     // NEW METHOD: Filter với multiple filters
     // ============================================
+    @Transactional(readOnly = true)
     public List<ProductDetail> filterProducts(String name, String brand, String type) {
         try {
             log.debug("Filtering products with name: {}, brand: {}, type: {}", name, brand, type);

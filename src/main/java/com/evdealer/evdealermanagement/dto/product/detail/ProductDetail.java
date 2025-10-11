@@ -1,12 +1,18 @@
 package com.evdealer.evdealermanagement.dto.product.detail;
 
 import com.evdealer.evdealermanagement.entity.product.Product;
+import com.evdealer.evdealermanagement.entity.product.ProductImages;
 import com.evdealer.evdealermanagement.utils.PriceSerializer;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
+import org.hibernate.Hibernate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -19,20 +25,40 @@ public class ProductDetail {
     private String title;
     private String description;
     private String type;
+    private List<ProductImageDto> productImagesList;
 
     @JsonSerialize(using = PriceSerializer.class)
     private BigDecimal price;
-    private String conditionType;     // NEW, USED
+    private String conditionType;
 
     private String sellerId;
     private String sellerName;
     private String sellerPhone;
 
-    private String status;            // DRAFT, ACTIVE, SOLD
+    private String status;
     private LocalDateTime createdAt;
+
+    private String addressDetail;
+    private String city;
+    private String district;
+    private String ward;
 
     public static ProductDetail fromEntity(Product product) {
         if (product == null) return null;
+
+        Hibernate.initialize(product.getImages());
+
+        // ✅ FIX: Tách logic ra khỏi builder để tránh type inference issue
+        List<ProductImageDto> imagesList = Collections.emptyList();
+        if (product.getImages() != null && !product.getImages().isEmpty()) {
+            imagesList = product.getImages().stream()
+                    .sorted(Comparator.comparing(
+                            ProductImages::getPosition,
+                            Comparator.nullsLast(Integer::compareTo)
+                    ))
+                    .map(ProductImageDto::fromEntity)
+                    .collect(Collectors.toList());
+        }
 
         return ProductDetail.builder()
                 .id(product.getId())
@@ -46,6 +72,11 @@ public class ProductDetail {
                 .sellerPhone(product.getSeller() != null ? product.getSeller().getPhone() : null)
                 .status(product.getStatus() != null ? product.getStatus().name() : null)
                 .createdAt(product.getCreatedAt())
+                .addressDetail(product.getAddressDetail())
+                .city(product.getCity())
+                .district(product.getDistrict())
+                .ward(product.getWard())
+                .productImagesList(imagesList)  // ✅ Dùng biến đã được infer đúng type
                 .build();
     }
 }

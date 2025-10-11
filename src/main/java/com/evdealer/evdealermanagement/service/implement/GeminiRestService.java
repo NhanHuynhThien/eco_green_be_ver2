@@ -44,9 +44,9 @@ public class GeminiRestService {
     @PostConstruct
     public void init() {
         this.apiKey = dotenv.get("GEMINI_API_KEY");
-        this.modelName = dotenv.get("GEMINI_MODEL", "gemini-1.5-flash");
-        this.maxTokens = Integer.parseInt(dotenv.get("GEMINI_MAX_TOKENS", "500"));
-        this.temperature = Float.parseFloat(dotenv.get("GEMINI_TEMPERATURE", "0.2"));
+        this.modelName = dotenv.get("GEMINI_MODEL", "gemini-2.5-flash");
+        this.maxTokens = Integer.parseInt(dotenv.get("GEMINI_MAX_TOKENS", "4096")); // ✅ Tăng từ 1000 lên 4096
+        this.temperature = Float.parseFloat(dotenv.get("GEMINI_TEMPERATURE", "0.5"));
 
         log.info("=== GEMINI REST SERVICE INITIALIZED ===");
         log.info("Model: {}", modelName);
@@ -119,21 +119,14 @@ public class GeminiRestService {
      */
     private String buildPrompt(String title) {
         return String.format(
-                "Bạn là chuyên gia thẩm định giá các sản phẩm CŨ tại Việt Nam (xe điện, pin, linh kiện điện, thiết bị điện tử, v.v.).\n" +
-                        "Nhiệm vụ: Đưa ra **giá gợi ý hợp lý** và **mô tả ngắn gọn về tình trạng sản phẩm** dựa trên thông tin người bán cung cấp.\n\n" +
-                        "Sản phẩm: %s\n\n" +
-                        "Yêu cầu phản hồi:\n" +
-                        "1️⃣ Chỉ trả về đúng định dạng sau (không markdown, không ký tự đặc biệt):\n" +
-                        "Giá gợi ý: [khoảng giá hoặc số cụ thể] VNĐ\n" +
-                        "Mô tả ngắn gọn: [1 câu đánh giá tổng quan tình trạng, độ mới, hiệu suất hoặc giá trị sử dụng]\n\n" +
-                        "Ví dụ:\n" +
-                        "Giá gợi ý: Khoảng 58–62 triệu VNĐ\n" +
-                        "Mô tả ngắn gọn: Pin xe điện còn 90%%, giữ hiệu suất tốt, thích hợp để tái sử dụng.\n\n" +
-                        "Hoặc:\n" +
-                        "Giá gợi ý: 12.500.000 VNĐ\n" +
-                        "Mô tả ngắn gọn: Bộ sạc xe điện hoạt động ổn định, bề ngoài hơi trầy nhưng hiệu năng tốt.\n\n" +
-                        "Chỉ trả về đúng format trên, không thêm lời giải thích.",
-                title
+                "Bạn là chuyên gia thẩm định giá sản phẩm cũ tại Việt Nam. "
+                        + "Hãy dựa trên tiêu đề sản phẩm để đưa ra: "
+                        + "1. Giá gợi ý hợp lý (đơn vị VNĐ) "
+                        + "2. Mô tả ngắn gọn tình trạng (1 câu). "
+                        + "Chỉ trả lời đúng format sau:\n"
+                        + "Giá gợi ý: [giá hoặc khoảng giá] VNĐ\n"
+                        + "Mô tả ngắn gọn trong 1-2 câu: [mô tả]\n\n"
+                        + "Sản phẩm: %s", title
         );
     }
 
@@ -154,21 +147,55 @@ public class GeminiRestService {
                 return generateFallback(title);
             }
 
-            // Lấy text từ response
+            // Lấy candidates từ response
             JsonNode candidates = root.path("candidates");
-            if (candidates.isArray() && candidates.size() > 0) {
-                JsonNode textNode = candidates.get(0)
-                        .path("content")
-                        .path("parts")
-                        .get(0)
-                        .path("text");
 
-                if (textNode != null && !textNode.asText().isEmpty()) {
-                    String text = textNode.asText();
-                    log.info("✅ Gemini response received");
-                    log.debug("Raw response: {}", text);
-                    return parseResponse(text, title);
+            if (candidates.isArray() && candidates.size() > 0) {
+                JsonNode firstCandidate = candidates.get(0);
+
+                // Kiểm tra finishReason để biết tại sao bị block
+                JsonNode finishReason = firstCandidate.path("finishReason");
+                if (!finishReason.isMissingNode()) {
+                    String reason = finishReason.asText();
+                    log.info("Finish Reason: {}", reason);
+
+                    // Nếu bị block bởi safety
+                    if (!"STOP".equals(reason)) {
+                        log.warn("⚠️ Response blocked/filtered. Reason: {}", reason);
+
+                        // Kiểm tra safety ratings nếu có
+                        JsonNode safetyRatings = firstCandidate.path("safetyRatings");
+                        if (safetyRatings.isArray()) {
+                            log.info("Safety ratings: {}", safetyRatings);
+                        }
+
+                        return generateFallback(title);
+                    }
                 }
+
+                // Lấy content
+                JsonNode content = firstCandidate.path("content");
+
+                if (!content.isMissingNode()) {
+                    JsonNode parts = content.path("parts");
+
+                    // Kiểm tra parts có phần tử không
+                    if (parts.isArray() && parts.size() > 0) {
+                        JsonNode textNode = parts.get(0).path("text");
+
+                        if (!textNode.isMissingNode() && !textNode.asText().isEmpty()) {
+                            String text = textNode.asText();
+                            log.info("✅ Gemini response text received");
+                            return parseResponse(text, title);
+                        }
+                    } else {
+                        log.error("❌ Parts is empty or not an array");
+                    }
+                } else {
+                    log.error("❌ Content node is missing");
+                }
+            } else {
+                log.error("❌ Candidates array is empty or missing");
             }
 
             log.error("❌ Unexpected response format: no text content found");
@@ -295,6 +322,6 @@ public class GeminiRestService {
             return BigDecimal.valueOf(0.70);
         }
 
-        return BigDecimal.ONE; // Mặc định 100%
+        return BigDecimal.ONE;
     }
 }
