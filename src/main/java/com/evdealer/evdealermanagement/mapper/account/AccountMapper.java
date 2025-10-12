@@ -7,67 +7,39 @@ import org.springframework.util.StringUtils;
 
 public final class AccountMapper {
 
-    private AccountMapper() {
-    }
+    private AccountMapper() {}
 
     public static void updateAccountFromRequest(AccountUpdateRequest req, Account account) {
         if (req == null || account == null) return;
 
-        // Họ và tên
-        if (hasText(req.getFullName())) {
-            account.setFullName(trimToNull(req.getFullName()));
-        }
+        if (StringUtils.hasText(req.getFullName())) account.setFullName(trimToNull(req.getFullName()));
+        if (StringUtils.hasText(req.getPhone())) account.setPhone(trimToNull(req.getPhone()));
+        if (StringUtils.hasText(req.getAddress())) account.setAddress(trimToNull(req.getAddress()));
+        if (StringUtils.hasText(req.getEmail())) account.setEmail(trimToNull(req.getEmail()));
+        if (StringUtils.hasText(req.getNationalId())) account.setNationalId(trimToNull(req.getNationalId()));
+        if (StringUtils.hasText(req.getTaxCode())) account.setTaxCode(trimToNull(req.getTaxCode()));
+        if (StringUtils.hasText(req.getAvatarUrl())) account.setAvatarUrl(trimToNull(req.getAvatarUrl()));
 
-        // Điện thoại
-        if (hasText(req.getPhone())) {
-            account.setPhone(trimToNull(req.getPhone()));
-        }
-
-        // Địa chỉ
-        if (hasText(req.getAddress())) {
-            account.setAddress(trimToNull(req.getAddress()));
-        }
-
-        // Email
-        if (hasText(req.getEmail())) {
-            account.setEmail(trimToNull(req.getEmail()));
-        }
-
-        // CCCD/CMND/Hộ chiếu
-        if (hasText(req.getNationalId())) {
-            account.setNationalId(trimToNull(req.getNationalId()));
-        }
-
-        // Tax code — cho phép xóa nếu gửi rỗng
-        if (req.getTaxCode() != null) {
-            account.setTaxCode(trimToNull(req.getTaxCode()));
-        }
-
-        // Giới tính
         if (req.getGender() != null) {
-            account.setGender(Account.Gender.valueOf(req.getGender().name()));
+            try {
+                account.setGender(Account.Gender.valueOf(req.getGender().name()));
+            } catch (IllegalArgumentException ignored) {}
         }
 
-        // Ngày sinh
         if (req.getDateOfBirth() != null) {
             account.setDateOfBirth(req.getDateOfBirth());
         }
-
-        // Avatar — cho phép xóa nếu null
-        if (req.getAvatarUrl() != null) {
-            account.setAvatarUrl(trimToNull(req.getAvatarUrl()));
-        }
-    }
-
-    private static boolean hasText(String s) {
-        return StringUtils.hasText(s);
     }
 
     private static String trimToNull(String s) {
-        return s == null ? null : s.trim();
+        if (s == null) return null;
+        String trimmed = s.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     public static AccountProfileResponse mapToAccountProfileResponse(Account account) {
+        if (account == null) return null;
+
         return AccountProfileResponse.builder()
                 .id(account.getId())
                 .username(account.getUsername())
