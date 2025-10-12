@@ -30,14 +30,10 @@ public class AccountUpdateRequest {
     @Size(max = 50, message = "National ID must not exceed 50 characters")
     private String nationalId;
 
-    private Gender gender;
+    private String gender;
 
     private LocalDate dateOfBirth;
 
     @Size(max = 50, message = "Tax code must not exceed 50 characters")
     private String taxCode;
-
-    public enum Gender {
-        MALE, FEMALE, OTHER
-    }
 }
