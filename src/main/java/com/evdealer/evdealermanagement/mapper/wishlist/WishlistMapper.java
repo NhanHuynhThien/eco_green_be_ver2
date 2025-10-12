@@ -14,6 +14,7 @@ public class WishlistMapper {
                 .productName(product.getTitle())
                 .thumbnailUrl(getThumbnailUrl(product))
                 .addedAt(wishlistItem.getAddedAt())
+                .isWishlisted(true)
                 .build();
     }
 

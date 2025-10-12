@@ -22,7 +22,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -115,5 +119,35 @@ public class WishlistService implements IWishlistService {
         } catch (IllegalArgumentException e) {
             throw new AppException(ErrorCode.INVALID_KEY, String.format("Invalid UUID format for %s: %s", fieldName, id));
         }
+    }
+
+    //Function<Product, D> toDto is functional interface , it gets a Product object and map into D (dto).
+    //BiConsumer<D, Boolean> setIsWishlisted is also function interface. It gets 2 parameter D and Boolean in order to do to assign isWishlisted flag
+    @Transactional(readOnly = true)
+    public <D> List<D> attachWishlistFlag(String accountId, List<Product> products, Function<Product, D> toDto, BiConsumer<D, Boolean> setIsWishlisted) {
+        if(products == null || products.isEmpty()) {
+            return List.of();
+        }
+        //If not logged in then all is false
+        if(accountId == null || accountId.isEmpty()) {
+            return products.stream().map(p -> {
+                D dto = toDto.apply(p);
+                setIsWishlisted.accept(dto, false);
+                return dto;
+            }).collect(Collectors.toList());
+        }
+        //Get list of productId that user is wishlisted.
+        List<String> productIds = products.stream().map(Product::getId).collect(Collectors.toList());
+        Set<String> wishedIds = wishlistItemRepository.findWishedProductIds(accountId, productIds);
+        //Map to DTO and flag isWishlisted
+        return products.stream().map(p -> {
+            D dto = toDto.apply(p);
+            setIsWishlisted.accept(dto, wishedIds.contains(p.getId()));
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+    public boolean isProductInWishlist(String accountId, String productId) {
+        return wishlistItemRepository.existsByWishlist_Account_IdAndProduct_Id(accountId, productId);
     }
 }
