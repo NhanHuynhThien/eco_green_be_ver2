@@ -20,8 +20,6 @@ import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 
-
-
 @Service
 public class MomoService {
 
@@ -30,7 +28,6 @@ public class MomoService {
     private static final String SECRET_KEY = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
     private static final String REDIRECT_URL = "http://localhost:8080/api/momo/return";
     private static final String IPN_URL = "https://callback.url/notify";
-    // private static final String REQUEST_TYPE = "captureWallet";
     private static final String REQUEST_TYPE = "payWithMethod";
 
     public MomoResponse createPaymentRequest(MomoRequest paymentRequest) {
@@ -128,50 +125,4 @@ public class MomoService {
         }
         return hexString.toString();
     }
-
-    public String checkPaymentStatus(String orderId) {
-        try {
-            // Generate requestId
-            String requestId = PARTNER_CODE + new Date().getTime();
-
-            // Generate raw signature for the status check
-            String rawSignature = String.format(
-                    "accessKey=%s&orderId=%s&partnerCode=%s&requestId=%s",
-                    ACCESS_KEY, orderId, PARTNER_CODE, requestId);
-
-            // Sign with HMAC SHA256
-            String signature = signHmacSHA256(rawSignature, SECRET_KEY);
-            System.out.println("Generated Signature for Status Check: " + signature);
-
-            // Prepare request body
-            JSONObject requestBody = new JSONObject();
-            requestBody.put("partnerCode", PARTNER_CODE);
-            requestBody.put("accessKey", ACCESS_KEY);
-            requestBody.put("requestId", requestId);
-            requestBody.put("orderId", orderId);
-            requestBody.put("signature", signature);
-            requestBody.put("lang", "en");
-
-            CloseableHttpClient httpClient = HttpClients.createDefault();
-            HttpPost httpPost = new HttpPost("https://test-payment.momo.vn/v2/gateway/api/query");
-            httpPost.setHeader("Content-Type", "application/json");
-            httpPost.setEntity(new StringEntity(requestBody.toString(), StandardCharsets.UTF_8));
-
-            try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8));
-                StringBuilder result = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    result.append(line);
-                }
-                System.out.println("Response from MoMo (Status Check): " + result.toString());
-                return result.toString();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "{\"error\": \"Failed to check payment status: " + e.getMessage() + "\"}";
-        }
-    }
-
 }

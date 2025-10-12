@@ -1,10 +1,11 @@
 package com.evdealer.evdealermanagement.repository;
 
-import com.evdealer.evdealermanagement.entity.product.ProductImages;
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.util.List;
 
-public interface ProductImagesRepository extends JpaRepository<ProductImages, Integer> {
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.evdealer.evdealermanagement.entity.product.ProductImages;
+
+public interface ProductImagesRepository extends JpaRepository<ProductImages, String> {
     List<ProductImages> findByProductIdOrderByPositionAsc(String productId);
 }

@@ -29,8 +29,6 @@ public class ProfileService implements IAccountService {
         return AccountMapper.mapToAccountProfileResponse(account);
     }
 
-    // Consolidated updateProfile using String userId (deprecates Long overload if
-    // possible)
     @Override
     public AccountProfileResponse updateProfile(String userId, AccountUpdateRequest accountRequest) {
         Account existingAccount = accountRepository.findById(userId)

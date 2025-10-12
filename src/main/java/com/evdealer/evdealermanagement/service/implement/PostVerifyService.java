@@ -1,7 +1,7 @@
 package com.evdealer.evdealermanagement.service.implement;
 
-import com.evdealer.evdealermanagement.dto.post.PostVerifyRequest;
-import com.evdealer.evdealermanagement.dto.post.PostVerifyResponse;
+import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyRequest;
+import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
 import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.mapper.post.PostVerifyMapper;
@@ -23,15 +23,17 @@ public class PostVerifyService {
     private final UserContextService userContextService;
 
     @Transactional
-    public PostVerifyResponse verifyPost(String productId,
-            PostVerifyRequest request) {
+    public PostVerifyResponse verifyPost(String productId, PostVerifyRequest request) {
 
         // 1) Load product
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found")); // APP
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
 
-        // 3) Lưu trạng thái trước khi đổi
-        Product.Status previous = product.getStatus();
+        // 2) Chỉ cho phép xử lý nếu đang ở trạng thái PENDING_REVIEW
+        if (product.getStatus() != Product.Status.PENDING_REVIEW) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Only products in PENDING_REVIEW status can be verified or rejected");
+        }
 
         // 4) Lấy staff
         Account staff = userContextService.getCurrentUser()
@@ -45,10 +47,7 @@ public class PostVerifyService {
                 product.setRejectReason(null);
             }
             case REJECT -> {
-                product.setStatus(
-                        request.getAction() == PostVerifyRequest.ActionType.REJECT
-                                ? Product.Status.REJECTED
-                                : Product.Status.ACTIVE);
+                product.setStatus(Product.Status.REJECTED);
                 product.setRejectReason(request.getRejectReason());
             }
             default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported action");
@@ -61,6 +60,6 @@ public class PostVerifyService {
         productRepository.save(product);
 
         // 8) Map response
-        return PostVerifyMapper.mapToPostVerifyResponse(product, previous);
+        return PostVerifyMapper.mapToPostVerifyResponse(product);
     }
 }

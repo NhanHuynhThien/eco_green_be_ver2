@@ -17,7 +17,7 @@ public class MemberProfileController {
     private final IAccountService accountService;
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('MEMBER','ADMIN')")
+    @PreAuthorize("hasRole('MEMBER')")
     public ResponseEntity<AccountProfileResponse> updateProfile(
             @PathVariable String id,
             @Valid @RequestBody AccountUpdateRequest request) {

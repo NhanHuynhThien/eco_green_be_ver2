@@ -1,4 +1,4 @@
-package com.evdealer.evdealermanagement.dto.post;
+package com.evdealer.evdealermanagement.dto.post.verification;
 
 import lombok.*;
 
@@ -14,7 +14,6 @@ import com.evdealer.evdealermanagement.entity.product.Product.Status;
 public class PostVerifyResponse {
 
     private String productId;
-    private Status previousStatus;
     private Status newStatus;
     private String rejectReason;
     private LocalDateTime updateAt;
