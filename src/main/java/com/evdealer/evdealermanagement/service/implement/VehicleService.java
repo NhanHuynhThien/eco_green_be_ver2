@@ -1,13 +1,19 @@
 package com.evdealer.evdealermanagement.service.implement;
 
+import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsResponse;
+import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleCategoriesResponse;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
+import com.evdealer.evdealermanagement.repository.VehicleBrandsRepository;
+import com.evdealer.evdealermanagement.repository.VehicleCategoryRepository;
 import com.evdealer.evdealermanagement.repository.VehicleDetailsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -15,6 +21,8 @@ import java.util.Optional;
 public class VehicleService {
 
     private final VehicleDetailsRepository vehicleDetailsRepository;
+    private final VehicleCategoryRepository vehicleCategoryRepository;
+    private final VehicleBrandsRepository vehicleBrandsRepository;
 
     /**
      * Lấy danh sách Vehicle Product IDs theo tên sản phẩm
@@ -202,5 +210,15 @@ public class VehicleService {
             log.error("Error getting vehicles by battery health: {}", minHealth, e);
             return List.of();
         }
+    }
+
+    public List<VehicleBrandsResponse> listAllVehicleBrandsSorted() {
+        var all =  vehicleBrandsRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
+        return all.stream().map(v -> new VehicleBrandsResponse(v.getId(), v.getName())).collect(Collectors.toList());
+    }
+
+    public List<VehicleCategoriesResponse> listAllVehicleCategoriesSorted() {
+        var all = vehicleCategoryRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
+        return all.stream().map(v -> new VehicleCategoriesResponse(v.getId(), v.getName())).collect(Collectors.toList());
     }
 }
