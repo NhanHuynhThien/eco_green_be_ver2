@@ -1,15 +1,21 @@
 package com.evdealer.evdealermanagement.service.implement;
 
+import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsResponse;
+import com.evdealer.evdealermanagement.dto.battery.brand.BatteryTypesResponse;
 import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
+import com.evdealer.evdealermanagement.repository.BatteryBrandsRepository;
 import com.evdealer.evdealermanagement.repository.BatteryDetailRepository;
+import com.evdealer.evdealermanagement.repository.BatteryTypesRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -17,6 +23,8 @@ import java.util.UUID;
 public class BatteryService {
 
     private final BatteryDetailRepository batteryDetailRepository;
+    private final BatteryBrandsRepository batteryBrandsRepository;
+    private final BatteryTypesRepository batteryTypesRepository;
 
     /**
      * Lấy danh sách Battery Product IDs theo tên sản phẩm
@@ -167,5 +175,15 @@ public class BatteryService {
     public List<BatteryDetails> getPopularBrandBatteries() {
         List<String> popularBrands = List.of("Panasonic", "Samsung SDI", "LG Energy");
         return getBatteriesByBrands(popularBrands);
+    }
+
+    public List<BatteryBrandsResponse> listAllBatteryBrandsSorted() {
+        var all = batteryBrandsRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
+        return all.stream().map(b -> new BatteryBrandsResponse(b.getId(), b.getName())).collect(Collectors.toList());
+    }
+
+    public List<BatteryTypesResponse> listAllBatteryTypesSorted() {
+        var all = batteryTypesRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
+        return all.stream().map(b -> new BatteryTypesResponse(b.getId(), b.getName())).collect(Collectors.toList());
     }
 }
