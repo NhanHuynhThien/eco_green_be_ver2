@@ -30,17 +30,17 @@ public class ProfileService implements IAccountService {
     }
 
     @Override
-    public AccountProfileResponse updateProfile(String userId, AccountUpdateRequest accountRequest) {
-        Account existingAccount = accountRepository.findById(userId)
+    public AccountProfileResponse updateProfile(String username, AccountUpdateRequest accountRequest) {
+        Account existingAccount = accountRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
 
         if (accountRequest.getPhone() != null &&
-                accountRepository.existsByPhoneAndIdNot(accountRequest.getPhone(), userId)) {
+                accountRepository.existsByPhoneAndIdNot(accountRequest.getPhone(), existingAccount.getId())) {
             throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Phone already used");
         }
 
         if (accountRequest.getEmail() != null &&
-                accountRepository.existsByEmailAndIdNot(accountRequest.getEmail(), userId)) {
+                accountRepository.existsByEmailAndIdNot(accountRequest.getEmail(), existingAccount.getId())) {
             throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Email already used");
         }
 
@@ -55,5 +55,4 @@ public class ProfileService implements IAccountService {
     public void deleteAccount(String userId) {
         accountRepository.deleteById(userId);
     }
-
 }

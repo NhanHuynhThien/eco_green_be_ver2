@@ -2,6 +2,7 @@ package com.evdealer.evdealermanagement.dto.account.profile;
 
 import java.time.LocalDate;
 
+import com.evdealer.evdealermanagement.entity.account.Account;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -30,7 +31,11 @@ public class AccountUpdateRequest {
     @Size(max = 50, message = "National ID must not exceed 50 characters")
     private String nationalId;
 
+<<<<<<< HEAD
     private String gender;
+=======
+    private Account.Gender gender;
+>>>>>>> 1cf309f66c3668b84b4b0f70c5b3d3bf6e470289
 
     private LocalDate dateOfBirth;
 
