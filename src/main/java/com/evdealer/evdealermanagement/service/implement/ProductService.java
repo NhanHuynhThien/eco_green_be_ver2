@@ -5,6 +5,7 @@ import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.mapper.product.ProductMapper;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
 import com.evdealer.evdealermanagement.service.contract.IProductService;
+import com.evdealer.evdealermanagement.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,22 +27,25 @@ public class ProductService implements IProductService {
     private final ProductRepository productRepository;
     private final VehicleService vehicleService;
     private final BatteryService batteryService;
+    private final WishlistService wishlistService;
 
     @Override
     @Transactional(readOnly = true)
     public List<ProductDetail> getAllProductsWithStatusActive() {
         try {
-            log.debug("Fetching all products");
-            List<ProductDetail> list = productRepository.findAll()
-                    .stream()
-                    .filter(product -> product.getStatus() == Product.Status.ACTIVE)
-                    .map(ProductMapper::toDetailDto)
-                    .toList();
+            String accountId = SecurityUtils.getCurrentAccountId();
 
-            List<ProductDetail> sortedList = new ArrayList<>(list);
-            sortedList.sort(Comparator.comparing(ProductDetail::getCreatedAt));
+            //Get product list Active
+            List<Product> products =  productRepository.findAll().stream().filter(p -> p.getStatus() == Product.Status.ACTIVE).toList();
+            //Attach isWishlisted + mapp to ProductDetail
+            List<ProductDetail> result = wishlistService.attachWishlistFlag(
+                    accountId, products, ProductMapper::toDetailDto,
+                    ProductDetail::setIsWishlisted
+            );
 
-            return sortedList;
+            result.sort(Comparator.comparing(ProductDetail::getCreatedAt));
+
+            return result;
         } catch (Exception e) {
             log.error("Error fetching all products", e);
             return List.of();
@@ -57,8 +61,17 @@ public class ProductService implements IProductService {
         }
         try {
             log.debug("Fetching product by Long ID: {}", id);
-            return productRepository.findById(String.valueOf(id))
-                    .map(ProductMapper::toDetailDto);
+
+            String accountId = SecurityUtils.getCurrentAccountId();
+            Optional<ProductDetail> result = productRepository.findById(id).map(ProductMapper::toDetailDto);
+            //If user logged , check if this product is in wishlist
+            if(accountId != null && result.isPresent()) {
+                boolean isWishlisted = wishlistService.isProductInWishlist(accountId, id);
+                result.get().setIsWishlisted(isWishlisted);
+            }
+
+
+            return result;
         } catch (Exception e) {
             log.error("Error fetching product by Long ID: {}", id, e);
             return Optional.empty();
@@ -76,18 +89,19 @@ public class ProductService implements IProductService {
         try {
             log.debug("Searching products by name: {}", name);
 
+            String accountId = SecurityUtils.getCurrentAccountId();
             List<Product> products = productRepository.findTitlesByTitleContainingIgnoreCase(name.trim());
 
             if (products.isEmpty()) {
                 log.debug("No products found with name: {}", name);
                 return List.of();
             }
-
-            log.debug("Found {} products with name: {}", products.size(), name);
-
-            return products.stream()
-                    .map(ProductMapper::toDetailDto)
-                    .toList();
+            return wishlistService.attachWishlistFlag(
+                    accountId,
+                    products,
+                    ProductMapper::toDetailDto,
+                    ProductDetail::setIsWishlisted
+            );
 
         } catch (Exception e) {
             log.error("Error searching products by name: {}", name, e);
@@ -105,11 +119,16 @@ public class ProductService implements IProductService {
 
         try {
             log.debug("Fetching products by type: {}", type);
+            String accountId = SecurityUtils.getCurrentAccountId();
             Product.ProductType enumType = Product.ProductType.valueOf(type.toUpperCase());
-            return productRepository.findByType(enumType)
-                    .stream()
-                    .map(ProductMapper::toDetailDto)
-                    .toList();
+            List<Product> products = productRepository.findByType(enumType);
+
+            return wishlistService.attachWishlistFlag(
+                    accountId,
+                    products,
+                    ProductMapper::toDetailDto,
+                    ProductDetail::setIsWishlisted
+            );
 
         } catch (IllegalArgumentException e) {
             log.warn("Invalid product type: {}", type);
@@ -139,17 +158,24 @@ public class ProductService implements IProductService {
             }
 
             // Filter ACTIVE và sort theo createdAt
-            List<ProductDetail> products = productRepository.findAllById(allProductIds)
+            List<Product> products = productRepository.findAllById(allProductIds)
                     .stream()
                     .filter(product -> product.getStatus() == Product.Status.ACTIVE)
-                    .map(ProductMapper::toDetailDto)
                     .toList();
 
-            // Sắp xếp theo createdAt
-            List<ProductDetail> sortedList = new ArrayList<>(products);
-            sortedList.sort(Comparator.comparing(ProductDetail::getCreatedAt));
+            String accountId = SecurityUtils.getCurrentAccountId();
+            List<ProductDetail> list = wishlistService.attachWishlistFlag(
+                    accountId,
+                    products,
+                    ProductMapper::toDetailDto,
+                    ProductDetail::setIsWishlisted
+            );
 
-            return sortedList;
+
+            // Sắp xếp theo createdAt
+            list.sort(Comparator.comparing(ProductDetail::getCreatedAt));
+
+            return list;
 
         } catch (Exception e) {
             log.error("Error fetching products by brand: {}", brand, e);
@@ -162,13 +188,17 @@ public class ProductService implements IProductService {
     public List<ProductDetail> getNewProducts() {
         try {
             log.debug("Fetching new products");
+            String accountId = SecurityUtils.getCurrentAccountId();
             LocalDateTime threeDaysAgo = LocalDateTime.now().minusDays(3);
 
             List<Product> products = productRepository.findTop12ByStatusOrderByCreatedAtDesc(Product.Status.ACTIVE);
 
-            return products.stream()
-                    .map(ProductDetail::fromEntity)
-                    .collect(Collectors.toList());
+            return wishlistService.attachWishlistFlag(
+                    accountId,
+                    products,
+                    ProductMapper::toDetailDto,      // Product -> ProductDetail
+                    ProductDetail::setIsWishlisted   // gắn cờ
+            );
         } catch (Exception e) {
             log.error("Error fetching new products", e);
             return List.of();
@@ -227,10 +257,13 @@ public class ProductService implements IProductService {
                 log.debug("After brand filter '{}': {} products", brand, products.size());
             }
 
-            // Convert to DTO and sort by createdAt
-            List<ProductDetail> result = products.stream()
-                    .map(ProductMapper::toDetailDto)
-                    .collect(Collectors.toList());
+            String accountId = SecurityUtils.getCurrentAccountId();
+            List<ProductDetail> result = wishlistService.attachWishlistFlag(
+                    accountId,
+                    products,
+                    ProductMapper::toDetailDto,
+                    ProductDetail::setIsWishlisted
+            );
 
             result.sort(Comparator.comparing(ProductDetail::getCreatedAt));
 
