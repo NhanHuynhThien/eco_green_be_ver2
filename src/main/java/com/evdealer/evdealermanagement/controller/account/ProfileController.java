@@ -11,7 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/profile/update")
+@RequestMapping("/profile")
 @RequiredArgsConstructor
 public class ProfileController {
     private final ProfileService profileService;
@@ -22,7 +22,7 @@ public class ProfileController {
         return profileService.getProfile(username);
     }
 
-    @PatchMapping
+    @PatchMapping("/me/update")
     @PreAuthorize("hasRole('MEMBER') or hasRole('ADMIN')")
     public ResponseEntity<AccountProfileResponse> updateProfile(
             @Valid @RequestBody AccountUpdateRequest request,
