@@ -43,6 +43,8 @@ public class ProductDetail {
     private String district;
     private String ward;
 
+    private Boolean isWishlisted;
+
     public static ProductDetail fromEntity(Product product) {
         if (product == null) return null;
 

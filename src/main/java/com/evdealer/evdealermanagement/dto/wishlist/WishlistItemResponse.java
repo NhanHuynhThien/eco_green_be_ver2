@@ -16,4 +16,5 @@ public class WishlistItemResponse {
     String thumbnailUrl;
     String productId;
     LocalDateTime addedAt;
+    Boolean isWishlisted;
 }
