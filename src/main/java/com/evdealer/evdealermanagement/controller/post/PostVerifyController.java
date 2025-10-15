@@ -11,7 +11,7 @@ import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
 import com.evdealer.evdealermanagement.service.implement.PostVerifyService;
 
 @RestController
-@RequestMapping("/staff/products")
+@RequestMapping("/post")
 @RequiredArgsConstructor
 public class PostVerifyController {
 

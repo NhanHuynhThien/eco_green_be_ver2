@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 public class ProfileController {
     private final ProfileService profileService;
 
-    @GetMapping
+    @GetMapping("/me")
     @PreAuthorize("hasRole('MEMBER') or hasRole('ADMIN')")
     public AccountProfileResponse getCurrentProfile(Authentication authentication) {
         String username = authentication.getName();
@@ -31,4 +31,5 @@ public class ProfileController {
         String username = authentication.getName();
         return ResponseEntity.ok(profileService.updateProfile(username, request));
     }
+
 }
