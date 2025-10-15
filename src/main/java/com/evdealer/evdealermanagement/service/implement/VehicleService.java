@@ -1,5 +1,6 @@
 package com.evdealer.evdealermanagement.service.implement;
 
+import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleCategoriesResponse;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
@@ -212,13 +213,26 @@ public class VehicleService {
         }
     }
 
-    public List<VehicleBrandsResponse> listAllVehicleBrandsSorted() {
-        var all =  vehicleBrandsRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
-        return all.stream().map(v -> new VehicleBrandsResponse(v.getId(), v.getName())).collect(Collectors.toList());
-    }
-
     public List<VehicleCategoriesResponse> listAllVehicleCategoriesSorted() {
         var all = vehicleCategoryRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
         return all.stream().map(v -> new VehicleCategoriesResponse(v.getId(), v.getName())).collect(Collectors.toList());
+    }
+
+    public List<VehicleBrandsResponse> listAllVehicleBrandsSorted() {
+        var all = vehicleBrandsRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
+        return all.stream().map(v -> VehicleBrandsResponse.builder()
+                .brandName(v.getName())
+                .brandId(v.getId())
+                .build())
+                .collect(Collectors.toList());
+    }
+
+    public List<VehicleBrandsResponse> listAllVehicleNameAndLogo() {
+        var all = vehicleBrandsRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
+        return all.stream().map(v -> VehicleBrandsResponse.builder()
+                        .brandName(v.getName())
+                        .logoUrl(v.getLogoUrl())
+                        .build())
+                .collect(Collectors.toList());
     }
 }

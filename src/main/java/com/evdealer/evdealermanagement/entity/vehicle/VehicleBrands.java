@@ -13,4 +13,7 @@ import lombok.*;
 public class VehicleBrands extends BaseEntity {
     @Column(nullable = false, unique = true, length = 100)
     private String name;
+
+    @Column(name = "logo_url",  nullable = false, length = 500)
+    private String logoUrl;
 }

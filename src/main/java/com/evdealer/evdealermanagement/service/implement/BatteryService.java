@@ -177,13 +177,26 @@ public class BatteryService {
         return getBatteriesByBrands(popularBrands);
     }
 
-    public List<BatteryBrandsResponse> listAllBatteryBrandsSorted() {
-        var all = batteryBrandsRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
-        return all.stream().map(b -> new BatteryBrandsResponse(b.getId(), b.getName())).collect(Collectors.toList());
-    }
-
     public List<BatteryTypesResponse> listAllBatteryTypesSorted() {
         var all = batteryTypesRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
         return all.stream().map(b -> new BatteryTypesResponse(b.getId(), b.getName())).collect(Collectors.toList());
+    }
+
+    public List<BatteryBrandsResponse> listAllBatteryBrandsSorted() {
+        var all = batteryBrandsRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
+        return all.stream().map(b -> BatteryBrandsResponse.builder()
+                .brandId(b.getId())
+                .brandName(b.getName())
+                .build())
+                .collect(Collectors.toList());
+    }
+
+    public List<BatteryBrandsResponse> listAllBatteryNameAndLogo() {
+        var all = batteryBrandsRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
+        return all.stream().map(b -> BatteryBrandsResponse.builder()
+                        .brandName(b.getName())
+                        .logoUrl(b.getLogoUrl())
+                        .build())
+                .collect(Collectors.toList());
     }
 }
