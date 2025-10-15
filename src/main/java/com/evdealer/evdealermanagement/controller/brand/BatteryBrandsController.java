@@ -11,13 +11,13 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/brands")
+@RequestMapping("/battery")
 @RequiredArgsConstructor
 public class BatteryBrandsController {
 
     private final BatteryService batteryService;
 
-    @GetMapping("/battery/logoName")
+    @GetMapping("/brands/logoName")
     @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
     public List<BatteryBrandsResponse> getAllBrandsLogoName() {
         return batteryService.listAllBatteryNameAndLogo();

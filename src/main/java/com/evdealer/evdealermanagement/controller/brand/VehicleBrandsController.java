@@ -12,13 +12,13 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/brands")
+@RequestMapping("/vehicle")
 @RequiredArgsConstructor
 public class VehicleBrandsController {
 
     private final VehicleService vehicleService;
 
-    @GetMapping("/vehicle/logoName")
+    @GetMapping("/brands/logoName")
     @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
     public List<VehicleBrandsResponse> getAllBrandsLogoName() {
         return vehicleService.listAllVehicleNameAndLogo();
