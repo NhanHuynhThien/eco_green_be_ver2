@@ -43,10 +43,6 @@ public class WishlistService implements IWishlistService {
     public void addWishlistItem(String accountId, String productId) {
         log.debug("Adding wishlist item for account: {}, product: {}", accountId, productId);
 
-        // Validate UUID format
-        validateUuid(accountId, "accountId");
-        validateUuid(productId, "productId");
-
         // Check if product exists
         if (!productRepository.existsById(productId)) {
             throw new AppException(ErrorCode.PRODUCT_NOT_FOUND, "Product not found with ID: " + productId);
