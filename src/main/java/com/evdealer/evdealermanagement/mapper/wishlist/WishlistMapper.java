@@ -14,6 +14,10 @@ public class WishlistMapper {
                 .productName(product.getTitle())
                 .thumbnailUrl(getThumbnailUrl(product))
                 .addedAt(wishlistItem.getAddedAt())
+                .price(wishlistItem.getProduct().getPrice())
+                .city(wishlistItem.getProduct().getCity())
+                .ward(wishlistItem.getProduct().getWard())
+                .district(wishlistItem.getProduct().getDistrict())
                 .isWishlisted(true)
                 .build();
     }
@@ -33,6 +37,7 @@ public class WishlistMapper {
                                 .orElse(null)
                 );
 
+        assert imageUrl != null;
         if(imageUrl.contains("res.cloudinary.com")) {
             return  imageUrl.replace("upload", "upload/w_108,h_108,c_fill,q_auto,f_auto/");
         }

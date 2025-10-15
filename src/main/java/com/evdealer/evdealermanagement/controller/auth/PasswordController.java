@@ -15,13 +15,17 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
+<<<<<<< HEAD
 @RequestMapping("/auth")
+=======
+@RequestMapping("/password")
+>>>>>>> e5ba1b09714b2fd34b9fb547a43286fdd439af02
 @RequiredArgsConstructor
 public class PasswordController {
 
     private final ChangePasswordService changePasswordService;
 
-    @PutMapping("/change-password")
+    @PutMapping("/update")
     @PreAuthorize("hasAnyRole('ADMIN', 'MEMBER', 'STAFF')")
     public PasswordResponse changePassword(@Valid @RequestBody ChangePasswordRequest req,
             Authentication auth) {

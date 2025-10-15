@@ -200,6 +200,7 @@ public class BatteryService {
     public List<BatteryBrandsResponse> listAllBatteryNameAndLogo() {
         var all = batteryBrandsRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
         return all.stream().map(b -> BatteryBrandsResponse.builder()
+<<<<<<< HEAD
                 .brandName(b.getName())
                 .logoUrl(b.getLogoUrl())
                 .build())
@@ -219,4 +220,11 @@ public class BatteryService {
         e = batteryBrandsRepository.save(e);
         return BatteryMapper.mapToBatteryBrandsResponse(e);
     }
+=======
+                        .brandName(b.getName())
+                        .logoUrl(b.getLogoUrl())
+                        .build())
+                .collect(Collectors.toList());
+    }
+>>>>>>> e5ba1b09714b2fd34b9fb547a43286fdd439af02
 }

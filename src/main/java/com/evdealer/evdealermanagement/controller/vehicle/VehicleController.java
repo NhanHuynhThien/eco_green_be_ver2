@@ -1,7 +1,11 @@
 package com.evdealer.evdealermanagement.controller.vehicle;
 
+<<<<<<< HEAD
 import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsResponse;
 import com.evdealer.evdealermanagement.dto.battery.brand.BatteryTypesResponse;
+=======
+
+>>>>>>> e5ba1b09714b2fd34b9fb547a43286fdd439af02
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleCategoriesResponse;
 import com.evdealer.evdealermanagement.service.implement.VehicleService;

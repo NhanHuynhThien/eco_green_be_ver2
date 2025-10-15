@@ -1,6 +1,10 @@
 package com.evdealer.evdealermanagement.service.implement;
 
+<<<<<<< HEAD
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsRequest;
+=======
+import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsResponse;
+>>>>>>> e5ba1b09714b2fd34b9fb547a43286fdd439af02
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleCategoriesResponse;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleBrands;
@@ -254,5 +258,23 @@ public class VehicleService {
         e.setLogoUrl(req.getLogoUrl());
         e = vehicleBrandsRepository.save(e);
         return VehicleMapper.mapToVehicleBrandsResponse(e);
+    }
+
+    public List<VehicleBrandsResponse> listAllVehicleBrandsSorted() {
+        var all = vehicleBrandsRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
+        return all.stream().map(v -> VehicleBrandsResponse.builder()
+                .brandName(v.getName())
+                .brandId(v.getId())
+                .build())
+                .collect(Collectors.toList());
+    }
+
+    public List<VehicleBrandsResponse> listAllVehicleNameAndLogo() {
+        var all = vehicleBrandsRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
+        return all.stream().map(v -> VehicleBrandsResponse.builder()
+                        .brandName(v.getName())
+                        .logoUrl(v.getLogoUrl())
+                        .build())
+                .collect(Collectors.toList());
     }
 }

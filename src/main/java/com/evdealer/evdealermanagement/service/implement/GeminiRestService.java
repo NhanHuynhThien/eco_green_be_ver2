@@ -19,10 +19,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Service để tích hợp Google Gemini API cho việc gợi ý giá sản phẩm
- * Sử dụng REST API trực tiếp thông qua RestTemplate
- */
 @Service
 @Slf4j
 public class GeminiRestService {
