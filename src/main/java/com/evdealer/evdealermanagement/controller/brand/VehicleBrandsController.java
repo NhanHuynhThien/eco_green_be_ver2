@@ -18,7 +18,7 @@ public class VehicleBrandsController {
 
     private final VehicleService vehicleService;
 
-    @GetMapping("/brands/logoName")
+    @GetMapping("/brands/show")
     @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
     public List<VehicleBrandsResponse> getAllBrandsLogoName() {
         return vehicleService.listAllVehicleNameAndLogo();

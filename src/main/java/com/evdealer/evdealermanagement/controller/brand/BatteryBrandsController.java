@@ -17,7 +17,7 @@ public class BatteryBrandsController {
 
     private final BatteryService batteryService;
 
-    @GetMapping("/brands/logoName")
+    @GetMapping("/brands/show")
     @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
     public List<BatteryBrandsResponse> getAllBrandsLogoName() {
         return batteryService.listAllBatteryNameAndLogo();
