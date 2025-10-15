@@ -14,12 +14,8 @@ public class PostPackageController {
     private final PaymentService paymentService;
 
     @PutMapping("/{productId}/package")
-<<<<<<< HEAD
     public ResponseEntity<PackageResponse> choosePackage(@PathVariable String productId,
             @RequestBody PackageRequest packageRequest) {
-=======
-    public ResponseEntity<PackageResponse> choosePackage(@PathVariable String productId, @RequestBody PackageRequest packageRequest) {
->>>>>>> e5ba1b09714b2fd34b9fb547a43286fdd439af02
         PackageResponse packageResponse = paymentService.choosePackage(productId, packageRequest);
         return ResponseEntity.ok(packageResponse);
     }

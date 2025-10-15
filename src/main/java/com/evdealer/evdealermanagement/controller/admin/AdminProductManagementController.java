@@ -1,17 +1,26 @@
 package com.evdealer.evdealermanagement.controller.admin;
 
-import com.evdealer.evdealermanagement.dto.account.response.ApiResponse;
+import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsResponse;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
+import com.evdealer.evdealermanagement.dto.vehicle.brand.BatteryBrandsRequest;
+import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsRequest;
+import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsResponse;
 import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import com.evdealer.evdealermanagement.service.implement.AdminService;
+import com.evdealer.evdealermanagement.service.implement.BatteryService;
+import com.evdealer.evdealermanagement.service.implement.VehicleService;
+
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -19,9 +28,14 @@ import java.util.List;
 public class AdminProductManagementController {
 
     private final AdminService adminService;
+    private final BatteryService batteryService;
+    private final VehicleService vehicleService;
 
-    public AdminProductManagementController(AdminService adminService) {
+    public AdminProductManagementController(AdminService adminService, BatteryService batteryService,
+            VehicleService vehicleService) {
         this.adminService = adminService;
+        this.batteryService = batteryService;
+        this.vehicleService = vehicleService;
     }
 
     @GetMapping("/all")
@@ -42,4 +56,17 @@ public class AdminProductManagementController {
         }
     }
 
+    @PostMapping("/battery/brands/add")
+    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
+    public ResponseEntity<BatteryBrandsResponse> addVehicleBrand(@Valid @RequestBody BatteryBrandsRequest request) {
+        BatteryBrandsResponse response = batteryService.addNewBatteryBrand(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/vehicle/brands/add")
+    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
+    public ResponseEntity<VehicleBrandsResponse> addVehicleBrand(@Valid @RequestBody VehicleBrandsRequest request) {
+        VehicleBrandsResponse response = vehicleService.addNewVehicleBrand(request);
+        return ResponseEntity.ok(response);
+    }
 }
