@@ -7,13 +7,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@RequestMapping("/api/payments")
+@RequestMapping("/post/payments")
 @RestController
 @RequiredArgsConstructor
 public class PostPackageController {
     private final PaymentService paymentService;
 
-    @PutMapping("/products/{productId}/package")
+    @PutMapping("/{productId}/package")
     public ResponseEntity<PackageResponse> choosePackage(@PathVariable String productId, @RequestBody PackageRequest packageRequest) {
         PackageResponse packageResponse = paymentService.choosePackage(productId, packageRequest);
         return ResponseEntity.ok(packageResponse);
