@@ -1,15 +1,22 @@
 package com.evdealer.evdealermanagement.service.implement;
 
+import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsRequest;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleCategoriesResponse;
+import com.evdealer.evdealermanagement.entity.vehicle.VehicleBrands;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
+import com.evdealer.evdealermanagement.exceptions.AppException;
+import com.evdealer.evdealermanagement.exceptions.ErrorCode;
+import com.evdealer.evdealermanagement.mapper.vehicle.VehicleMapper;
 import com.evdealer.evdealermanagement.repository.VehicleBrandsRepository;
 import com.evdealer.evdealermanagement.repository.VehicleCategoryRepository;
 import com.evdealer.evdealermanagement.repository.VehicleDetailsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
@@ -212,13 +219,40 @@ public class VehicleService {
         }
     }
 
-    public List<VehicleBrandsResponse> listAllVehicleBrandsSorted() {
-        var all =  vehicleBrandsRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
-        return all.stream().map(v -> new VehicleBrandsResponse(v.getId(), v.getName())).collect(Collectors.toList());
-    }
-
     public List<VehicleCategoriesResponse> listAllVehicleCategoriesSorted() {
         var all = vehicleCategoryRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
-        return all.stream().map(v -> new VehicleCategoriesResponse(v.getId(), v.getName())).collect(Collectors.toList());
+        return all.stream().map(v -> new VehicleCategoriesResponse(v.getId(), v.getName()))
+                .collect(Collectors.toList());
+    }
+
+    public List<VehicleBrandsResponse> listAllVehicleBrandsSorted() {
+        var all = vehicleBrandsRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
+        return all.stream().map(v -> VehicleBrandsResponse.builder()
+                .brandName(v.getName())
+                .brandId(v.getId())
+                .build())
+                .collect(Collectors.toList());
+    }
+
+    public List<VehicleBrandsResponse> listAllVehicleNameAndLogo() {
+        var all = vehicleBrandsRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
+        return all.stream().map(v -> VehicleBrandsResponse.builder()
+                .brandName(v.getName())
+                .logoUrl(v.getLogoUrl())
+                .build())
+                .collect(Collectors.toList());
+    }
+
+    public VehicleBrandsResponse addNewVehicleBrand(VehicleBrandsRequest req) {
+
+        String brandName = req.getBrandName().trim();
+        if (vehicleBrandsRepository.existsByNameIgnoreCase(brandName)) {
+            throw new AppException(ErrorCode.BRAND_EXISTS, "Brand name already exists");
+        }
+        VehicleBrands e = new VehicleBrands();
+        e.setName(brandName);
+        e.setLogoUrl(req.getLogoUrl());
+        e = vehicleBrandsRepository.save(e);
+        return VehicleMapper.mapToVehicleBrandsResponse(e);
     }
 }

@@ -25,7 +25,4 @@ public interface AccountRepository extends JpaRepository<Account, String> {
 
     @EntityGraph(attributePaths = { "role" }) // nếu có quan hệ role
     Optional<Account> findWithDetailsByEmail(String email);
-
-    Optional<Account> findByUsernameOrPhoneOrEmail(String username, String phone, String email);
-
 }
