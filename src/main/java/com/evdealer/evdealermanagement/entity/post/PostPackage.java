@@ -3,16 +3,14 @@ package com.evdealer.evdealermanagement.entity.post;
 import com.evdealer.evdealermanagement.entity.BaseEntity;
 import com.evdealer.evdealermanagement.entity.account.Account;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "post_packages")
 @NoArgsConstructor
