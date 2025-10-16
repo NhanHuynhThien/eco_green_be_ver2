@@ -3,5 +3,5 @@ target
 .gitignore
 README.md
 node_modules
-Dockerfile
+Docker/Dockerfile
 docker-compose.yml
