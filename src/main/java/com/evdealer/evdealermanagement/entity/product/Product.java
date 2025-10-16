@@ -104,7 +104,7 @@ public class Product extends BaseEntity {
     }
 
     public enum ConditionType {
-        NEW, USED
+        USED
     }
 
     public enum Status {
