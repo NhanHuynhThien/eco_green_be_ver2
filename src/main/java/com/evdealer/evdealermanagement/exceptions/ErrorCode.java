@@ -52,7 +52,9 @@ public enum ErrorCode {
     EMAIL_INVALID(1207, "Invalid email format", HttpStatus.BAD_REQUEST),
     PHONE_REQUIRED(1208, "Phone number is required", HttpStatus.BAD_REQUEST),
     PASSWORD_REQUIRED(1209, "Password is required", HttpStatus.BAD_REQUEST),
-    PASSWORD_INVALID(1210, "Password must contain at least one uppercase letter, one lowercase letter, one digit, and be 8-32 characters long", HttpStatus.BAD_REQUEST),
+    PASSWORD_INVALID(1210,
+            "Password must contain at least one uppercase letter, one lowercase letter, one digit, and be 8-32 characters long",
+            HttpStatus.BAD_REQUEST),
     FULLNAME_INVALID_LENGTH(1211, "Full name must be between 4 and 50 characters", HttpStatus.BAD_REQUEST),
 
     // --- Security / Token Errors (Codes 1300 - 1399) ---
@@ -81,18 +83,23 @@ public enum ErrorCode {
 
     // --- Posting Errors (Codes 1700 - 1799) ---
     // Moved from conflicting 10xx range to dedicated 17xx range
-    MIN_1_IMAGE(1701,"At least 1 image is required", HttpStatus.BAD_REQUEST),
-    MAX_10_IMAGES(1702,"At most 10 images allowed", HttpStatus.BAD_REQUEST),
-    IMAGE_TOO_LARGE(1703,"Image too large", HttpStatus.BAD_REQUEST),
-    UNSUPPORTED_IMAGE_TYPE(1704,"Unsupported image type", HttpStatus.UNSUPPORTED_MEDIA_TYPE),
-    IMAGE_UPLOAD_FAILED(1705,"Upload image failed", HttpStatus.INTERNAL_SERVER_ERROR),
-
+    MIN_1_IMAGE(1701, "At least 1 image is required", HttpStatus.BAD_REQUEST),
+    MAX_10_IMAGES(1702, "At most 10 images allowed", HttpStatus.BAD_REQUEST),
+    IMAGE_TOO_LARGE(1703, "Image too large", HttpStatus.BAD_REQUEST),
+    UNSUPPORTED_IMAGE_TYPE(1704, "Unsupported image type", HttpStatus.UNSUPPORTED_MEDIA_TYPE),
+    IMAGE_UPLOAD_FAILED(1705, "Upload image failed", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // --- Brand/Battery Errors (Codes 4000 - 4099) ---
     // Separated the conflicting 4004 code into unique codes 4000 and 4001
-    BRAND_NOT_FOUND(4000,"Brand not found with the provided ID", HttpStatus.NOT_FOUND ),
-    BATT_NOT_FOUND(4001, "Battery Type Not Found",  HttpStatus.NOT_FOUND ),
-    VEHICLE_CATE_NOT_FOUND(4002, "Battery Type Not Found",  HttpStatus.NOT_FOUND );
+    BRAND_NOT_FOUND(4000, "Brand not found with the provided ID", HttpStatus.NOT_FOUND),
+    BATT_NOT_FOUND(4001, "Battery Type Not Found", HttpStatus.NOT_FOUND),
+    VEHICLE_CATE_NOT_FOUND(4002, "Vehicle Category Not Found", HttpStatus.NOT_FOUND),
+    BRAND_EXISTS(4003, "Brand name already exists", HttpStatus.BAD_REQUEST),
+
+    // --- OAuth2 / External Errors (Codes 1900 - 1999) ---
+    UNSUPPORTED_OAUTH2_PROVIDER(1900, "Unsupported OAuth2 provider", HttpStatus.BAD_REQUEST),
+    OAUTH2_GOOGLE_PROCESS_FAILED(1901, "Error processing Google login", HttpStatus.BAD_REQUEST),
+    OAUTH2_FACEBOOK_PROCESS_FAILED(1902, "Error processing Facebook login", HttpStatus.BAD_REQUEST);
 
     private final int code;
     private final String message;

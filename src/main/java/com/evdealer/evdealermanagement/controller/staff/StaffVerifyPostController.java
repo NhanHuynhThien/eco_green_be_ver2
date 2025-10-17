@@ -1,4 +1,4 @@
-package com.evdealer.evdealermanagement.controller.post;
+package com.evdealer.evdealermanagement.controller.staff;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -8,19 +8,19 @@ import org.springframework.web.bind.annotation.*;
 
 import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyRequest;
 import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
-import com.evdealer.evdealermanagement.service.implement.PostVerifyService;
+import com.evdealer.evdealermanagement.service.implement.StaffService;
 
 @RestController
-@RequestMapping("/staff/products")
+@RequestMapping("/staff/post")
 @RequiredArgsConstructor
-public class PostVerifyController {
+public class StaffVerifyPostController {
 
-    private final PostVerifyService postVerifyService;
+    private final StaffService staffService;
 
     @PutMapping("/{productId}/verify")
     @PreAuthorize("hasRole('STAFF')")
     public ResponseEntity<PostVerifyResponse> verifyPost(@PathVariable String productId,
             @Valid @RequestBody PostVerifyRequest request) {
-        return ResponseEntity.ok(postVerifyService.verifyPost(productId, request));
+        return ResponseEntity.ok(staffService.verifyPost(productId, request));
     }
 }

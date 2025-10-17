@@ -22,7 +22,7 @@ public class ChangePasswordService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public PasswordResponse changePassword(String principal, ChangePasswordRequest req) {
+    public PasswordResponse changePassword(String username, ChangePasswordRequest req) {
 
         if (!req.getNewPassword().equals(req.getConfirmNewPassword())) {
             return PasswordResponse.builder()
@@ -31,7 +31,7 @@ public class ChangePasswordService {
                     .build();
         }
 
-        Account acc = accountRepository.findByUsernameOrPhoneOrEmail(principal, principal, principal)
+        Account acc = accountRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, "User Not Found"));
 
         // 1) Xác thực mật khẩu hiện tại

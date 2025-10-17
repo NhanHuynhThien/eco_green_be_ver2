@@ -15,7 +15,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/password")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 public class PasswordController {
 

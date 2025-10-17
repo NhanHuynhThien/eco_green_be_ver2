@@ -2,7 +2,12 @@ package com.evdealer.evdealermanagement.service.implement;
 
 import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsResponse;
 import com.evdealer.evdealermanagement.dto.battery.brand.BatteryTypesResponse;
+import com.evdealer.evdealermanagement.dto.vehicle.brand.BatteryBrandsRequest;
+import com.evdealer.evdealermanagement.entity.battery.BatteryBrands;
 import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
+import com.evdealer.evdealermanagement.exceptions.AppException;
+import com.evdealer.evdealermanagement.exceptions.ErrorCode;
+import com.evdealer.evdealermanagement.mapper.battery.BatteryMapper;
 import com.evdealer.evdealermanagement.repository.BatteryBrandsRepository;
 import com.evdealer.evdealermanagement.repository.BatteryDetailRepository;
 import com.evdealer.evdealermanagement.repository.BatteryTypesRepository;
@@ -144,7 +149,8 @@ public class BatteryService {
 
         try {
             log.debug("Getting batteries by capacity range: {} - {}", minCapacity, maxCapacity);
-            return batteryDetailRepository.findByCapacityKwhBetween(BigDecimal.valueOf(minCapacity), BigDecimal.valueOf(maxCapacity));
+            return batteryDetailRepository.findByCapacityKwhBetween(BigDecimal.valueOf(minCapacity),
+                    BigDecimal.valueOf(maxCapacity));
         } catch (Exception e) {
             log.error("Error getting batteries by capacity range: {} - {}", minCapacity, maxCapacity, e);
             return List.of();
@@ -194,9 +200,23 @@ public class BatteryService {
     public List<BatteryBrandsResponse> listAllBatteryNameAndLogo() {
         var all = batteryBrandsRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
         return all.stream().map(b -> BatteryBrandsResponse.builder()
-                        .brandName(b.getName())
-                        .logoUrl(b.getLogoUrl())
-                        .build())
+                .brandName(b.getName())
+                .logoUrl(b.getLogoUrl())
+                .build())
                 .collect(Collectors.toList());
+    }
+
+    public BatteryBrandsResponse addNewBatteryBrand(BatteryBrandsRequest req) {
+
+        String brandName = req.getBrandName().trim();
+        if (batteryBrandsRepository.existsByNameIgnoreCase(brandName)) {
+            throw new AppException(ErrorCode.BRAND_EXISTS, "Brand name already exists");
+        }
+
+        BatteryBrands e = new BatteryBrands();
+        e.setName(brandName);
+        e.setLogoUrl(req.getLogoUrl());
+        e = batteryBrandsRepository.save(e);
+        return BatteryMapper.mapToBatteryBrandsResponse(e);
     }
 }

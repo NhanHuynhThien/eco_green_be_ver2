@@ -1,18 +1,30 @@
 package com.evdealer.evdealermanagement.service.implement;
 
+import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsRequest;
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleCategoriesResponse;
+import com.evdealer.evdealermanagement.entity.vehicle.VehicleBrands;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
+import com.evdealer.evdealermanagement.exceptions.AppException;
+import com.evdealer.evdealermanagement.exceptions.ErrorCode;
+import com.evdealer.evdealermanagement.mapper.vehicle.VehicleMapper;
 import com.evdealer.evdealermanagement.repository.VehicleBrandsRepository;
 import com.evdealer.evdealermanagement.repository.VehicleCategoryRepository;
 import com.evdealer.evdealermanagement.repository.VehicleDetailsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -24,6 +36,7 @@ public class VehicleService {
     private final VehicleDetailsRepository vehicleDetailsRepository;
     private final VehicleCategoryRepository vehicleCategoryRepository;
     private final VehicleBrandsRepository vehicleBrandsRepository;
+    private final Cloudinary cloudinary;
 
     /**
      * Lấy danh sách Vehicle Product IDs theo tên sản phẩm
@@ -215,7 +228,8 @@ public class VehicleService {
 
     public List<VehicleCategoriesResponse> listAllVehicleCategoriesSorted() {
         var all = vehicleCategoryRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
-        return all.stream().map(v -> new VehicleCategoriesResponse(v.getId(), v.getName())).collect(Collectors.toList());
+        return all.stream().map(v -> new VehicleCategoriesResponse(v.getId(), v.getName()))
+                .collect(Collectors.toList());
     }
 
     public List<VehicleBrandsResponse> listAllVehicleBrandsSorted() {
@@ -230,9 +244,84 @@ public class VehicleService {
     public List<VehicleBrandsResponse> listAllVehicleNameAndLogo() {
         var all = vehicleBrandsRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
         return all.stream().map(v -> VehicleBrandsResponse.builder()
-                        .brandName(v.getName())
-                        .logoUrl(v.getLogoUrl())
-                        .build())
+                .brandName(v.getName())
+                .logoUrl(v.getLogoUrl())
+                .build())
                 .collect(Collectors.toList());
+    }
+
+    public VehicleBrandsResponse addNewVehicleBrand(VehicleBrandsRequest req) {
+
+        String brandName = req.getBrandName().trim();
+        if (vehicleBrandsRepository.existsByNameIgnoreCase(brandName)) {
+            throw new AppException(ErrorCode.BRAND_EXISTS, "Brand name already exists");
+        }
+        VehicleBrands e = new VehicleBrands();
+        e.setName(brandName);
+        e.setLogoUrl(req.getLogoUrl());
+        e = vehicleBrandsRepository.save(e);
+        return VehicleMapper.mapToVehicleBrandsResponse(e);
+    }
+
+    @Transactional
+    public VehicleBrandsResponse createWithLogo(String brandName, MultipartFile logoFile) {
+        // 1) Validate brandName
+        if (brandName == null || brandName.isBlank()) {
+            throw new AppException(ErrorCode.BRAND_NOT_FOUND);
+        }
+        String brandNameWithoutSpace = brandName.trim();
+
+        // 2) Check trùng tên (ignore case)
+        if (vehicleBrandsRepository.existsByNameIgnoreCase(brandNameWithoutSpace)) {
+            throw new AppException(ErrorCode.BRAND_EXISTS);
+        }
+
+        // 3) Validate ảnh
+        validateLogo(logoFile);
+
+        // 4) Upload Cloudinary
+        Map<String, Object> uploaded;
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> up = (Map<String, Object>) cloudinary.uploader().upload(
+                    logoFile.getBytes(),
+                    ObjectUtils.asMap(
+                            "folder", "eco-green/brands/vehicle", // thư mục riêng cho brand vehicle
+                            "resource_type", "image",
+                            "overwrite", true,
+                            "unique_filename", true));
+            uploaded = up;
+        } catch (Exception e) {
+            log.error("Cloudinary upload error: {}", e.getMessage(), e);
+            throw new AppException(ErrorCode.IMAGE_UPLOAD_FAILED);
+        }
+
+        String secureUrl = (String) uploaded.get("secure_url");
+
+        // 5) Lưu DB
+        VehicleBrands entity = new VehicleBrands();
+        entity.setName(brandNameWithoutSpace);
+        entity.setLogoUrl(secureUrl);
+        vehicleBrandsRepository.save(entity);
+
+        // 6) Trả DTO
+        return VehicleBrandsResponse.builder()
+                .brandId(entity.getId())
+                .brandName(entity.getName())
+                .logoUrl(entity.getLogoUrl())
+                .build();
+    }
+
+    private void validateLogo(MultipartFile image) {
+        if (image == null || image.isEmpty()) {
+            throw new AppException(ErrorCode.MIN_1_IMAGE);
+        }
+        if (image.getSize() > 6L * 1024 * 1024) {
+            throw new AppException(ErrorCode.IMAGE_TOO_LARGE);
+        }
+        String ct = image.getContentType() == null ? "" : image.getContentType();
+        if (!(ct.equals("image/jpeg") || ct.equals("image/png"))) {
+            throw new AppException(ErrorCode.UNSUPPORTED_IMAGE_TYPE);
+        }
     }
 }

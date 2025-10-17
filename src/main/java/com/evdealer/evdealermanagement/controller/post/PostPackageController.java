@@ -14,13 +14,14 @@ public class PostPackageController {
     private final PaymentService paymentService;
 
     @PutMapping("/{productId}/package")
-    public ResponseEntity<PackageResponse> choosePackage(@PathVariable String productId, @RequestBody PackageRequest packageRequest) {
+    public ResponseEntity<PackageResponse> choosePackage(@PathVariable String productId,
+            @RequestBody PackageRequest packageRequest) {
         PackageResponse packageResponse = paymentService.choosePackage(productId, packageRequest);
         return ResponseEntity.ok(packageResponse);
     }
 
     @PostMapping("/callback")
-    public ResponseEntity<String> handleCallback(@RequestParam String paymentId ,@RequestParam boolean success) {
+    public ResponseEntity<String> handleCallback(@RequestParam String paymentId, @RequestParam boolean success) {
         paymentService.handlePaymentCallback(paymentId, success);
         return ResponseEntity.ok("success");
     }

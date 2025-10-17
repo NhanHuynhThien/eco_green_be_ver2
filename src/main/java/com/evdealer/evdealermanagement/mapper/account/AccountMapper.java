@@ -3,27 +3,38 @@ package com.evdealer.evdealermanagement.mapper.account;
 import com.evdealer.evdealermanagement.dto.account.profile.AccountProfileResponse;
 import com.evdealer.evdealermanagement.dto.account.profile.AccountUpdateRequest;
 import com.evdealer.evdealermanagement.entity.account.Account;
+
 import org.springframework.util.StringUtils;
 
 public final class AccountMapper {
 
-    private AccountMapper() {}
+    private AccountMapper() {
+    }
 
     public static void updateAccountFromRequest(AccountUpdateRequest req, Account account) {
-        if (req == null || account == null) return;
+        if (req == null || account == null)
+            return;
 
-        if (StringUtils.hasText(req.getFullName())) account.setFullName(trimToNull(req.getFullName()));
-        if (StringUtils.hasText(req.getPhone())) account.setPhone(trimToNull(req.getPhone()));
-        if (StringUtils.hasText(req.getAddress())) account.setAddress(trimToNull(req.getAddress()));
-        if (StringUtils.hasText(req.getEmail())) account.setEmail(trimToNull(req.getEmail()));
-        if (StringUtils.hasText(req.getNationalId())) account.setNationalId(trimToNull(req.getNationalId()));
-        if (StringUtils.hasText(req.getTaxCode())) account.setTaxCode(trimToNull(req.getTaxCode()));
-        if (StringUtils.hasText(req.getAvatarUrl())) account.setAvatarUrl(trimToNull(req.getAvatarUrl()));
+        if (StringUtils.hasText(req.getFullName()))
+            account.setFullName(trimToNull(req.getFullName()));
+        if (StringUtils.hasText(req.getPhone()))
+            account.setPhone(trimToNull(req.getPhone()));
+        if (StringUtils.hasText(req.getAddress()))
+            account.setAddress(trimToNull(req.getAddress()));
+        if (StringUtils.hasText(req.getEmail()))
+            account.setEmail(trimToNull(req.getEmail()));
+        if (StringUtils.hasText(req.getNationalId()))
+            account.setNationalId(trimToNull(req.getNationalId()));
+        if (StringUtils.hasText(req.getTaxCode()))
+            account.setTaxCode(trimToNull(req.getTaxCode()));
+        if (StringUtils.hasText(req.getAvatarUrl()))
+            account.setAvatarUrl(trimToNull(req.getAvatarUrl()));
 
         if (req.getGender() != null) {
             try {
                 account.setGender(Account.Gender.valueOf(req.getGender().name()));
-            } catch (IllegalArgumentException ignored) {}
+            } catch (IllegalArgumentException ignored) {
+            }
         }
 
         if (req.getDateOfBirth() != null) {
@@ -32,13 +43,15 @@ public final class AccountMapper {
     }
 
     private static String trimToNull(String s) {
-        if (s == null) return null;
+        if (s == null)
+            return null;
         String trimmed = s.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
 
     public static AccountProfileResponse mapToAccountProfileResponse(Account account) {
-        if (account == null) return null;
+        if (account == null)
+            return null;
 
         return AccountProfileResponse.builder()
                 .id(account.getId())

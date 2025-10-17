@@ -11,19 +11,19 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/profile/me")
+@RequestMapping("/profile")
 @RequiredArgsConstructor
 public class ProfileController {
     private final ProfileService profileService;
 
-    @GetMapping
+    @GetMapping("/me")
     @PreAuthorize("hasRole('MEMBER') or hasRole('ADMIN')")
     public AccountProfileResponse getCurrentProfile(Authentication authentication) {
         String username = authentication.getName();
         return profileService.getProfile(username);
     }
 
-    @PatchMapping("/update")
+    @PatchMapping("/me/update")
     @PreAuthorize("hasRole('MEMBER') or hasRole('ADMIN')")
     public ResponseEntity<AccountProfileResponse> updateProfile(
             @Valid @RequestBody AccountUpdateRequest request,
@@ -31,4 +31,5 @@ public class ProfileController {
         String username = authentication.getName();
         return ResponseEntity.ok(profileService.updateProfile(username, request));
     }
+
 }
