@@ -50,6 +50,8 @@ public class StaffService {
         if (request.getAction() == PostVerifyRequest.ActionType.ACTIVE) {
             product.setStatus(Product.Status.ACTIVE);
             product.setRejectReason(null);
+
+
         } else if (request.getAction() == PostVerifyRequest.ActionType.REJECT) {
             product.setStatus(Product.Status.REJECTED);
             product.setRejectReason(request.getRejectReason());
