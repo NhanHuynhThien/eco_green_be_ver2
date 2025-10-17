@@ -25,4 +25,5 @@ public class AccountProfileResponse {
     private Account.Status status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Account.Role role;
 }

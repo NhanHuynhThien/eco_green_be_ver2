@@ -59,6 +59,7 @@ public final class AccountMapper {
                 .email(account.getEmail())
                 .fullName(account.getFullName())
                 .phone(account.getPhone())
+                .role(account.getRole())
                 .status(account.getStatus())
                 .dateOfBirth(account.getDateOfBirth())
                 .address(account.getAddress())
