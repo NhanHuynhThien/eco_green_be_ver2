@@ -188,4 +188,10 @@ public class PaymentService {
         postPaymentRepository.save(payment);
         productRepository.save(product);
     }
+
+    //Find and show all package
+    public List<PostPackage> getAllPostPackages() {
+        return postPackageRepository.findAll();
+    }
+
 }
