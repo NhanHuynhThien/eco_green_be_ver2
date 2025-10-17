@@ -29,8 +29,8 @@ public class VehiclePostRequest {
     @Digits(integer = 15, fraction = 2, message = "Price must be a valid number with up to 15 digits and 2 decimal places")
     BigDecimal price;
 
-    @NotBlank(message = "Please enter the seller's phone number")
-    String sellerPhone;
+//    @NotBlank(message = "Please enter the seller's phone number")
+//    String sellerPhone;
 
     @NotBlank(message = "Please enter the city")
     @Size(max = 255, message = "City must not exceed 255 characters")
@@ -48,10 +48,10 @@ public class VehiclePostRequest {
     @Size(max = 10_000, message = "Address detail must not exceed 10,000 characters")
     String addressDetail;
 
-    @Future(message = "Expiration date must be in the future")
-    @NotNull(message = "Please provide the expiration date")
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    LocalDateTime expiresAt;
+//    @Future(message = "Expiration date must be in the future")
+//    @NotNull(message = "Please provide the expiration date")
+//    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+//    LocalDateTime expiresAt;
 
     @NotBlank(message = "Please select the brand")
     String brandId;
@@ -72,8 +72,14 @@ public class VehiclePostRequest {
     @Min(value = 1900, message = "Year must be greater than or equal to 1900")
     Short year;
 
-    @NotNull(message = "Please enter the manufacturing year")
-    Double builtInBatteryVoltageV;
+    @NotNull(message = "Please enter the version")
+    String version;
 
-    String color;
+    @NotBlank(message = "Category ID is required")
+    String categoryId;
+
+//    @NotNull(message = "Please enter the built-in battery voltage")
+//    Double builtInBatteryVoltageV;
+
+//    String color;
 }

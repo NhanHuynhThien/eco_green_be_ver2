@@ -80,9 +80,6 @@ public class Product extends BaseEntity {
     @Column(name = "auction_end_time")
     private LocalDateTime auctionEndTime;
 
-    @Column(name = "is_negotiable", columnDefinition = "BIT")
-    private Boolean isNegotiable;
-
     @Column(name = "posting_fee", precision = 8, scale = 2)
     private BigDecimal postingFee;
 
