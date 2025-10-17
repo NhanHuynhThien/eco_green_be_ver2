@@ -3,13 +3,15 @@ package com.evdealer.evdealermanagement.controller.vehicle;
 
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleCategoriesResponse;
+import com.evdealer.evdealermanagement.entity.vehicle.VehicleSpecs;
+import com.evdealer.evdealermanagement.service.implement.GeminiRestService;
 import com.evdealer.evdealermanagement.service.implement.VehicleService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -17,6 +19,7 @@ import java.util.List;
 public class VehicleController {
 
     private final VehicleService vehicleService;
+    private final GeminiRestService geminiRestService;
 
     @GetMapping("/brands/all")
     public List<VehicleBrandsResponse> getAllBrands() {
@@ -32,4 +35,13 @@ public class VehicleController {
     public List<VehicleBrandsResponse> getAllBrandsLogoName() {
         return vehicleService.listAllVehicleNameAndLogo();
     }
+
+    @PostMapping("/specs")
+    public ResponseEntity<VehicleSpecs> getVehicleSpecs(@RequestBody Map<String, String> body) {
+        String name = body.get("name");
+        VehicleSpecs specs = geminiRestService.getVehicleSpecs(name);
+        return ResponseEntity.ok(specs);
+    }
+
+
 }
