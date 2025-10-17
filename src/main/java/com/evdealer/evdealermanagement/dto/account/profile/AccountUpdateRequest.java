@@ -37,8 +37,4 @@ public class AccountUpdateRequest {
 
     @Size(max = 50, message = "Tax code must not exceed 50 characters")
     private String taxCode;
-
-    public enum Gender {
-        MALE, FEMALE, OTHER
-    }
 }

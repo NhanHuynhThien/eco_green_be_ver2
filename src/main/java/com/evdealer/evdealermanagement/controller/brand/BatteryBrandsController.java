@@ -20,5 +20,4 @@ public class BatteryBrandsController {
     public List<BatteryBrandsResponse> getAllBrandsLogoName() {
         return batteryService.listAllBatteryNameAndLogo();
     }
-
 }

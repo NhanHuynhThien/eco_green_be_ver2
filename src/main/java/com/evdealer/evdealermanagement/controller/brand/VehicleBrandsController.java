@@ -2,6 +2,7 @@ package com.evdealer.evdealermanagement.controller.brand;
 
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsResponse;
 import com.evdealer.evdealermanagement.service.implement.VehicleService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,4 +21,5 @@ public class VehicleBrandsController {
     public List<VehicleBrandsResponse> getAllBrandsLogoName() {
         return vehicleService.listAllVehicleNameAndLogo();
     }
+
 }

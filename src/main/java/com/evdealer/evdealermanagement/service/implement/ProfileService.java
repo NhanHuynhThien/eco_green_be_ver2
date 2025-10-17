@@ -11,7 +11,9 @@ import com.evdealer.evdealermanagement.service.contract.IAccountService;
 
 import java.time.LocalDateTime;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class ProfileService implements IAccountService {
@@ -31,6 +33,7 @@ public class ProfileService implements IAccountService {
 
     @Override
     public AccountProfileResponse updateProfile(String username, AccountUpdateRequest accountRequest) {
+
         Account existingAccount = accountRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
 
@@ -52,7 +55,9 @@ public class ProfileService implements IAccountService {
     }
 
     @Override
-    public void deleteAccount(String userId) {
-        accountRepository.deleteById(userId);
+    public void deleteAccount(String username) {
+        Account acc = accountRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        accountRepository.delete(acc);
     }
 }

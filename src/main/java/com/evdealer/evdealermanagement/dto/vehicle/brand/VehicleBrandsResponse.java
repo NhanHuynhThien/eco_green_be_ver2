@@ -1,5 +1,6 @@
 package com.evdealer.evdealermanagement.dto.vehicle.brand;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
