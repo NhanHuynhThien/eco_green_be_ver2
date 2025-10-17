@@ -29,27 +29,24 @@ public class StaffService {
     @Transactional
     public PostVerifyResponse verifyPost(String productId, PostVerifyRequest request) {
 
-        // 1) Load product
+        // 1) Lấy user hiện tại (phải có quyền STAFF hoặc ADMIN)
+        Account currentUser = userContextService.getCurrentUser()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized user"));
+
+        if (currentUser.getRole() != Account.Role.STAFF && currentUser.getRole() != Account.Role.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only STAFF or ADMIN can verify posts");
+        }
+
+        // 2) Load product sau khi xác thực quyền
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
 
-        // 2) Chỉ cho phép xử lý nếu đang ở trạng thái PENDING_REVIEW
+        // 3) Chỉ cho phép xử lý nếu post đang ở trạng thái PENDING_REVIEW
         if (product.getStatus() != Product.Status.PENDING_REVIEW) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Only products in PENDING_REVIEW status can be verified or rejected");
+                    "Only posts in PENDING_REVIEW status can be verified or rejected");
         }
 
-        /// 2) Lấy user hiện tại
-        Account currentUser = userContextService.getCurrentUser()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Unauthorized"));
-
-        // 3) Bắt buộc phải là STAFF (nếu muốn cho ADMIN làm luôn, xem phần ghi chú bên
-        // dưới)
-        if (currentUser.getRole() != Account.Role.STAFF) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only STAFF can verify posts");
-        }
-
-        // 5) Áp dụng hành động
         if (request.getAction() == PostVerifyRequest.ActionType.ACTIVE) {
             product.setStatus(Product.Status.ACTIVE);
             product.setRejectReason(null);
@@ -62,11 +59,7 @@ public class StaffService {
 
         product.setApprovedBy(currentUser);
         product.setUpdatedAt(LocalDateTime.now());
-
-        // 7) Lưu DB
         productRepository.save(product);
-
-        // 8) Map response
         return PostVerifyMapper.mapToPostVerifyResponse(product);
     }
 
