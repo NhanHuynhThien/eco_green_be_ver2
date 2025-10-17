@@ -29,6 +29,7 @@ public class WebSecurityConfigs {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final AccountDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
+    private final CustomOAuth2SuccessHandler successHandler;
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -69,6 +70,7 @@ public class WebSecurityConfigs {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // <-- Lỗi 401 được trả về tại đây
                             response.getWriter().write("{\"error\": \"Unauthorized\"}");
                         }))
+                .oauth2Login(oauth -> oauth.successHandler(successHandler))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
