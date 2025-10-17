@@ -2,10 +2,13 @@ package com.evdealer.evdealermanagement.controller.post;
 
 import com.evdealer.evdealermanagement.dto.post.packages.PackageRequest;
 import com.evdealer.evdealermanagement.dto.post.packages.PackageResponse;
+import com.evdealer.evdealermanagement.entity.post.PostPackage;
 import com.evdealer.evdealermanagement.service.implement.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RequestMapping("/post/payments")
 @RestController
@@ -24,5 +27,10 @@ public class PostPackageController {
     public ResponseEntity<String> handleCallback(@RequestParam String paymentId, @RequestParam boolean success) {
         paymentService.handlePaymentCallback(paymentId, success);
         return ResponseEntity.ok("success");
+    }
+
+    @GetMapping("/show")
+    public ResponseEntity<List<PostPackage>> getAllPackages() {
+        return ResponseEntity.ok(paymentService.getAllPostPackages());
     }
 }

@@ -21,6 +21,7 @@ import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -138,6 +139,10 @@ public class PaymentService {
         }
         postPaymentRepository.save(payment);
         productRepository.save(product);
+    }
+
+    public List<PostPackage> getAllPostPackages() {
+        return postPackageRepository.findAll();
     }
 
 }
