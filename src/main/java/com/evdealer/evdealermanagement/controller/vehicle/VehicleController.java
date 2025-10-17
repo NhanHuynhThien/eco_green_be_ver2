@@ -5,7 +5,7 @@ import com.evdealer.evdealermanagement.dto.battery.brand.BatteryTypesResponse;
 
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleCategoriesResponse;
-import com.evdealer.evdealermanagement.entity.vehicle.VehicleSpecs;
+import com.evdealer.evdealermanagement.dto.vehicle.catalog.VehicleCatalogDTO;
 import com.evdealer.evdealermanagement.service.implement.GeminiRestService;
 import com.evdealer.evdealermanagement.service.implement.VehicleService;
 import lombok.RequiredArgsConstructor;
@@ -38,12 +38,12 @@ public class VehicleController {
         return vehicleService.listAllVehicleNameAndLogo();
     }
 
-    @PostMapping("/specs")
-    public ResponseEntity<VehicleSpecs> getVehicleSpecs(@RequestBody Map<String, String> body) {
-        String name = body.get("name");
-        VehicleSpecs specs = geminiRestService.getVehicleSpecs(name);
-        return ResponseEntity.ok(specs);
-    }
+//    @PostMapping("/specs")
+//    public ResponseEntity<VehicleCatalogDTO> getVehicleSpecs(@RequestBody Map<String, String> body) {
+//        String name = body.get("name");
+//        VehicleCatalogDTO specs = geminiRestService.getVehicleSpecs(name);
+//        return ResponseEntity.ok(specs);
+//    }
 
 
 }
