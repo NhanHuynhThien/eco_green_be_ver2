@@ -1,4 +1,4 @@
-package com.evdealer.evdealermanagement.dto.vehicle.brand;
+package com.evdealer.evdealermanagement.dto.battery.brand;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

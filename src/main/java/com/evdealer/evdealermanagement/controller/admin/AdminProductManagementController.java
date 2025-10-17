@@ -2,7 +2,7 @@ package com.evdealer.evdealermanagement.controller.admin;
 
 import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsResponse;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
-import com.evdealer.evdealermanagement.dto.vehicle.brand.BatteryBrandsRequest;
+import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsRequest;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsRequest;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsResponse;
 import com.evdealer.evdealermanagement.exceptions.AppException;
