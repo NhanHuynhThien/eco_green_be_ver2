@@ -21,9 +21,9 @@ public class VehiclePostResponse {
     String status;
     String title;
     String description;
-    String conditionType;
+//    String conditionType; xóa DB
     BigDecimal price;
-    Boolean isNegotiable;
+//    Boolean isNegotiable; xóa DB
     String sellerPhone;
     String city;
     String district;
@@ -36,8 +36,8 @@ public class VehiclePostResponse {
 //    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
 //    LocalDateTime updatedAt;
 
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    LocalDateTime expiresAt;
+//    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+//    LocalDateTime expiresAt;
 
     // ID references
     String categoryId;
@@ -70,7 +70,7 @@ public class VehiclePostResponse {
     // Legal / registration
     Boolean hasInsurance;
     Boolean hasRegistration;
-    String licensePlate;
+//    String licensePlate;
 
     List<ProductImageResponse> images;
 }

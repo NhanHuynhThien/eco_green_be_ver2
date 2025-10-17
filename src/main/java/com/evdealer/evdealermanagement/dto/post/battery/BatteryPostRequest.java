@@ -45,9 +45,9 @@ public class BatteryPostRequest {
     @Size(max = 10_000)
     String addressDetail;
 
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    @Future
-    LocalDateTime expiresAt;
+//    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+//    @Future
+//    LocalDateTime expiresAt;
 
     String batteryTypeId;
 
@@ -63,8 +63,8 @@ public class BatteryPostRequest {
     @NotNull(message = "Please enter health percent")
     private Integer healthPercent;
 
-    @Size(max = 50)
-    String origin;
+//    @Size(max = 50)
+//    String origin;
 
     @Positive
     Integer voltageV;
