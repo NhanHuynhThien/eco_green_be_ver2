@@ -22,4 +22,6 @@ public interface ProductRepository extends JpaRepository<Product, String> {
     List<Product> findTop12ByStatusOrderByCreatedAtDesc(Product.Status status);
 
     Optional<Product> findById(@NotNull String productId);
+
+    List<Product> findByStatus(Product.Status status);
 }
