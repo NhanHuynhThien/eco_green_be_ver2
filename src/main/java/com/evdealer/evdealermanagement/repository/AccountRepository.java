@@ -13,6 +13,8 @@ public interface AccountRepository extends JpaRepository<Account, String> {
 
     Optional<Account> findByPhone(String phone);
 
+    boolean existsByUsername(String username);
+
     boolean existsByUsernameAndIdNot(String username, String id); // Changed Long to String
 
     boolean existsByPhoneAndIdNot(String phone, String id); // Changed Long to String
