@@ -33,47 +33,92 @@ public class ProductService implements IProductService {
     @Transactional(readOnly = true)
     public List<ProductDetail> getAllProductsWithStatusActive() {
         try {
+            log.info("=== START getAllProductsWithStatusActive ===");
+
             String accountId = SecurityUtils.getCurrentAccountId();
+            log.info("Current accountId: {}", accountId);
 
-            //Get product list Active
-            List<Product> products =  productRepository.findAll().stream().filter(p -> p.getStatus() == Product.Status.ACTIVE).toList();
-            //Attach isWishlisted + mapp to ProductDetail
-            List<ProductDetail> result = wishlistService.attachWishlistFlag(
-                    accountId, products, ProductMapper::toDetailDto,
-                    ProductDetail::setIsWishlisted
-            );
+            // Get ACTIVE products
+            List<Product> products = productRepository.findAll().stream()
+                    .filter(p -> p.getStatus() == Product.Status.ACTIVE)
+                    .collect(Collectors.toList());
 
-            result.sort(Comparator.comparing(ProductDetail::getCreatedAt));
+            log.info("Found {} ACTIVE products from DB", products.size());
 
+            if (products.isEmpty()) {
+                log.warn("No active products in database!");
+                return List.of();
+            }
+
+            // Attach isWishlisted + map to ProductDetail with error handling
+            List<ProductDetail> result;
+            try {
+                result = wishlistService.attachWishlistFlag(
+                        accountId,
+                        products,
+                        ProductMapper::toDetailDto,
+                        ProductDetail::setIsWishlisted
+                );
+                log.info("Successfully mapped {} products to DTOs", result.size());
+            } catch (Exception e) {
+                log.error("Error in wishlistService.attachWishlistFlag, falling back to basic mapping", e);
+                // Fallback: Map without wishlist
+                result = products.stream()
+                        .map(ProductMapper::toDetailDto)
+                        .collect(Collectors.toList());
+            }
+
+            // Sort with null-safe comparator
+            result.sort(Comparator.comparing(
+                    ProductDetail::getCreatedAt,
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            ));
+
+            log.info("=== END getAllProductsWithStatusActive: {} products ===", result.size());
             return result;
+
         } catch (Exception e) {
-            log.error("Error fetching all products", e);
-            return List.of();
+            log.error("❌ FATAL ERROR in getAllProductsWithStatusActive", e);
+            throw new RuntimeException("Failed to get all active products: " + e.getMessage(), e);
         }
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<ProductDetail> getProductById(String id) {
-        if (id == null) {
-            log.warn("Invalid product ID: null");
+        if (id == null || id.trim().isEmpty()) {
+            log.warn("Invalid product ID: null or empty");
             return Optional.empty();
         }
+
         try {
-            log.debug("Fetching product by Long ID: {}", id);
+            log.info("Fetching product by ID: {}", id);
 
             String accountId = SecurityUtils.getCurrentAccountId();
-            Optional<ProductDetail> result = productRepository.findById(id).map(ProductMapper::toDetailDto);
-            //If user logged , check if this product is in wishlist
-            if(accountId != null && result.isPresent()) {
-                boolean isWishlisted = wishlistService.isProductInWishlist(accountId, id);
-                result.get().setIsWishlisted(isWishlisted);
+            Optional<Product> productOpt = productRepository.findById(id);
+
+            if (productOpt.isEmpty()) {
+                log.info("Product not found with ID: {}", id);
+                return Optional.empty();
             }
 
+            ProductDetail productDetail = ProductMapper.toDetailDto(productOpt.get());
 
-            return result;
+            // If user logged in, check if this product is in wishlist
+            if (accountId != null) {
+                try {
+                    boolean isWishlisted = wishlistService.isProductInWishlist(accountId, id);
+                    productDetail.setIsWishlisted(isWishlisted);
+                } catch (Exception e) {
+                    log.error("Error checking wishlist status for product {}", id, e);
+                    productDetail.setIsWishlisted(false);
+                }
+            }
+
+            return Optional.of(productDetail);
+
         } catch (Exception e) {
-            log.error("Error fetching product by Long ID: {}", id, e);
+            log.error("Error fetching product by ID: {}", id, e);
             return Optional.empty();
         }
     }
@@ -87,21 +132,33 @@ public class ProductService implements IProductService {
         }
 
         try {
-            log.debug("Searching products by name: {}", name);
+            log.info("Searching products by name: {}", name);
 
             String accountId = SecurityUtils.getCurrentAccountId();
             List<Product> products = productRepository.findTitlesByTitleContainingIgnoreCase(name.trim());
 
             if (products.isEmpty()) {
-                log.debug("No products found with name: {}", name);
+                log.info("No products found with name: {}", name);
                 return List.of();
             }
-            return wishlistService.attachWishlistFlag(
-                    accountId,
-                    products,
-                    ProductMapper::toDetailDto,
-                    ProductDetail::setIsWishlisted
-            );
+
+            List<ProductDetail> result;
+            try {
+                result = wishlistService.attachWishlistFlag(
+                        accountId,
+                        products,
+                        ProductMapper::toDetailDto,
+                        ProductDetail::setIsWishlisted
+                );
+            } catch (Exception e) {
+                log.error("Error attaching wishlist flags, using basic mapping", e);
+                result = products.stream()
+                        .map(ProductMapper::toDetailDto)
+                        .collect(Collectors.toList());
+            }
+
+            log.info("Found {} products matching name: {}", result.size(), name);
+            return result;
 
         } catch (Exception e) {
             log.error("Error searching products by name: {}", name, e);
@@ -118,21 +175,42 @@ public class ProductService implements IProductService {
         }
 
         try {
-            log.debug("Fetching products by type: {}", type);
+            log.info("Fetching products by type: {}", type);
+
+            Product.ProductType enumType;
+            try {
+                enumType = Product.ProductType.valueOf(type.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid product type: {}", type);
+                return List.of();
+            }
+
             String accountId = SecurityUtils.getCurrentAccountId();
-            Product.ProductType enumType = Product.ProductType.valueOf(type.toUpperCase());
             List<Product> products = productRepository.findByType(enumType);
 
-            return wishlistService.attachWishlistFlag(
-                    accountId,
-                    products,
-                    ProductMapper::toDetailDto,
-                    ProductDetail::setIsWishlisted
-            );
+            if (products.isEmpty()) {
+                log.info("No products found with type: {}", type);
+                return List.of();
+            }
 
-        } catch (IllegalArgumentException e) {
-            log.warn("Invalid product type: {}", type);
-            return List.of();
+            List<ProductDetail> result;
+            try {
+                result = wishlistService.attachWishlistFlag(
+                        accountId,
+                        products,
+                        ProductMapper::toDetailDto,
+                        ProductDetail::setIsWishlisted
+                );
+            } catch (Exception e) {
+                log.error("Error attaching wishlist flags, using basic mapping", e);
+                result = products.stream()
+                        .map(ProductMapper::toDetailDto)
+                        .collect(Collectors.toList());
+            }
+
+            log.info("Found {} products with type: {}", result.size(), type);
+            return result;
+
         } catch (Exception e) {
             log.error("Error fetching products by type: {}", type, e);
             return List.of();
@@ -148,34 +226,51 @@ public class ProductService implements IProductService {
         }
 
         try {
-            log.debug("Fetching products by brand: {}", brand);
+            log.info("Fetching products by brand: {}", brand);
 
             List<String> allProductIds = getProductIdsByBrand(brand);
 
             if (allProductIds.isEmpty()) {
-                log.debug("No products found for brand: {}", brand);
+                log.info("No products found for brand: {}", brand);
                 return List.of();
             }
 
-            // Filter ACTIVE và sort theo createdAt
+            // Filter ACTIVE and sort by createdAt
             List<Product> products = productRepository.findAllById(allProductIds)
                     .stream()
                     .filter(product -> product.getStatus() == Product.Status.ACTIVE)
-                    .toList();
+                    .collect(Collectors.toList());
+
+            if (products.isEmpty()) {
+                log.info("No ACTIVE products found for brand: {}", brand);
+                return List.of();
+            }
 
             String accountId = SecurityUtils.getCurrentAccountId();
-            List<ProductDetail> list = wishlistService.attachWishlistFlag(
-                    accountId,
-                    products,
-                    ProductMapper::toDetailDto,
-                    ProductDetail::setIsWishlisted
-            );
+            List<ProductDetail> result;
 
+            try {
+                result = wishlistService.attachWishlistFlag(
+                        accountId,
+                        products,
+                        ProductMapper::toDetailDto,
+                        ProductDetail::setIsWishlisted
+                );
+            } catch (Exception e) {
+                log.error("Error attaching wishlist flags, using basic mapping", e);
+                result = products.stream()
+                        .map(ProductMapper::toDetailDto)
+                        .collect(Collectors.toList());
+            }
 
-            // Sắp xếp theo createdAt
-            list.sort(Comparator.comparing(ProductDetail::getCreatedAt));
+            // Sort by createdAt with null-safe comparator
+            result.sort(Comparator.comparing(
+                    ProductDetail::getCreatedAt,
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            ));
 
-            return list;
+            log.info("Found {} products for brand: {}", result.size(), brand);
+            return result;
 
         } catch (Exception e) {
             log.error("Error fetching products by brand: {}", brand, e);
@@ -187,31 +282,50 @@ public class ProductService implements IProductService {
     @Transactional(readOnly = true)
     public List<ProductDetail> getNewProducts() {
         try {
-            log.debug("Fetching new products");
+            log.info("=== START getNewProducts ===");
+
             String accountId = SecurityUtils.getCurrentAccountId();
-            LocalDateTime threeDaysAgo = LocalDateTime.now().minusDays(3);
 
             List<Product> products = productRepository.findTop12ByStatusOrderByCreatedAtDesc(Product.Status.ACTIVE);
 
-            return wishlistService.attachWishlistFlag(
-                    accountId,
-                    products,
-                    ProductMapper::toDetailDto,      // Product -> ProductDetail
-                    ProductDetail::setIsWishlisted   // gắn cờ
-            );
+            log.info("Found {} new products from DB", products.size());
+
+            if (products.isEmpty()) {
+                log.warn("No new products found");
+                return List.of();
+            }
+
+            List<ProductDetail> result;
+            try {
+                result = wishlistService.attachWishlistFlag(
+                        accountId,
+                        products,
+                        ProductMapper::toDetailDto,
+                        ProductDetail::setIsWishlisted
+                );
+            } catch (Exception e) {
+                log.error("Error attaching wishlist flags, using basic mapping", e);
+                result = products.stream()
+                        .map(ProductMapper::toDetailDto)
+                        .collect(Collectors.toList());
+            }
+
+            log.info("=== END getNewProducts: {} products ===", result.size());
+            return result;
+
         } catch (Exception e) {
-            log.error("Error fetching new products", e);
-            return List.of();
+            log.error("❌ FATAL ERROR in getNewProducts", e);
+            throw new RuntimeException("Failed to get new products: " + e.getMessage(), e);
         }
     }
 
     // ============================================
-    // NEW METHOD: Filter với multiple filters
+    // NEW METHOD: Filter with multiple filters
     // ============================================
     @Transactional(readOnly = true)
     public List<ProductDetail> filterProducts(String name, String brand, String type) {
         try {
-            log.debug("Filtering products with name: {}, brand: {}, type: {}", name, brand, type);
+            log.info("=== START filterProducts: name={}, brand={}, type={} ===", name, brand, type);
 
             // Start with all ACTIVE products
             List<Product> products = productRepository.findAll()
@@ -219,8 +333,10 @@ public class ProductService implements IProductService {
                     .filter(product -> product.getStatus() == Product.Status.ACTIVE)
                     .collect(Collectors.toList());
 
+            log.info("Initial ACTIVE products count: {}", products.size());
+
             if (products.isEmpty()) {
-                log.debug("No active products found");
+                log.warn("No active products found in database");
                 return List.of();
             }
 
@@ -231,7 +347,7 @@ public class ProductService implements IProductService {
                         .filter(p -> p.getTitle() != null &&
                                 p.getTitle().toLowerCase().contains(searchName))
                         .collect(Collectors.toList());
-                log.debug("After name filter '{}': {} products", name, products.size());
+                log.info("After name filter '{}': {} products", name, products.size());
             }
 
             // Apply type filter
@@ -241,10 +357,10 @@ public class ProductService implements IProductService {
                     products = products.stream()
                             .filter(p -> p.getType() == enumType)
                             .collect(Collectors.toList());
-                    log.debug("After type filter '{}': {} products", type, products.size());
+                    log.info("After type filter '{}': {} products", type, products.size());
                 } catch (IllegalArgumentException e) {
-                    log.warn("Invalid product type: {}", type);
-                    throw e;
+                    log.error("Invalid product type: {}", type);
+                    throw new IllegalArgumentException("Invalid product type: " + type);
                 }
             }
 
@@ -254,28 +370,46 @@ public class ProductService implements IProductService {
                 products = products.stream()
                         .filter(p -> productIdsByBrand.contains(p.getId()))
                         .collect(Collectors.toList());
-                log.debug("After brand filter '{}': {} products", brand, products.size());
+                log.info("After brand filter '{}': {} products", brand, products.size());
+            }
+
+            if (products.isEmpty()) {
+                log.info("No products match the filter criteria");
+                return List.of();
             }
 
             String accountId = SecurityUtils.getCurrentAccountId();
-            List<ProductDetail> result = wishlistService.attachWishlistFlag(
-                    accountId,
-                    products,
-                    ProductMapper::toDetailDto,
-                    ProductDetail::setIsWishlisted
-            );
+            List<ProductDetail> result;
 
-            result.sort(Comparator.comparing(ProductDetail::getCreatedAt));
+            try {
+                result = wishlistService.attachWishlistFlag(
+                        accountId,
+                        products,
+                        ProductMapper::toDetailDto,
+                        ProductDetail::setIsWishlisted
+                );
+            } catch (Exception e) {
+                log.error("Error attaching wishlist flags, using basic mapping", e);
+                result = products.stream()
+                        .map(ProductMapper::toDetailDto)
+                        .collect(Collectors.toList());
+            }
 
-            log.info("Filter completed: {} products found", result.size());
+            // Sort by createdAt with null-safe comparator
+            result.sort(Comparator.comparing(
+                    ProductDetail::getCreatedAt,
+                    Comparator.nullsLast(Comparator.naturalOrder())
+            ));
+
+            log.info("=== END filterProducts: {} products found ===", result.size());
             return result;
 
         } catch (IllegalArgumentException e) {
             log.error("Invalid filter parameter: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("Error filtering products with name: {}, brand: {}, type: {}", name, brand, type, e);
-            return List.of();
+            log.error("❌ FATAL ERROR in filterProducts", e);
+            throw new RuntimeException("Failed to filter products: " + e.getMessage(), e);
         }
     }
 
@@ -284,11 +418,13 @@ public class ProductService implements IProductService {
     // ============================================
     private List<String> getProductIdsByBrand(String brand) {
         try {
+            log.debug("Getting product IDs for brand: {}", brand);
+
             // Get vehicle product IDs
             List<String> vehicleProductIds = vehicleService.getVehicleIdByBrand(brand)
                     .stream()
                     .map(String::valueOf)
-                    .toList();
+                    .collect(Collectors.toList());
 
             // Get battery product IDs
             List<String> batteryProductIds = batteryService.getBatteryIdByBrand(brand);
@@ -299,7 +435,9 @@ public class ProductService implements IProductService {
                     batteryProductIds.stream()
             ).distinct().collect(Collectors.toList());
 
-            log.debug("Found {} product IDs for brand '{}'", allProductIds.size(), brand);
+            log.debug("Found {} product IDs for brand '{}' (vehicles: {}, batteries: {})",
+                    allProductIds.size(), brand, vehicleProductIds.size(), batteryProductIds.size());
+
             return allProductIds;
 
         } catch (Exception e) {
