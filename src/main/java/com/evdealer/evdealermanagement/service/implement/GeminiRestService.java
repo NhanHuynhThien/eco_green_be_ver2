@@ -1,10 +1,14 @@
 package com.evdealer.evdealermanagement.service.implement;
 
 import com.evdealer.evdealermanagement.dto.price.PriceSuggestion;
+import com.evdealer.evdealermanagement.entity.vehicle.VehicleSpecs;
 import com.evdealer.evdealermanagement.utils.PriceSerializer;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.cdimascio.dotenv.Dotenv;
+import io.jsonwebtoken.lang.Maps;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,13 +59,17 @@ public class GeminiRestService {
         }
     }
 
+
+    //========== Sugget Price ==========
+
     /**
      * Gợi ý giá cho sản phẩm dựa trên tiêu đề
+     *
      * @param title Tiêu đề sản phẩm
      * @return PriceSuggestion chứa giá và mô tả
      */
     public PriceSuggestion suggestPrice(String title) {
-        String prompt = buildPrompt(title);
+        String prompt = buildPricePrompt(title);
 
         try {
             log.info("=== GEMINI REST API REQUEST ===");
@@ -113,7 +121,7 @@ public class GeminiRestService {
     /**
      * Xây dựng prompt cho Gemini
      */
-    private String buildPrompt(String title) {
+    private String buildPricePrompt(String title) {
         return String.format(
                 "Bạn là chuyên gia thẩm định giá sản phẩm cũ tại Việt Nam. "
                         + "Hãy dựa trên tiêu đề sản phẩm để đưa ra: "
@@ -320,4 +328,110 @@ public class GeminiRestService {
 
         return BigDecimal.ONE;
     }
+
+
+    //========== Suggest Price ==========
+    public String buildSpecsPrompt(String productName) {
+        return String.format("""
+                Bạn là chuyên gia xe điện. 
+                Hãy dựa vào tên sản phẩm "%s" để trả về thông số kỹ thuật chuẩn dưới dạng JSON, 
+                KHÔNG thêm lời giải thích nào khác.
+                Các trường cần có:
+                {
+                  "model": "Tên sản phẩm",
+                  "type": "Loại xe (VD: SUV/Crossover, Scooter, Sedan, Hatchback...)",
+                  "color": "Màu phổ biến",
+                  "range_km": "Tầm hoạt động (km)",
+                  "battery_capacity_kwh": "Dung lượng pin (kWh)",
+                  "power_hp": "Công suất (hp)",
+                  "top_speed_kmh": "Tốc độ tối đa (km/h)",
+                  "acceleration_0_100_s": "Thời gian tăng tốc 0-100 (giây)",
+                  "weight_kg": "Trọng lượng bản thân (kg)",
+                  "gross_weight_kg": "Trọng lượng toàn tải (kg)",
+                  "length_mm": "Chiều dài (mm)",
+                  "wheelbase_mm": "Chiều dài cơ sở (mm)",
+                  "features": ["Danh sách 5-10 tính năng phổ biến"]
+                }
+                
+                ⚠️ Lưu ý: 
+                - Nếu là xe máy điện hoặc pin điện, hãy chỉ trả thông số phù hợp.
+                - Chỉ trả đúng JSON, không thêm chữ nào khác.
+                """, productName);
+    }
+
+    public String suggestSpecs(String productName) {
+        String prompt = buildSpecsPrompt(productName);
+
+        try {
+            log.info("=== GEMINI REQUEST: Suggest Vehicle Specs ===");
+            String url = String.format(
+                    "https://generativelanguage.googleapis.com/v1/models/%s:generateContent?key=%s",
+                    modelName, apiKey
+            );
+
+            Map<String, Object> requestBody = Map.of(
+                    "contents", List.of(
+                            Map.of("parts", List.of(Map.of("text", prompt)))
+                    ),
+                    "generationConfig", Map.of(
+                            "temperature", temperature,
+                            "maxOutputTokens", maxTokens,
+                            "topK", 40,
+                            "topP", 0.9
+                    )
+            );
+
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                JsonNode root = objectMapper.readTree(response.getBody());
+                JsonNode textNode = root.at("/candidates/0/content/parts/0/text");
+
+                if (!textNode.isMissingNode()) {
+                    return textNode.asText().trim();
+                }
+            }
+        } catch (JsonProcessingException e) {
+            log.error("Error while generating specs: {}", e.getMessage(), e);
+        }
+        return "{}";
+    }
+
+    public VehicleSpecs getVehicleSpecs(String productName) {
+        try {
+            String json = suggestSpecs(productName);
+
+            // 🧹 Làm sạch dữ liệu Gemini trả về
+            if (json.startsWith("```")) {
+                json = json.replaceAll("```json", "")
+                        .replaceAll("```", "")
+                        .trim();
+            }
+
+            log.info("✅ Cleaned JSON before parsing:\n{}", json);
+
+            return objectMapper.readValue(json, VehicleSpecs.class);
+
+        } catch (JsonProcessingException e) {
+            log.error("❌ Failed to parse specs JSON for '{}': {}", productName, e.getMessage());
+            return VehicleSpecs.builder()
+                    .model(productName)
+                    .type("Không xác định")
+                    .features(List.of("Chưa có dữ liệu"))
+                    .build();
+        } catch (Exception e) {
+            log.error("❌ Unexpected error while generating specs: {}", e.getMessage(), e);
+            return VehicleSpecs.builder()
+                    .model(productName)
+                    .type("Không xác định")
+                    .features(List.of("Chưa có dữ liệu"))
+                    .build();
+        }
+    }
+
 }

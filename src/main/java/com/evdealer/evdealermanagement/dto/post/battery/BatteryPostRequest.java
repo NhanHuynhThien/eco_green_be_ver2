@@ -19,28 +19,24 @@ import java.time.LocalDateTime;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class BatteryPostRequest {
 
-
-    @NotBlank
+    @NotNull
     @Size(max = 255)
     String title;
 
+    @NotNull
     @Size(max = 10_000)
     String description;
-
-    Product.ConditionType conditionType;
 
     @Positive
     @Digits(integer = 15, fraction = 2)
     BigDecimal price;
 
-    Boolean isNegotiable;
-
-    String sellerPhone;
-
     @Size(max = 255)
+    @NotNull
     String city;
 
     @Size(max = 255)
+    @NotNull(message = "Please fill your district")
     String district;
 
     @Size(max = 255)
@@ -49,23 +45,26 @@ public class BatteryPostRequest {
     @Size(max = 10_000)
     String addressDetail;
 
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    @Future
-    LocalDateTime expiresAt;
+//    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+//    @Future
+//    LocalDateTime expiresAt;
 
     String batteryTypeId;
 
+    @NotBlank(message = "Please choose the brand")
     String brandId;
 
     @Positive
     @Digits(integer = 10, fraction = 2)
     BigDecimal capacityKwh;
 
-    @Min(0) @Max(100)
-    Integer healthPercent;
+    @Min(value = 0, message = "Health percent must be at least 0")
+    @Max(value = 100, message = "Health percent cannot exceed 100")
+    @NotNull(message = "Please enter health percent")
+    private Integer healthPercent;
 
-    @Size(max = 50)
-    String origin;
+//    @Size(max = 50)
+//    String origin;
 
     @Positive
     Integer voltageV;
