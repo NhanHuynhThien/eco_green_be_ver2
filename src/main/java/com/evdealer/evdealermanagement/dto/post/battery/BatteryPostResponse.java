@@ -22,7 +22,7 @@ public class BatteryPostResponse {
     String description;
     String conditionType;
     BigDecimal price;
-    Boolean isNegotiable;
+//    Boolean isNegotiable;
     String sellerPhone;
     String city;
     String district;
@@ -35,8 +35,8 @@ public class BatteryPostResponse {
 //    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
 //    LocalDateTime updatedAt;
 
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    LocalDateTime expiresAt;
+//    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+//    LocalDateTime expiresAt;
 
     String batteryTypeName;
     String brandId;
@@ -44,7 +44,7 @@ public class BatteryPostResponse {
 
     BigDecimal capacityKwh;
     Integer healthPercent;
-    String origin;
+//    String origin;
     Integer voltageV;
 
     List<ProductImageResponse> images;

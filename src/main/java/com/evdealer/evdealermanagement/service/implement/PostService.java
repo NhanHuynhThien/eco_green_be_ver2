@@ -57,14 +57,16 @@ public class PostService implements IProductPostService {
                         .seller(accountRepository.findById(sellerId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND)))
                         .type(Product.ProductType.BATTERY)
                         .status(Product.Status.DRAFT)
+                        .conditionType(Product.ConditionType.USED)
                         .title(request.getTitle())
                         .description(request.getDescription())
                         .price(request.getPrice())
+                        .sellerPhone(accountRepository.getPhone(sellerId))
                         .city(request.getCity())
                         .district(request.getDistrict())
                         .ward(request.getWard())
                         .addressDetail(request.getAddressDetail())
-                        .expiresAt(request.getExpiresAt())
+
                 .build());
 
         BatteryDetails bd = batteryDetailRepository.save(BatteryDetails.builder()
@@ -74,7 +76,6 @@ public class PostService implements IProductPostService {
                         .capacityKwh(request.getCapacityKwh())
                         .healthPercent(request.getHealthPercent())
                         .voltageV(request.getVoltageV())
-                        .origin(request.getOrigin())
                 .build());
 
 
@@ -85,13 +86,11 @@ public class PostService implements IProductPostService {
                 .title(product.getTitle())
                 .description(product.getDescription())
                 .price(product.getPrice())
-                .isNegotiable(product.getIsNegotiable())
                 .sellerPhone(product.getSellerPhone())
                 .city(product.getCity())
                 .district(product.getDistrict())
                 .ward(product.getWard())
                 .addressDetail(product.getAddressDetail())
-                .expiresAt(product.getExpiresAt())
                 .createdAt(product.getCreatedAt())
                 .brandId(bd.getBrand().getId())
                 .brandName(bd.getBrand().getName())
@@ -99,7 +98,6 @@ public class PostService implements IProductPostService {
                 .capacityKwh(bd.getCapacityKwh())
                 .healthPercent(bd.getHealthPercent())
                 .voltageV(bd.getVoltageV())
-                .origin(bd.getOrigin())
                 .images(imageDtos)
                 .build();
 
@@ -111,26 +109,25 @@ public class PostService implements IProductPostService {
                 .seller(accountRepository.findById(sellerId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND)))
                 .type(Product.ProductType.VEHICLE)
                 .status(Product.Status.DRAFT)
+                .conditionType(Product.ConditionType.USED)
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .price(request.getPrice())
-                .sellerPhone(request.getSellerPhone())
+                .sellerPhone(accountRepository.getPhone(sellerId))
                 .city(request.getCity())
                 .district(request.getDistrict())
                 .ward(request.getWard())
                 .addressDetail(request.getAddressDetail())
-                .expiresAt(request.getExpiresAt())
                 .build());
 
         VehicleDetails vd = vehicleDetailsRepository.save(VehicleDetails.builder()
                         .product(product)
+                        .category(veCateRepo.findById(request.getCategoryId()).orElseThrow(() -> new AppException(ErrorCode.VEHICLE_CATE_NOT_FOUND)))
                         .brand(veBrandsRepo.findById(request.getBrandId()).orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND)))
-                        .builtInBatteryVoltageV(request.getBuiltInBatteryVoltageV())
                         .batteryHealthPercent(request.getBatteryHealthPercent())
                         .mileageKm(request.getMileageKm())
                         .model(request.getModel())
                         .year(request.getYear())
-                        .color(request.getColor())
                 .build());
 
         List<ProductImageResponse> imageDtos = uploadAndSaveImages(product, images, imagesMetaJson);
@@ -140,13 +137,11 @@ public class PostService implements IProductPostService {
                 .title(product.getTitle())
                 .description(product.getDescription())
                 .price(product.getPrice())
-                .isNegotiable(product.getIsNegotiable())
                 .sellerPhone(product.getSellerPhone())
                 .city(product.getCity())
                 .district(product.getDistrict())
                 .ward(product.getWard())
                 .addressDetail(product.getAddressDetail())
-                .expiresAt(product.getExpiresAt())
                 .createdAt(product.getCreatedAt())
                 .categoryId(vd.getCategory().getId())
                 .brandId(vd.getBrand().getId())
@@ -170,7 +165,6 @@ public class PostService implements IProductPostService {
                 .ownersCount(vd.getOwnersCount())
                 .hasInsurance(vd.getHasInsurance())
                 .hasRegistration(vd.getHasRegistration())
-                .licensePlate(vd.getLicensePlate())
                 .images(imageDtos)
                 .build();
 
