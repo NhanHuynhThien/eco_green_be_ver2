@@ -17,7 +17,7 @@ public class ProfileController {
     private final ProfileService profileService;
 
     @GetMapping("/me")
-    @PreAuthorize("hasRole('MEMBER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('MEMBER') or hasRole('ADMIN') or hasRole('STAFF')")
     public AccountProfileResponse getCurrentProfile(Authentication authentication) {
         String username = authentication.getName();
         return profileService.getProfile(username);
