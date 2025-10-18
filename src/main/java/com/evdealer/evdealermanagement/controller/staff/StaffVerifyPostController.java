@@ -1,14 +1,16 @@
 package com.evdealer.evdealermanagement.controller.staff;
 
+import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyRequest;
+import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
+import com.evdealer.evdealermanagement.service.implement.StaffService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyRequest;
-import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
-import com.evdealer.evdealermanagement.service.implement.StaffService;
+import java.util.List;
 
 @RestController
 @RequestMapping("/staff/post")
@@ -18,9 +20,19 @@ public class StaffVerifyPostController {
     private final StaffService staffService;
 
     @PutMapping("/{productId}/verify")
-    @PreAuthorize("hasRole('STAFF')")
-    public ResponseEntity<PostVerifyResponse> verifyPost(@PathVariable String productId,
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    public ResponseEntity<PostVerifyResponse> verifyPost(
+            @PathVariable String productId,
             @Valid @RequestBody PostVerifyRequest request) {
-        return ResponseEntity.ok(staffService.verifyPost(productId, request));
+
+        PostVerifyResponse response = staffService.verifyPost(productId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/pending/review")
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    public ResponseEntity<List<PostVerifyResponse>> getPendingPosts() {
+        List<PostVerifyResponse> pendingPosts = staffService.getListVerifyPost();
+        return ResponseEntity.ok(pendingPosts);
     }
 }

@@ -11,6 +11,7 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -63,6 +64,14 @@ public class StaffService {
         product.setUpdatedAt(LocalDateTime.now());
         productRepository.save(product);
         return PostVerifyMapper.mapToPostVerifyResponse(product);
+    }
+
+    @Transactional
+    public List<PostVerifyResponse> getListVerifyPost() {
+        List<Product> products = productRepository.findByStatus(Product.Status.PENDING_REVIEW);
+        return products.stream()
+                .map(PostVerifyMapper::mapToPostVerifyResponse)
+                .toList();
     }
 
 }

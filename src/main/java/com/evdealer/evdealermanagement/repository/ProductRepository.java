@@ -1,5 +1,6 @@
 package com.evdealer.evdealermanagement.repository;
 
+import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,4 +23,6 @@ public interface ProductRepository extends JpaRepository<Product, String> {
     List<Product> findTop12ByStatusOrderByCreatedAtDesc(Product.Status status);
 
     Optional<Product> findById(@NotNull String productId);
+
+    List<Product> findByStatus(Product.Status status);
 }
