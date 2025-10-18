@@ -66,7 +66,7 @@ public class WebSecurityConfigs {
                                 "/api/vnpayment", "/api/vnpayment/return",
                                 "/api/momo", "/api/momo/return")
                         .permitAll()
-                        .requestMatchers("battery/brands/all", "battery/types/all", "vehicle/brands/all", "vehicle/categories/all").permitAll()
+                        .requestMatchers("battery/brands/all", "battery/types/all", "vehicle/brands/all", "vehicle/categories/all", "vehicle/models/all", "vehicle/model/versions").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) -> {
