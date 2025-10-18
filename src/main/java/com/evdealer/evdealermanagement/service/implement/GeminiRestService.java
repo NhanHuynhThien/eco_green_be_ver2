@@ -1,7 +1,8 @@
 package com.evdealer.evdealermanagement.service.implement;
 
 import com.evdealer.evdealermanagement.dto.price.PriceSuggestion;
-import com.evdealer.evdealermanagement.entity.vehicle.VehicleSpecs;
+import com.evdealer.evdealermanagement.dto.vehicle.catalog.VehicleCatalogDTO;
+import com.evdealer.evdealermanagement.entity.vehicle.VehicleCatalog;
 import com.evdealer.evdealermanagement.utils.PriceSerializer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -329,44 +330,66 @@ public class GeminiRestService {
         return BigDecimal.ONE;
     }
 
-
     //========== Suggest Price ==========
-    public String buildSpecsPrompt(String productName) {
+    public String buildSpecsPrompt(String productName, String modelName, int year) {
         return String.format("""
                 Bạn là chuyên gia xe điện. 
-                Hãy dựa vào tên sản phẩm "%s" để trả về thông số kỹ thuật chuẩn dưới dạng JSON, 
-                KHÔNG thêm lời giải thích nào khác.
-                Các trường cần có:
+                Hãy dựa vào tên sản phẩm "%s", model "%s", năm %d để trả về thông số kỹ thuật chuẩn dưới dạng JSON.
+                KHÔNG thêm lời giải thích, markdown, hoặc bất kỳ ký tự nào ngoài JSON thuần túy.
+                
+                Cấu trúc JSON cần có CHÍNH XÁC các trường sau:
                 {
-                  "model": "Tên sản phẩm",
-                  "type": "Loại xe (VD: SUV/Crossover, Scooter, Sedan, Hatchback...)",
-                  "color": "Màu phổ biến",
-                  "range_km": "Tầm hoạt động (km)",
-                  "battery_capacity_kwh": "Dung lượng pin (kWh)",
-                  "power_hp": "Công suất (hp)",
-                  "top_speed_kmh": "Tốc độ tối đa (km/h)",
-                  "acceleration_0_100_s": "Thời gian tăng tốc 0-100 (giây)",
-                  "weight_kg": "Trọng lượng bản thân (kg)",
-                  "gross_weight_kg": "Trọng lượng toàn tải (kg)",
-                  "length_mm": "Chiều dài (mm)",
-                  "wheelbase_mm": "Chiều dài cơ sở (mm)",
-                  "features": ["Danh sách 5-10 tính năng phổ biến"]
+                  "model": "Tên đầy đủ của model",
+                  "type": "Loại xe (VD: SUV/Crossover, Scooter, Sedan, Hatchback, Xe máy điện)",
+                  "color": "Màu sắc phổ biến",
+                  "range_km": "Tầm hoạt động thực tế (số km, không có đơn vị)",
+                  "battery_capacity_kwh": "Dung lượng pin (số kWh, không có đơn vị)",
+                  "power_hp": "Công suất tối đa (số hp, không có đơn vị)",
+                  "top_speed_kmh": "Tốc độ tối đa (số km/h, không có đơn vị)",
+                  "acceleration_0_100_s": "Thời gian tăng tốc 0-100km/h (số giây, không có đơn vị, để null nếu là xe máy)",
+                  "weight_kg": "Trọng lượng bản thân (số kg, không có đơn vị)",
+                  "gross_weight_kg": "Trọng lượng toàn tải (số kg, không có đơn vị)",
+                  "length_mm": "Chiều dài tổng thể (số mm, không có đơn vị)",
+                  "wheelbase_mm": "Chiều dài cơ sở (số mm, không có đơn vị)",
+                  "features": ["Tính năng 1", "Tính năng 2", "Tính năng 3", "Tính năng 4", "Tính năng 5"]
                 }
                 
-                ⚠️ Lưu ý: 
-                - Nếu là xe máy điện hoặc pin điện, hãy chỉ trả thông số phù hợp.
-                - Chỉ trả đúng JSON, không thêm chữ nào khác.
-                """, productName);
+                QUY TẮC BẮT BUỘC:
+                - TẤT CẢ các trường số phải là số nguyên hoặc số thực, KHÔNG có đơn vị, KHÔNG có dấu phẩy phân cách hàng nghìn
+                - Trường "features" phải là mảng string, mỗi tính năng là 1 câu ngắn gọn, từ 5-10 tính năng
+                - Nếu không có thông tin chính xác, hãy ước lượng dựa trên xe cùng phân khúc và năm sản xuất
+                - Nếu là xe máy điện: để null cho "acceleration_0_100_s", điều chỉnh các thông số phù hợp
+                - CHỈ trả về JSON thuần túy, KHÔNG có ```json, KHÔNG có giải thích, KHÔNG có markdown
+                
+                Ví dụ output mong muốn:
+                {
+                  "model": "VF e34",
+                  "type": "SUV/Crossover",
+                  "color": "Xanh",
+                  "range_km": 285,
+                  "battery_capacity_kwh": 42,
+                  "power_hp": 110,
+                  "top_speed_kmh": 145,
+                  "acceleration_0_100_s": 9.5,
+                  "weight_kg": 1450,
+                  "gross_weight_kg": 1890,
+                  "length_mm": 4300,
+                  "wheelbase_mm": 2611,
+                  "features": ["Hệ thống phanh ABS", "Hỗ trợ đỗ xe tự động", "Màn hình cảm ứng 10 inch", "Kết nối smartphone", "Camera 360 độ", "Cảnh báo điểm mù", "Túi khí an toàn"]
+                }
+                """, productName, modelName, year);
     }
 
-    public String suggestSpecs(String productName) {
-        String prompt = buildSpecsPrompt(productName);
+    public String suggestSpecs(String productName, String modelName, int year) {
+        String prompt = buildSpecsPrompt(productName, modelName, year);
 
         try {
             log.info("=== GEMINI REQUEST: Suggest Vehicle Specs ===");
+            log.info("Product: {}, Model: {}, Year: {}", productName, modelName, year);
+
             String url = String.format(
                     "https://generativelanguage.googleapis.com/v1/models/%s:generateContent?key=%s",
-                    modelName, apiKey
+                    this.modelName, apiKey
             );
 
             Map<String, Object> requestBody = Map.of(
@@ -381,7 +404,6 @@ public class GeminiRestService {
                     )
             );
 
-
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
@@ -393,45 +415,51 @@ public class GeminiRestService {
                 JsonNode textNode = root.at("/candidates/0/content/parts/0/text");
 
                 if (!textNode.isMissingNode()) {
-                    return textNode.asText().trim();
+                    String result = textNode.asText().trim();
+                    log.info("Raw Gemini response: {}", result);
+                    return result;
                 }
             }
+
+            log.warn("No valid response from Gemini API");
         } catch (JsonProcessingException e) {
             log.error("Error while generating specs: {}", e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Unexpected error calling Gemini API: {}", e.getMessage(), e);
         }
+
         return "{}";
     }
 
-    public VehicleSpecs getVehicleSpecs(String productName) {
+    public VehicleCatalogDTO getVehicleSpecs(String productName, String modelName, int year) {
         try {
-            String json = suggestSpecs(productName);
+            String json = suggestSpecs(productName, modelName, year);
 
-            // 🧹 Làm sạch dữ liệu Gemini trả về
+            // Làm sạch dữ liệu Gemini trả về
             if (json.startsWith("```")) {
                 json = json.replaceAll("```json", "")
                         .replaceAll("```", "")
                         .trim();
             }
 
-            log.info("✅ Cleaned JSON before parsing:\n{}", json);
+            log.info("Cleaned JSON before parsing:\n{}", json);
 
-            return objectMapper.readValue(json, VehicleSpecs.class);
+            return objectMapper.readValue(json, VehicleCatalogDTO.class);
 
         } catch (JsonProcessingException e) {
-            log.error("❌ Failed to parse specs JSON for '{}': {}", productName, e.getMessage());
-            return VehicleSpecs.builder()
+            log.error("Failed to parse specs JSON for '{}': {}", productName, e.getMessage());
+            return VehicleCatalogDTO.builder()
                     .model(productName)
                     .type("Không xác định")
                     .features(List.of("Chưa có dữ liệu"))
                     .build();
         } catch (Exception e) {
-            log.error("❌ Unexpected error while generating specs: {}", e.getMessage(), e);
-            return VehicleSpecs.builder()
+            log.error("Unexpected error while generating specs: {}", e.getMessage(), e);
+            return VehicleCatalogDTO.builder()
                     .model(productName)
                     .type("Không xác định")
                     .features(List.of("Chưa có dữ liệu"))
                     .build();
         }
     }
-
 }

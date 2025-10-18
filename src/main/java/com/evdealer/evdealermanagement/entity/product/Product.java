@@ -101,6 +101,7 @@ public class Product extends BaseEntity {
     }
 
     public enum ConditionType {
+        NEW,           // ← THÊM DÒNG NÀY
         USED
     }
 

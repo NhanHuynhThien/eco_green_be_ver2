@@ -94,7 +94,12 @@ public enum ErrorCode {
     BRAND_NOT_FOUND(4000, "Brand not found with the provided ID", HttpStatus.NOT_FOUND),
     BATT_NOT_FOUND(4001, "Battery Type Not Found", HttpStatus.NOT_FOUND),
     VEHICLE_CATE_NOT_FOUND(4002, "Vehicle Category Not Found", HttpStatus.NOT_FOUND),
-    BRAND_EXISTS(4003, "Brand name already exists", HttpStatus.BAD_REQUEST);
+    BRAND_EXISTS(4003, "Brand name already exists", HttpStatus.BAD_REQUEST),
+
+    // --- OAuth2 / External Errors (Codes 1900 - 1999) ---
+    UNSUPPORTED_OAUTH2_PROVIDER(1900, "Unsupported OAuth2 provider", HttpStatus.BAD_REQUEST),
+    OAUTH2_GOOGLE_PROCESS_FAILED(1901, "Error processing Google login", HttpStatus.BAD_REQUEST),
+    OAUTH2_FACEBOOK_PROCESS_FAILED(1902, "Error processing Facebook login", HttpStatus.BAD_REQUEST);
 
     private final int code;
     private final String message;

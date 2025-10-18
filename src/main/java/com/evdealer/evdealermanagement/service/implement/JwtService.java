@@ -3,6 +3,7 @@ package com.evdealer.evdealermanagement.service.implement;
 import com.evdealer.evdealermanagement.service.contract.IJwtService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.hibernate.usertype.UserType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.time.Instant;
 import java.util.Date;
 
 @Service
@@ -53,6 +55,19 @@ public class JwtService implements IJwtService {
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
+
+
+    public String generateToken(String accountId, String email, boolean phoneVerified) {
+        return Jwts.builder()
+                .setSubject(accountId)
+                .claim("email", email)
+                .claim("phone_verified", phoneVerified)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
+                .signWith(getSignKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
 
 
     @Override

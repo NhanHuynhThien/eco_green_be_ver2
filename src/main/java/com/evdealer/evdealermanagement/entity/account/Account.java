@@ -1,6 +1,7 @@
 package com.evdealer.evdealermanagement.entity.account;
 
 import com.evdealer.evdealermanagement.entity.BaseEntity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -9,6 +10,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "accounts")
@@ -73,9 +75,10 @@ public class Account extends BaseEntity {
     @Column(name = "status", length = 20, nullable = false)
     private Status status = Status.PENDING;
 
-    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
-    private java.util.List<AuthProvider> providers = new java.util.ArrayList<>();
+    @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<AuthProvider> providers;
+
 
     public enum Gender {
         MALE, FEMALE, OTHER

@@ -16,10 +16,16 @@ public class AdminAccountManagementController {
 
     private final AdminService adminService;
 
-    @GetMapping("/manage/account")
+    @GetMapping("/manage/account/member")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<Account>> getAllAccounts() {
-        return ResponseEntity.ok(adminService.getAllAccounts());
+    public ResponseEntity<List<Account>> getMemberAccount() {
+        return ResponseEntity.ok(adminService.getMemberAccounts());
+    }
+
+    @GetMapping("/manage/account/staff")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<Account>> getStaffAccount() {
+        return ResponseEntity.ok(adminService.getStaffAccounts());
     }
 
     @DeleteMapping("/manage/account/{id}")

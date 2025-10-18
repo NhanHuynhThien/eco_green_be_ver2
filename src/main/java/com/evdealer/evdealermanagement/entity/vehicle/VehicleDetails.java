@@ -29,6 +29,10 @@ public class VehicleDetails {
     @JoinColumn(name = "brand_id")
     private VehicleBrands brand;
 
+    @ManyToOne
+    @JoinColumn(name = "catalog_id")
+    private VehicleCatalog vehicleCatalog;
+
     private String model;
     private Short year;
     private String color;

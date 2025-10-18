@@ -29,11 +29,12 @@ public class WebSecurityConfigs {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final AccountDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
+    private final CustomOAuth2SuccessHandler successHandler;
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:4173",
+        config.setAllowedOrigins(List.of("http://localhost:5173","http://localhost:5174","http://localhost:5175", "http://localhost:4173",
                 "api-eco-green-be.huanops.com", "https://d3k8h5w5waqdh2.cloudfront.net"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
@@ -69,6 +70,7 @@ public class WebSecurityConfigs {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // <-- Lỗi 401 được trả về tại đây
                             response.getWriter().write("{\"error\": \"Unauthorized\"}");
                         }))
+                .oauth2Login(oauth -> oauth.successHandler(successHandler))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
