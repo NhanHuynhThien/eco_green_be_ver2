@@ -1,19 +1,21 @@
 package com.evdealer.evdealermanagement.controller.vehicle;
 
-import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsResponse;
-import com.evdealer.evdealermanagement.dto.battery.brand.BatteryTypesResponse;
-
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleCategoriesResponse;
-import com.evdealer.evdealermanagement.dto.vehicle.catalog.VehicleCatalogDTO;
+import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelRequest;
+import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelResponse;
+import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelVersionRequest;
+import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelVersionResponse;
+
+
 import com.evdealer.evdealermanagement.service.implement.GeminiRestService;
 import com.evdealer.evdealermanagement.service.implement.VehicleService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
+
 
 @RestController
 @RequiredArgsConstructor
@@ -44,6 +46,16 @@ public class VehicleController {
 //        VehicleCatalogDTO specs = geminiRestService.getVehicleSpecs(name);
 //        return ResponseEntity.ok(specs);
 //    }
+
+    @PostMapping("/models/all")
+    public List<VehicleModelResponse> getAllModels(@RequestBody VehicleModelRequest request) {
+        return vehicleService.listAllVehicleModelsSorted(request);
+    }
+
+    @PostMapping("/model/versions")
+    public List<VehicleModelVersionResponse> getAllModelVersions(@RequestBody VehicleModelVersionRequest request) {
+        return vehicleService.listAllVehicleModelVersionsSorted(request);
+    }
 
 
 }
