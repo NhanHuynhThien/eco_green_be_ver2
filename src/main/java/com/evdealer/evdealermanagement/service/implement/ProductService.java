@@ -78,7 +78,7 @@ public class ProductService implements IProductService {
             return result;
 
         } catch (Exception e) {
-            log.error("❌ FATAL ERROR in getAllProductsWithStatusActive", e);
+            log.error("FATAL ERROR in getAllProductsWithStatusActive", e);
             throw new RuntimeException("Failed to get all active products: " + e.getMessage(), e);
         }
     }
@@ -314,7 +314,7 @@ public class ProductService implements IProductService {
             return result;
 
         } catch (Exception e) {
-            log.error("❌ FATAL ERROR in getNewProducts", e);
+            log.error("FATAL ERROR in getNewProducts", e);
             throw new RuntimeException("Failed to get new products: " + e.getMessage(), e);
         }
     }
@@ -408,7 +408,7 @@ public class ProductService implements IProductService {
             log.error("Invalid filter parameter: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("❌ FATAL ERROR in filterProducts", e);
+            log.error("FATAL ERROR in filterProducts", e);
             throw new RuntimeException("Failed to filter products: " + e.getMessage(), e);
         }
     }

@@ -45,17 +45,29 @@ public class AdminService {
         }
     }
 
-    public List<Account> getAllAccounts() {
+    public List<Account> getMemberAccounts() {
+        return getAccountsByRole(Account.Role.MEMBER);
+    }
+
+    public List<Account> getStaffAccounts() {
+        return getAccountsByRole(Account.Role.STAFF);
+    }
+
+    private List<Account> getAccountsByRole(Account.Role role) {
         try {
-            List<Account> accountList = accountRepository.findAll()
-                            .stream().sorted(Comparator.comparing(Account::getCreatedAt)).toList();
-            log.debug("Fetching all accounts");
+            List<Account> accountList = accountRepository.findByRole(role)
+                    .stream()
+                    .sorted(Comparator.comparing(Account::getCreatedAt))
+                    .toList();
+
+            log.debug("Fetching all accounts with role: {}", role);
             return accountList;
         } catch (Exception e) {
-            log.error("Error fetching all accounts", e);
+            log.error("Error fetching accounts with role: {}", role, e);
             return List.of();
         }
     }
+
 
     public boolean deleteAccount(String id) {
         try {
