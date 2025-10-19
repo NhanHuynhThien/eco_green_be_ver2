@@ -46,26 +46,14 @@ public class VehiclePostResponse {
     String categoryName;
 
     // Battery information
-    Double builtInBatteryCapacityAh;
-    Double builtInBatteryVoltageV;
-    Boolean removableBattery;
     Short batteryHealthPercent;
 
     // Performance
-    Integer motorPowerW;
-    Short maxSpeedKmh;
     Integer mileageKm;
-    Short rangeKm;
-    Double chargingTimeHours;
 
     // Vehicle info
-    String model;
-    Short year;
-    String color;
-    String origin;
-    Double weightKg;
+    String modelName;
     Byte warrantyMonths;
-    Byte ownersCount;
 
     // Legal / registration
     Boolean hasInsurance;

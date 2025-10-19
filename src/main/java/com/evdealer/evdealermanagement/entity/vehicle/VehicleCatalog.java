@@ -31,6 +31,19 @@ public class VehicleCatalog {
     @JsonProperty("model")
     private String model;
 
+    @OneToOne
+    @MapsId
+    @JoinColumn(name = "version_id")
+    private ModelVersion version;
+
+    @ManyToOne
+    @JoinColumn(name = "category_id", nullable = false)
+    private VehicleCategories category;
+
+    @ManyToOne
+    @JoinColumn(name = "brand_id")
+    private VehicleBrands brand;
+
     @Column(name = "year", nullable = false)
     @JsonProperty("year")
     private Short year;
@@ -50,6 +63,21 @@ public class VehicleCatalog {
     @Column(name = "battery_capacity_kwh")
     @JsonProperty("battery_capacity_kwh")
     private Double batteryCapacityKwh;
+
+    @Column(name = "charging_time_hours")
+    private Double chargingTimeHours;
+
+    @Column(name = "motor_power_w")
+    private Integer motorPowerW;
+
+    @Column(name = "built_in_battery_capacity_ah")
+    private Double builtInBatteryCapacityAh;
+
+    @Column(name = "built_in_battery_voltage_v")
+    private Double builtInBatteryVoltageV;
+
+    @Column(name = "removable_battery")
+    private Boolean removableBattery;
 
     @Column(name = "power_hp")
     @JsonProperty("power_hp")

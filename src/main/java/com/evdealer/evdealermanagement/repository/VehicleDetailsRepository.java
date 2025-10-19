@@ -35,8 +35,8 @@ public interface VehicleDetailsRepository extends JpaRepository<VehicleDetails, 
         List<VehicleDetails> findVehiclesByModel(@Param("model") String model);
 
         // Tìm xe theo năm sản xuất
-        @Query("SELECT vd FROM VehicleDetails vd " +
-                        "WHERE vd.year = :year")
+        @Query("SELECT vc FROM VehicleCatalog vc " +
+                        "WHERE vc.year = :year")
         List<VehicleDetails> findVehiclesByYear(@Param("year") Integer year);
 
         // Tìm xe theo category
@@ -54,18 +54,18 @@ public interface VehicleDetailsRepository extends JpaRepository<VehicleDetails, 
                         @Param("maxPrice") Double maxPrice);
 
         // Tìm xe theo tốc độ tối thiểu
-        @Query("SELECT vd FROM VehicleDetails vd " +
-                        "WHERE vd.maxSpeedKmh >= :minSpeed")
+        @Query("SELECT vc FROM VehicleCatalog vc " +
+                        "WHERE vc.topSpeedKmh >= :minSpeed")
         List<VehicleDetails> findVehiclesByMinSpeed(@Param("minSpeed") Integer minSpeed);
 
         // Tìm xe theo range tối thiểu
-        @Query("SELECT vd FROM VehicleDetails vd " +
-                        "WHERE vd.rangeKm >= :minRange")
+        @Query("SELECT vc FROM VehicleCatalog vc " +
+                        "WHERE vc.rangeKm >= :minRange")
         List<VehicleDetails> findVehiclesByMinRange(@Param("minRange") Integer minRange);
 
         // Tìm xe có pin tháo rời
-        @Query("SELECT vd FROM VehicleDetails vd " +
-                        "WHERE vd.removableBattery = true")
+        @Query("SELECT vc FROM VehicleCatalog vc " +
+                        "WHERE vc.removableBattery = true")
         List<VehicleDetails> findVehiclesWithRemovableBattery();
 
         // Tìm xe theo tình trạng sức khỏe pin
