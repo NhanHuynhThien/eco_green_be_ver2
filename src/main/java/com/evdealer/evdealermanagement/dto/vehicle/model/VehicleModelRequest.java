@@ -12,6 +12,6 @@ import lombok.experimental.FieldDefaults;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class VehicleModelRequest {
 
-    String typeId;
+    String categoryId;
     String brandId;
 }
