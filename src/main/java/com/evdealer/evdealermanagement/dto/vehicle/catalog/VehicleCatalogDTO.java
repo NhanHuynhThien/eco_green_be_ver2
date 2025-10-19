@@ -1,6 +1,12 @@
 package com.evdealer.evdealermanagement.dto.vehicle.catalog;
 
+import com.evdealer.evdealermanagement.entity.vehicle.ModelVersion;
+import com.evdealer.evdealermanagement.entity.vehicle.VehicleBrands;
+import com.evdealer.evdealermanagement.entity.vehicle.VehicleCategories;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.Column;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,6 +24,12 @@ public class VehicleCatalogDTO {
 
     private String model;
 
+    private String version;
+
+    private String category;
+
+    private String brand;
+
     private Integer year;
 
     private String type;
@@ -28,6 +40,16 @@ public class VehicleCatalogDTO {
     private Integer rangeKm;
 
     private Double batteryCapacityKwh;
+
+    private Double chargingTimeHours;
+
+    private Integer motorPowerW;
+
+    private Double builtInBatteryCapacityAh;
+
+    private Double builtInBatteryVoltageV;
+
+    private Boolean removableBattery;
 
     private Double powerHp;
 
