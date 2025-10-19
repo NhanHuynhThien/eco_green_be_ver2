@@ -11,6 +11,7 @@ import com.evdealer.evdealermanagement.dto.post.vehicle.VehiclePostResponse;
 import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.product.ProductImages;
+import com.evdealer.evdealermanagement.entity.vehicle.VehicleCatalog;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
 import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
@@ -48,6 +49,7 @@ public class PostService implements IProductPostService {
     private final Cloudinary cloudinary;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AccountRepository accountRepository;
+    private final VehicleModelVersionRepository vmvRepo;
 
     @Override
     public BatteryPostResponse createBatteryPost(String sellerId, BatteryPostRequest request, List<MultipartFile> images, String imagesMetaJson) {
@@ -126,9 +128,9 @@ public class PostService implements IProductPostService {
                         .brand(veBrandsRepo.findById(request.getBrandId()).orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND)))
                         .batteryHealthPercent(request.getBatteryHealthPercent())
                         .mileageKm(request.getMileageKm())
-                        .model(request.getModel())
-                        .year(request.getYear())
-                .build());
+                        .model(request.getModelId())
+                        .version(vmvRepo.findById(request.getVersionId()).orElseThrow(() -> new AppException(ErrorCode.VERSION_NOT_FOUND)))
+                        .build());
 
         List<ProductImageResponse> imageDtos = uploadAndSaveImages(product, images, imagesMetaJson);
         return VehiclePostResponse.builder()
@@ -147,22 +149,10 @@ public class PostService implements IProductPostService {
                 .brandId(vd.getBrand().getId())
                 .categoryName(vd.getCategory().getName())
                 .brandName(vd.getBrand().getName())
-                .builtInBatteryCapacityAh(vd.getBuiltInBatteryCapacityAh())
-                .builtInBatteryVoltageV(vd.getBuiltInBatteryVoltageV())
-                .removableBattery(vd.getRemovableBattery())
                 .batteryHealthPercent(vd.getBatteryHealthPercent())
-                .motorPowerW(vd.getMotorPowerW())
-                .maxSpeedKmh(vd.getMaxSpeedKmh())
                 .mileageKm(vd.getMileageKm())
-                .rangeKm(vd.getRangeKm())
-                .chargingTimeHours(vd.getChargingTimeHours())
-                .model(vd.getModel())
-                .year(vd.getYear())
-                .color(vd.getColor())
-                .origin(vd.getOrigin())
-                .weightKg(vd.getWeightKg())
+                .modelName(vd.getModel().getName())
                 .warrantyMonths(vd.getWarrantyMonths())
-                .ownersCount(vd.getOwnersCount())
                 .hasInsurance(vd.getHasInsurance())
                 .hasRegistration(vd.getHasRegistration())
                 .images(imageDtos)

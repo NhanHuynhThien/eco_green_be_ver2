@@ -36,6 +36,22 @@ public class ProductMapper {
                     .collect(Collectors.toList());
         }
 
+        String brandName = null;
+        String modelName = null;
+        String version = null;
+
+        if (product.getModelVersion() != null) {
+            version = product.getModelVersion().getName();
+
+            if (product.getModelVersion().getModel() != null) {
+                modelName = product.getModelVersion().getModel().getName();
+
+                if (product.getModelVersion().getModel().getBrand() != null) {
+                    brandName = product.getModelVersion().getModel().getBrand().getName();
+                }
+            }
+        }
+
         return ProductDetail.builder()
                 .id(product.getId())
                 .title(product.getTitle())
@@ -59,6 +75,9 @@ public class ProductMapper {
 
                 // ✅ Product images - Sử dụng biến đã convert
                 .productImagesList(imagesList)
+                .brandName(brandName)
+                .modelName(modelName)
+                .version(version)
                 .build();
     }
 

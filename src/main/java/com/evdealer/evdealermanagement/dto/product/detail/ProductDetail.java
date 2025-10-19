@@ -43,6 +43,10 @@ public class ProductDetail {
     private String district;
     private String ward;
 
+    private String brandName;
+    private String modelName;
+    private String version;
+
     private Boolean isWishlisted;
 
     public static ProductDetail fromEntity(Product product) {
@@ -62,6 +66,22 @@ public class ProductDetail {
                     .collect(Collectors.toList());
         }
 
+        String brandName = null;
+        String modelName = null;
+        String version = null;
+
+        if (product.getModelVersion() != null) {
+            version = product.getModelVersion().getName();
+
+            if (product.getModelVersion().getModel() != null) {
+                modelName = product.getModelVersion().getModel().getName();
+
+                if (product.getModelVersion().getModel().getBrand() != null) {
+                    brandName = product.getModelVersion().getModel().getBrand().getName();
+                }
+            }
+        }
+
         return ProductDetail.builder()
                 .id(product.getId())
                 .title(product.getTitle())
@@ -79,6 +99,9 @@ public class ProductDetail {
                 .district(product.getDistrict())
                 .ward(product.getWard())
                 .productImagesList(imagesList)  // ✅ Dùng biến đã được infer đúng type
+                .modelName(modelName)
+                .version(version)
+                .brandName(brandName)
                 .build();
     }
 }

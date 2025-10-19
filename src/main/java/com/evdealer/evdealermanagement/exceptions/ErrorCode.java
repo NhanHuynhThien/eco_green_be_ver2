@@ -95,6 +95,7 @@ public enum ErrorCode {
     BATT_NOT_FOUND(4001, "Battery Type Not Found", HttpStatus.NOT_FOUND),
     VEHICLE_CATE_NOT_FOUND(4002, "Vehicle Category Not Found", HttpStatus.NOT_FOUND),
     BRAND_EXISTS(4003, "Brand name already exists", HttpStatus.BAD_REQUEST),
+    VERSION_NOT_FOUND(4004, "Version not found", HttpStatus.NOT_FOUND),
 
     // --- OAuth2 / External Errors (Codes 1900 - 1999) ---
     UNSUPPORTED_OAUTH2_PROVIDER(1900, "Unsupported OAuth2 provider", HttpStatus.BAD_REQUEST),
