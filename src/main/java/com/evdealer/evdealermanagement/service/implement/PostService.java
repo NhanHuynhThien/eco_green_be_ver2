@@ -50,6 +50,7 @@ public class PostService implements IProductPostService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AccountRepository accountRepository;
     private final VehicleModelVersionRepository vmvRepo;
+    private final VehicleModelRepository vehicleModelRepository;
 
     @Override
     public BatteryPostResponse createBatteryPost(String sellerId, BatteryPostRequest request, List<MultipartFile> images, String imagesMetaJson) {
@@ -128,7 +129,7 @@ public class PostService implements IProductPostService {
                         .brand(veBrandsRepo.findById(request.getBrandId()).orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND)))
                         .batteryHealthPercent(request.getBatteryHealthPercent())
                         .mileageKm(request.getMileageKm())
-                        .model(request.getModelId())
+                        .model(vehicleModelRepository.findById(request.getModelId()).orElseThrow(() -> new AppException(ErrorCode.MODEL_NOT_FOUND)))
                         .version(vmvRepo.findById(request.getVersionId()).orElseThrow(() -> new AppException(ErrorCode.VERSION_NOT_FOUND)))
                         .build());
 
