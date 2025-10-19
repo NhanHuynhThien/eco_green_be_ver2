@@ -17,17 +17,21 @@ import java.math.BigDecimal;
 @Builder
 public class PostPayment extends BaseEntity {
 
-    @Column(name = "account_id",nullable = false, length = 36)
+    @Column(name = "account_id", nullable = false, length = 36)
     private String accountId;
 
     @Column(name = "product_id", nullable = false, length = 36)
     private String productId;
 
-    @Column(name = "package_id", nullable = false, length = 36)
-    private String packageId;
+    // @Column(name = "package_id", nullable = false, length = 36)
+    // private String packageId;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "package_id", nullable = false, foreignKey = @ForeignKey(name = "fk_payment_package"))
+    private PostPackage postPackage;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method")

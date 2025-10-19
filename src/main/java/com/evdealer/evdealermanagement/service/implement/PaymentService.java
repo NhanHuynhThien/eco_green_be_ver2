@@ -65,7 +65,7 @@ public class PaymentService {
         PostPayment payment = PostPayment.builder()
                 .accountId(product.getSeller().getId())
                 .productId(product.getId())
-                .packageId(pkg.getId())
+                .postPackage(pkg)
                 .amount(totalPayable)
                 .paymentMethod(PostPayment.PaymentMethod.valueOf(request.getPaymentMethod().toUpperCase()))
                 .paymentStatus(PostPayment.PaymentStatus.PENDING)
@@ -76,10 +76,12 @@ public class PaymentService {
         String paymentUrl;
         try {
             if ("VNPAY".equalsIgnoreCase(request.getPaymentMethod())) {
-                VnpayResponse res = vnpayService.createPayment(new VnpayRequest(payment.getId(), totalPayable.toString()));
+                VnpayResponse res = vnpayService
+                        .createPayment(new VnpayRequest(payment.getId(), totalPayable.toString()));
                 paymentUrl = res.getPaymentUrl();
             } else if ("MOMO".equalsIgnoreCase(request.getPaymentMethod())) {
-                MomoResponse res = momoService.createPaymentRequest(new MomoRequest(payment.getId(), totalPayable.toString()));
+                MomoResponse res = momoService
+                        .createPaymentRequest(new MomoRequest(payment.getId(), totalPayable.toString()));
                 paymentUrl = res.getPayUrl();
             } else {
                 throw new IllegalArgumentException("Unsupported payment method: " + request.getPaymentMethod());
@@ -168,7 +170,7 @@ public class PaymentService {
             payment.setPaymentStatus(PostPayment.PaymentStatus.COMPLETED);
             product.setStatus(Product.Status.PENDING_REVIEW);
 
-            PostPackage pkg = postPackageRepository.findById(payment.getPackageId())
+            PostPackage pkg = postPackageRepository.findById(payment.getPostPackage().getId())
                     .orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
 
             int durationDays;
@@ -190,7 +192,7 @@ public class PaymentService {
         productRepository.save(product);
     }
 
-    //Find and show all package
+    // Find and show all package
     public List<PostPackage> getAllPostPackages() {
         return postPackageRepository.findAll();
     }

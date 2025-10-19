@@ -1,5 +1,6 @@
 package com.evdealer.evdealermanagement.repository;
 
+import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.jpa.repository.JpaRepository;

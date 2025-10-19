@@ -6,14 +6,16 @@ import com.cloudinary.utils.ObjectUtils;
 import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleCategoriesResponse;
+import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelRequest;
+import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelResponse;
+import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelVersionRequest;
+import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelVersionResponse;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleBrands;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
 import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import com.evdealer.evdealermanagement.mapper.vehicle.VehicleMapper;
-import com.evdealer.evdealermanagement.repository.VehicleBrandsRepository;
-import com.evdealer.evdealermanagement.repository.VehicleCategoryRepository;
-import com.evdealer.evdealermanagement.repository.VehicleDetailsRepository;
+import com.evdealer.evdealermanagement.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
@@ -37,6 +39,8 @@ public class VehicleService {
     private final VehicleCategoryRepository vehicleCategoryRepository;
     private final VehicleBrandsRepository vehicleBrandsRepository;
     private final Cloudinary cloudinary;
+    private final VehicleModelRepository vmRepository;
+    private final VehicleModelVersionRepository vmvRepository;
 
     /**
      * Lấy danh sách Vehicle Product IDs theo tên sản phẩm
@@ -323,5 +327,23 @@ public class VehicleService {
         if (!(ct.equals("image/jpeg") || ct.equals("image/png"))) {
             throw new AppException(ErrorCode.UNSUPPORTED_IMAGE_TYPE);
         }
+    }
+
+    public List<VehicleModelResponse> listAllVehicleModelsSorted(VehicleModelRequest request) {
+        var all = vmRepository.findAllByBrand_IdAndVehicleType_Id( request.getBrandId(), request.getTypeId());
+        return all.stream().map(m -> VehicleModelResponse.builder()
+                .modelId(m.getId())
+                .modelName(m.getName())
+                .build())
+                .collect(Collectors.toList());
+    }
+
+    public List<VehicleModelVersionResponse> listAllVehicleModelVersionsSorted(VehicleModelVersionRequest request) {
+        var all = vmvRepository.findAllByModel_Id(request.getModelId());
+        return all.stream().map(vmv -> VehicleModelVersionResponse.builder()
+                .modelVersionId(vmv.getId())
+                .modelVersionName(vmv.getName())
+                .build())
+                .collect(Collectors.toList());
     }
 }
