@@ -330,7 +330,7 @@ public class VehicleService {
     }
 
     public List<VehicleModelResponse> listAllVehicleModelsSorted(VehicleModelRequest request) {
-        var all = vmRepository.findAllByBrand_IdAndVehicleType_Id( request.getBrandId(), request.getTypeId());
+        var all = vmRepository.findAllByBrand_IdAndVehicleType_Id( request.getBrandId(), request.getCategoryId());
         return all.stream().map(m -> VehicleModelResponse.builder()
                 .modelId(m.getId())
                 .modelName(m.getName())
