@@ -3,14 +3,17 @@ package com.evdealer.evdealermanagement.service.implement;
 import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyRequest;
 import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
 import com.evdealer.evdealermanagement.entity.account.Account;
+import com.evdealer.evdealermanagement.entity.post.PostPayment;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.mapper.post.PostVerifyMapper;
+import com.evdealer.evdealermanagement.repository.PostPaymentRepository;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +29,8 @@ public class StaffService {
     private ProductRepository productRepository;
     @Autowired
     private UserContextService userContextService;
+    @Autowired
+    private PostPaymentRepository postPaymentRepository;
 
     @Transactional
     public PostVerifyResponse verifyPost(String productId, PostVerifyRequest request) {
@@ -52,7 +57,6 @@ public class StaffService {
             product.setStatus(Product.Status.ACTIVE);
             product.setRejectReason(null);
 
-
         } else if (request.getAction() == PostVerifyRequest.ActionType.REJECT) {
             product.setStatus(Product.Status.REJECTED);
             product.setRejectReason(request.getRejectReason());
@@ -69,9 +73,18 @@ public class StaffService {
     @Transactional
     public List<PostVerifyResponse> getListVerifyPost() {
         List<Product> products = productRepository.findByStatus(Product.Status.PENDING_REVIEW);
-        return products.stream()
-                .map(PostVerifyMapper::mapToPostVerifyResponse)
-                .toList();
+        List<PostVerifyResponse> responses = new ArrayList<>();
+        for (Product product : products) {
+            // Lấy payment gần nhất có trạng thái COMPLETED
+            PostPayment payment = postPaymentRepository
+                    .findTopByProductIdAndPaymentStatusOrderByIdDesc(
+                            product.getId(),
+                            PostPayment.PaymentStatus.COMPLETED)
+                    .orElse(null);
+            PostVerifyResponse response = PostVerifyMapper.mapToPostVerifyResponse(product, payment);
+            responses.add(response);
+        }
+        return responses;
     }
 
 }

@@ -1,6 +1,8 @@
 package com.evdealer.evdealermanagement.service.implement;
 
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
+import com.evdealer.evdealermanagement.dto.product.moderation.ProductPendingResponse;
+import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.mapper.product.ProductMapper;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
@@ -57,8 +59,7 @@ public class ProductService implements IProductService {
                         accountId,
                         products,
                         ProductMapper::toDetailDto,
-                        ProductDetail::setIsWishlisted
-                );
+                        ProductDetail::setIsWishlisted);
                 log.info("Successfully mapped {} products to DTOs", result.size());
             } catch (Exception e) {
                 log.error("Error in wishlistService.attachWishlistFlag, falling back to basic mapping", e);
@@ -71,8 +72,7 @@ public class ProductService implements IProductService {
             // Sort with null-safe comparator
             result.sort(Comparator.comparing(
                     ProductDetail::getCreatedAt,
-                    Comparator.nullsLast(Comparator.naturalOrder())
-            ));
+                    Comparator.nullsLast(Comparator.naturalOrder())));
 
             log.info("=== END getAllProductsWithStatusActive: {} products ===", result.size());
             return result;
@@ -148,8 +148,7 @@ public class ProductService implements IProductService {
                         accountId,
                         products,
                         ProductMapper::toDetailDto,
-                        ProductDetail::setIsWishlisted
-                );
+                        ProductDetail::setIsWishlisted);
             } catch (Exception e) {
                 log.error("Error attaching wishlist flags, using basic mapping", e);
                 result = products.stream()
@@ -199,8 +198,7 @@ public class ProductService implements IProductService {
                         accountId,
                         products,
                         ProductMapper::toDetailDto,
-                        ProductDetail::setIsWishlisted
-                );
+                        ProductDetail::setIsWishlisted);
             } catch (Exception e) {
                 log.error("Error attaching wishlist flags, using basic mapping", e);
                 result = products.stream()
@@ -254,8 +252,7 @@ public class ProductService implements IProductService {
                         accountId,
                         products,
                         ProductMapper::toDetailDto,
-                        ProductDetail::setIsWishlisted
-                );
+                        ProductDetail::setIsWishlisted);
             } catch (Exception e) {
                 log.error("Error attaching wishlist flags, using basic mapping", e);
                 result = products.stream()
@@ -266,8 +263,7 @@ public class ProductService implements IProductService {
             // Sort by createdAt with null-safe comparator
             result.sort(Comparator.comparing(
                     ProductDetail::getCreatedAt,
-                    Comparator.nullsLast(Comparator.naturalOrder())
-            ));
+                    Comparator.nullsLast(Comparator.naturalOrder())));
 
             log.info("Found {} products for brand: {}", result.size(), brand);
             return result;
@@ -301,8 +297,7 @@ public class ProductService implements IProductService {
                         accountId,
                         products,
                         ProductMapper::toDetailDto,
-                        ProductDetail::setIsWishlisted
-                );
+                        ProductDetail::setIsWishlisted);
             } catch (Exception e) {
                 log.error("Error attaching wishlist flags, using basic mapping", e);
                 result = products.stream()
@@ -386,8 +381,7 @@ public class ProductService implements IProductService {
                         accountId,
                         products,
                         ProductMapper::toDetailDto,
-                        ProductDetail::setIsWishlisted
-                );
+                        ProductDetail::setIsWishlisted);
             } catch (Exception e) {
                 log.error("Error attaching wishlist flags, using basic mapping", e);
                 result = products.stream()
@@ -398,8 +392,7 @@ public class ProductService implements IProductService {
             // Sort by createdAt with null-safe comparator
             result.sort(Comparator.comparing(
                     ProductDetail::getCreatedAt,
-                    Comparator.nullsLast(Comparator.naturalOrder())
-            ));
+                    Comparator.nullsLast(Comparator.naturalOrder())));
 
             log.info("=== END filterProducts: {} products found ===", result.size());
             return result;
@@ -432,8 +425,7 @@ public class ProductService implements IProductService {
             // Merge and remove duplicates
             List<String> allProductIds = Stream.concat(
                     vehicleProductIds.stream(),
-                    batteryProductIds.stream()
-            ).distinct().collect(Collectors.toList());
+                    batteryProductIds.stream()).distinct().collect(Collectors.toList());
 
             log.debug("Found {} product IDs for brand '{}' (vehicles: {}, batteries: {})",
                     allProductIds.size(), brand, vehicleProductIds.size(), batteryProductIds.size());
@@ -444,5 +436,41 @@ public class ProductService implements IProductService {
             log.error("Error getting product IDs for brand: {}", brand, e);
             return List.of();
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductPendingResponse> getPendingProducts() {
+        List<Product> products = productRepository.findByStatus(Product.Status.PENDING_REVIEW);
+        List<ProductPendingResponse> result = new ArrayList<>();
+
+        if (products.isEmpty()) {
+            return result;
+        }
+
+        for (Product p : products) {
+            Account seller = p.getSeller();
+            String imageUrl = null;
+
+            if (p.getImages() != null && !p.getImages().isEmpty()) {
+                imageUrl = p.getImages().get(0).getImageUrl();
+            }
+
+            ProductPendingResponse dto = new ProductPendingResponse();
+            dto.setId(p.getId());
+            dto.setTitle(p.getTitle());
+            dto.setType(p.getType() != null ? p.getType().name() : null);
+            dto.setPrice(p.getPrice());
+            dto.setImageUrl(imageUrl);
+
+            if (seller != null) {
+                dto.setSellerId(seller.getId());
+                dto.setSellerName(seller.getFullName());
+                dto.setSellerPhone(seller.getPhone());
+            }
+            dto.setCreatedAt(p.getCreatedAt());
+            result.add(dto);
+        }
+
+        return result;
     }
 }

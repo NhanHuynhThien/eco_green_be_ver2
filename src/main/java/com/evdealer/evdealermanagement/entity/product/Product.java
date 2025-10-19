@@ -2,6 +2,8 @@ package com.evdealer.evdealermanagement.entity.product;
 
 import com.evdealer.evdealermanagement.entity.BaseEntity;
 import com.evdealer.evdealermanagement.entity.account.Account;
+import com.evdealer.evdealermanagement.entity.vehicle.ModelVersion;
+
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -96,12 +98,16 @@ public class Product extends BaseEntity {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ProductImages> images;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "model_version_id")
+    private ModelVersion modelVersion;
+
     public enum ProductType {
         BATTERY, VEHICLE
     }
 
     public enum ConditionType {
-        NEW,           // ← THÊM DÒNG NÀY
+        NEW, // ← THÊM DÒNG NÀY
         USED
     }
 
@@ -115,7 +121,7 @@ public class Product extends BaseEntity {
 
     @PrePersist
     protected void onCreate() {
-        if(createdAt == null) {
+        if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
     }
