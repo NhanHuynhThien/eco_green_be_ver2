@@ -183,7 +183,8 @@ public class PostService implements IProductPostService {
             if(image == null || image.isEmpty()){
                 throw new AppException(ErrorCode.MIN_1_IMAGE);
             }
-            if (image.getSize() > 6L * 1024 * 1024 ) {
+            long maxBytes = 15L * 1024 * 1024;
+            if (image.getSize() >  maxBytes) {
                 throw new AppException(ErrorCode.IMAGE_TOO_LARGE);
             }
             String ct = image.getContentType() == null ? "" : image.getContentType();
