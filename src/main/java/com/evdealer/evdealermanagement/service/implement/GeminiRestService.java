@@ -60,9 +60,6 @@ public class GeminiRestService {
         }
     }
 
-
-    //========== Sugget Price ==========
-
     /**
      * Gợi ý giá cho sản phẩm dựa trên tiêu đề
      *
