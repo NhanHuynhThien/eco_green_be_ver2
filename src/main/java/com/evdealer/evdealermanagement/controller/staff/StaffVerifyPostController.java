@@ -2,6 +2,7 @@ package com.evdealer.evdealermanagement.controller.staff;
 
 import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyRequest;
 import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
+import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.service.implement.StaffService;
 
 import jakarta.validation.Valid;
@@ -35,4 +36,13 @@ public class StaffVerifyPostController {
         List<PostVerifyResponse> pendingPosts = staffService.getListVerifyPost();
         return ResponseEntity.ok(pendingPosts);
     }
+
+    @GetMapping("/pending/review/type")
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    public ResponseEntity<List<PostVerifyResponse>> getPendingPostsByType(
+            @RequestParam(name = "type", required = false) Product.ProductType type) {
+        List<PostVerifyResponse> pendingPosts = staffService.getListVerifyPostByType(type);
+        return ResponseEntity.ok(pendingPosts);
+    }
+
 }

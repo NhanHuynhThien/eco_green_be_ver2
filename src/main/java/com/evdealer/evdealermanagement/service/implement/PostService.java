@@ -53,34 +53,37 @@ public class PostService implements IProductPostService {
     private final VehicleModelRepository vehicleModelRepository;
 
     @Override
-    public BatteryPostResponse createBatteryPost(String sellerId, BatteryPostRequest request, List<MultipartFile> images, String imagesMetaJson) {
+    public BatteryPostResponse createBatteryPost(String sellerId, BatteryPostRequest request,
+            List<MultipartFile> images, String imagesMetaJson) {
         validateImages(images);
 
         Product product = productRepository.save(Product.builder()
-                        .seller(accountRepository.findById(sellerId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND)))
-                        .type(Product.ProductType.BATTERY)
-                        .status(Product.Status.DRAFT)
-                        .conditionType(Product.ConditionType.USED)
-                        .title(request.getTitle())
-                        .description(request.getDescription())
-                        .price(request.getPrice())
-                        .sellerPhone(accountRepository.getPhone(sellerId))
-                        .city(request.getCity())
-                        .district(request.getDistrict())
-                        .ward(request.getWard())
-                        .addressDetail(request.getAddressDetail())
+                .seller(accountRepository.findById(sellerId)
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND)))
+                .type(Product.ProductType.BATTERY)
+                .status(Product.Status.DRAFT)
+                .conditionType(Product.ConditionType.USED)
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .price(request.getPrice())
+                .sellerPhone(accountRepository.getPhone(sellerId))
+                .city(request.getCity())
+                .district(request.getDistrict())
+                .ward(request.getWard())
+                .addressDetail(request.getAddressDetail())
 
                 .build());
 
         BatteryDetails bd = batteryDetailRepository.save(BatteryDetails.builder()
-                        .product(product)
-                        .batteryType(batteryTypesRepository.findById(request.getBatteryTypeId()).orElseThrow(() -> new AppException(ErrorCode.BATT_NOT_FOUND)))
-                        .brand(batteryBrandsRepository.findById(request.getBrandId()).orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND)))
-                        .capacityKwh(request.getCapacityKwh())
-                        .healthPercent(request.getHealthPercent())
-                        .voltageV(request.getVoltageV())
+                .product(product)
+                .batteryType(batteryTypesRepository.findById(request.getBatteryTypeId())
+                        .orElseThrow(() -> new AppException(ErrorCode.BATT_NOT_FOUND)))
+                .brand(batteryBrandsRepository.findById(request.getBrandId())
+                        .orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND)))
+                .capacityKwh(request.getCapacityKwh())
+                .healthPercent(request.getHealthPercent())
+                .voltageV(request.getVoltageV())
                 .build());
-
 
         List<ProductImageResponse> imageDtos = uploadAndSaveImages(product, images, imagesMetaJson);
         return BatteryPostResponse.builder()
@@ -107,9 +110,11 @@ public class PostService implements IProductPostService {
     }
 
     @Override
-    public VehiclePostResponse createVehiclePost(String sellerId, VehiclePostRequest request, List<MultipartFile> images, String imagesMetaJson) {
+    public VehiclePostResponse createVehiclePost(String sellerId, VehiclePostRequest request,
+            List<MultipartFile> images, String imagesMetaJson) {
         Product product = productRepository.save(Product.builder()
-                .seller(accountRepository.findById(sellerId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND)))
+                .seller(accountRepository.findById(sellerId)
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND)))
                 .type(Product.ProductType.VEHICLE)
                 .status(Product.Status.DRAFT)
                 .conditionType(Product.ConditionType.USED)
@@ -118,20 +123,25 @@ public class PostService implements IProductPostService {
                 .price(request.getPrice())
                 .sellerPhone(accountRepository.getPhone(sellerId))
                 .city(request.getCity())
+                .manufactureYear(request.getYear())
                 .district(request.getDistrict())
                 .ward(request.getWard())
                 .addressDetail(request.getAddressDetail())
                 .build());
 
         VehicleDetails vd = vehicleDetailsRepository.save(VehicleDetails.builder()
-                        .product(product)
-                        .category(veCateRepo.findById(request.getCategoryId()).orElseThrow(() -> new AppException(ErrorCode.VEHICLE_CATE_NOT_FOUND)))
-                        .brand(veBrandsRepo.findById(request.getBrandId()).orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND)))
-                        .batteryHealthPercent(request.getBatteryHealthPercent())
-                        .mileageKm(request.getMileageKm())
-                        .model(vehicleModelRepository.findById(request.getModelId()).orElseThrow(() -> new AppException(ErrorCode.MODEL_NOT_FOUND)))
-                        .version(vmvRepo.findById(request.getVersionId()).orElseThrow(() -> new AppException(ErrorCode.VERSION_NOT_FOUND)))
-                        .build());
+                .product(product)
+                .category(veCateRepo.findById(request.getCategoryId())
+                        .orElseThrow(() -> new AppException(ErrorCode.VEHICLE_CATE_NOT_FOUND)))
+                .brand(veBrandsRepo.findById(request.getBrandId())
+                        .orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND)))
+                .batteryHealthPercent(request.getBatteryHealthPercent())
+                .mileageKm(request.getMileageKm())
+                .model(vehicleModelRepository.findById(request.getModelId())
+                        .orElseThrow(() -> new AppException(ErrorCode.MODEL_NOT_FOUND)))
+                .version(vmvRepo.findById(request.getVersionId())
+                        .orElseThrow(() -> new AppException(ErrorCode.VERSION_NOT_FOUND)))
+                .build());
 
         List<ProductImageResponse> imageDtos = uploadAndSaveImages(product, images, imagesMetaJson);
         return VehiclePostResponse.builder()
@@ -161,37 +171,37 @@ public class PostService implements IProductPostService {
 
     }
 
-
-    //Support Method
-    private  void validateImages(List<MultipartFile> images){
-        if(images == null || images.isEmpty()){
+    // Support Method
+    private void validateImages(List<MultipartFile> images) {
+        if (images == null || images.isEmpty()) {
             throw new AppException(ErrorCode.MIN_1_IMAGE);
         }
-        if(images.size() > 10 ){
+        if (images.size() > 10) {
             throw new AppException(ErrorCode.MAX_10_IMAGES);
         }
-        for( MultipartFile image : images){
-            if(image == null || image.isEmpty()){
+        for (MultipartFile image : images) {
+            if (image == null || image.isEmpty()) {
                 throw new AppException(ErrorCode.MIN_1_IMAGE);
             }
             long maxBytes = 15L * 1024 * 1024;
-            if (image.getSize() >  maxBytes) {
+            if (image.getSize() > maxBytes) {
                 throw new AppException(ErrorCode.IMAGE_TOO_LARGE);
             }
             String ct = image.getContentType() == null ? "" : image.getContentType();
-            if(!(ct.equals("image/jpeg") || ct.equals("image/png"))) {
+            if (!(ct.equals("image/jpeg") || ct.equals("image/png"))) {
                 throw new AppException(ErrorCode.UNSUPPORTED_IMAGE_TYPE);
             }
         }
     }
 
     private Map<Integer, ImageMeta> parseMeta(String json) {
-        if(json == null || json.isBlank()) return Map.of();
+        if (json == null || json.isBlank())
+            return Map.of();
         try {
             var list = objectMapper.readValue(json, new TypeReference<List<ImageMeta>>() {
             });
             Map<Integer, ImageMeta> map = new HashMap<>();
-            for(int i = 0; i < list.size(); i++){
+            for (int i = 0; i < list.size(); i++) {
                 map.put(i, list.get(i));
             }
             return map;
@@ -201,30 +211,31 @@ public class PostService implements IProductPostService {
 
     }
 
-    private List<ProductImageResponse> uploadAndSaveImages(Product product, List<MultipartFile> files, String metaJson) {
+    private List<ProductImageResponse> uploadAndSaveImages(Product product, List<MultipartFile> files,
+            String metaJson) {
         Map<Integer, ImageMeta> meta = parseMeta(metaJson);
 
-        //check if meta specifies primary
-        boolean hasExplicitPrimary = meta.values().stream().anyMatch(imageMeta -> imageMeta != null && Boolean.TRUE.equals(imageMeta.getIsPrimary()));
+        // check if meta specifies primary
+        boolean hasExplicitPrimary = meta.values().stream()
+                .anyMatch(imageMeta -> imageMeta != null && Boolean.TRUE.equals(imageMeta.getIsPrimary()));
 
         boolean primarySet = false;
         int i = 0;
         List<ProductImageResponse> dtos = new ArrayList<>();
 
-
         Map<String, Object> res;
         for (MultipartFile file : files) {
-            log.info("img name={}, size={}, ct={}", file.getOriginalFilename(), file.getSize(),  file.getContentType());
+            log.info("img name={}, size={}, ct={}", file.getOriginalFilename(), file.getSize(), file.getContentType());
 
-            try  {
+            try {
 
                 @SuppressWarnings("unchecked")
-                Map<String, Object> uploaded = (Map<String, Object>) cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
-                        "folder", "eco-green/products/" + product.getId(),
-                        "resource_type" , "image",
-                        "overwrite", true,
-                        "unique_filename", true
-                ));
+                Map<String, Object> uploaded = (Map<String, Object>) cloudinary.uploader().upload(file.getBytes(),
+                        ObjectUtils.asMap(
+                                "folder", "eco-green/products/" + product.getId(),
+                                "resource_type", "image",
+                                "overwrite", true,
+                                "unique_filename", true));
                 res = uploaded;
             } catch (Exception e) {
                 log.error("Cloudinary upload error: {}", e.getMessage(), e);
@@ -233,8 +244,8 @@ public class PostService implements IProductPostService {
 
             var m = meta.get(i);
             boolean isPrimary = false;
-            if(m != null && Boolean.TRUE.equals(m.getIsPrimary())) {
-                if(!primarySet){
+            if (m != null && Boolean.TRUE.equals(m.getIsPrimary())) {
+                if (!primarySet) {
                     isPrimary = true;
                     primarySet = true;
                 } else {
@@ -251,7 +262,7 @@ public class PostService implements IProductPostService {
                     .publicId((String) res.get("public_id"))
                     .width((Integer) res.get("width"))
                     .height((Integer) res.get("height"))
-                    .bytes( (Integer) res.get("bytes"))
+                    .bytes((Integer) res.get("bytes"))
                     .format((String) res.get("format"))
                     .position(m != null && m.getPosition() != null ? m.getPosition() : i)
                     .isPrimary(isPrimary)

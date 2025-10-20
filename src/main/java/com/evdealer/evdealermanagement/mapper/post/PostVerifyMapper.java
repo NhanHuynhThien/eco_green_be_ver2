@@ -51,10 +51,23 @@ public class PostVerifyMapper {
             return null;
         }
 
+        String versionName = null;
+        String modelName = null;
+        if (product.getModelVersion() != null) {
+            versionName = product.getModelVersion().getName();
+            if (product.getModelVersion().getModel() != null) {
+                modelName = product.getModelVersion().getModel().getName();
+            }
+        }
+
         return PostVerifyResponse.builder()
                 .id(product.getId() != null ? product.getId().toString() : null)
+                .title(product.getTitle())
                 .status(product.getStatus())
+                .productType(product.getType())
                 .rejectReason(product.getRejectReason())
+                .modelName(modelName)
+                .versionName(versionName)
                 .updateAt(product.getUpdatedAt())
                 .build();
     }

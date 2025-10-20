@@ -102,6 +102,9 @@ public class Product extends BaseEntity {
     @JoinColumn(name = "model_version_id")
     private ModelVersion modelVersion;
 
+    @Column(name = "manufacture_year")
+    private Short manufactureYear;
+
     public enum ProductType {
         BATTERY, VEHICLE
     }
