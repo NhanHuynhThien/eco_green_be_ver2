@@ -17,7 +17,8 @@ import org.hibernate.annotations.GenericGenerator;
                 @Index(name = "idx_model_vehicle_type_id", columnList = "vehicle_type_id")
         }
 )
-@Getter @Setter
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

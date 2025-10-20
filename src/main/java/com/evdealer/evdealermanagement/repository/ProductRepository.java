@@ -25,4 +25,8 @@ public interface ProductRepository extends JpaRepository<Product, String> {
     Optional<Product> findById(@NotNull String productId);
 
     List<Product> findByStatus(Product.Status status);
+
+    @Query("SELECT p FROM Product p WHERE p.seller.id = :sellerId AND p.status = :status ORDER BY p.createdAt DESC")
+    List<Product> findBySellerAndStatus(@Param("sellerId") String sellerId, @Param("status") Product.Status status);
+
 }
