@@ -52,4 +52,11 @@ public class ProductManagementController {
         }
     }
 
+    @GetMapping("/status")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_STAFF')")
+    public ResponseEntity<List<String>> getAllStatuses() {
+        List<String> statuses = productService.getAllStatuses();
+        return ResponseEntity.ok(statuses);
+    }
+
 }

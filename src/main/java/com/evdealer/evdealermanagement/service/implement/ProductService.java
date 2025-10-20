@@ -473,4 +473,12 @@ public class ProductService implements IProductService {
 
         return result;
     }
+
+    public List<String> getAllStatuses() {
+        List<String> statuses = new ArrayList<>();
+        for (Product.Status status : Product.Status.values()) {
+            statuses.add(status.name());
+        }
+        return statuses;
+    }
 }
