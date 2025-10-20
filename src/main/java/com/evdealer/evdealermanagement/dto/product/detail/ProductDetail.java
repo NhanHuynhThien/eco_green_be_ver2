@@ -54,7 +54,6 @@ public class ProductDetail {
 
         Hibernate.initialize(product.getImages());
 
-        // ✅ FIX: Tách logic ra khỏi builder để tránh type inference issue
         List<ProductImageDto> imagesList = Collections.emptyList();
         if (product.getImages() != null && !product.getImages().isEmpty()) {
             imagesList = product.getImages().stream()

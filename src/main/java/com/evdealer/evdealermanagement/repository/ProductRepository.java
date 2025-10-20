@@ -27,4 +27,8 @@ public interface ProductRepository extends JpaRepository<Product, String> {
     List<Product> findByStatus(Product.Status status);
 
     List<Product> findByStatusAndType(Product.Status status, Product.ProductType type);
+
+    @Query("SELECT p FROM Product p WHERE p.seller.id = :sellerId AND p.status = :status ORDER BY p.createdAt DESC")
+    List<Product> findBySellerAndStatus(@Param("sellerId") String sellerId, @Param("status") Product.Status status);
+
 }
