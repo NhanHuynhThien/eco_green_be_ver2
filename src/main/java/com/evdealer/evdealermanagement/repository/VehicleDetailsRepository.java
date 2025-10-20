@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface VehicleDetailsRepository extends JpaRepository<VehicleDetails, String> {
@@ -78,4 +79,9 @@ public interface VehicleDetailsRepository extends JpaRepository<VehicleDetails, 
                         "JOIN vd.brand vb " +
                         "WHERE vb.name IN :brandNames")
         List<VehicleDetails> findByBrandNames(@Param("brandNames") List<String> brandNames);
+
+        // Tìm VehicleDetails theo Product ID
+        @Query("SELECT vd FROM VehicleDetails vd " +
+                        "WHERE vd.product.id = :productId")
+        Optional<VehicleDetails> findByProductId(@Param("productId") String productId);
 }
