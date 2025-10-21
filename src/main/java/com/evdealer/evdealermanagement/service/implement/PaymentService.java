@@ -6,11 +6,15 @@ import com.evdealer.evdealermanagement.dto.payment.VnpayRequest;
 import com.evdealer.evdealermanagement.dto.payment.VnpayResponse;
 import com.evdealer.evdealermanagement.dto.post.packages.PackageRequest;
 import com.evdealer.evdealermanagement.dto.post.packages.PackageResponse;
+import com.evdealer.evdealermanagement.dto.post.packages.PostPackageOptionResponse;
+import com.evdealer.evdealermanagement.dto.post.packages.PostPackageResponse;
 import com.evdealer.evdealermanagement.entity.post.PostPackage;
+import com.evdealer.evdealermanagement.entity.post.PostPackageOption;
 import com.evdealer.evdealermanagement.entity.post.PostPayment;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
+import com.evdealer.evdealermanagement.repository.PostPackageOptionRepository;
 import com.evdealer.evdealermanagement.repository.PostPackageRepository;
 import com.evdealer.evdealermanagement.repository.PostPaymentRepository;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
@@ -33,11 +37,14 @@ public class PaymentService {
     private final PostPaymentRepository postPaymentRepository;
     private final VnpayService vnpayService;
     private final MomoService momoService;
+    private final PostPackageRepository packageRepo;
+    private final PostPackageOptionRepository optionRepo;
+
 
     // --- Constants ---
     private static final BigDecimal BASE_DISPLAY_PRICE_PER_30_DAYS = new BigDecimal("10000");
     private static final BigDecimal PRIORITY_FEATURE_PRICE_PER_30_DAYS = new BigDecimal("20000");
-    private static final BigDecimal SPECIAL_FEATURE_PRICE_PER_30_DAYS = new BigDecimal("35000");
+    private static final BigDecimal SPECIAL_FEATURE_PRICE_PER_30_DAYS = new BigDecimal("30000");
     private static final BigDecimal DAYS_IN_MONTH = new BigDecimal("30");
 
     /**
@@ -193,7 +200,46 @@ public class PaymentService {
     }
 
     // Find and show all package
-    public List<PostPackage> getAllPostPackages() {
-        return postPackageRepository.findAll();
+    public List<PostPackageResponse> getAllPackages() {
+
+        var packages = packageRepo.findByStatusOrderByPriorityLevelDesc(PostPackage.Status.ACTIVE);
+
+        return packages.stream().map(p -> {
+          List<PostPackageOptionResponse> optionResponses =   optionRepo.findByPostPackage_IdAndStatusOrderBySortOrderAsc(p.getId(), PostPackageOption.Status.ACTIVE).stream()
+                  .map(o -> PostPackageOptionResponse.builder()
+                          .id(o.getId())
+                          .name(o.getName())
+                          .durationDays(o.getDurationDays())
+                          .price(o.getPrice())
+                          .listPrice(o.getListPrice())
+                          .isDefault(o.getIsDefault())
+                          .sortOrder(o.getSortOrder())
+                          .build())
+                  .toList();
+
+          String note = "STANDARD".equals(p.getCode()) ? "Miễn phí lần đăng đầu tiên" : null;
+
+          return PostPackageResponse.builder()
+                  .postPackageId(p.getId())
+                  .postPackageCode(p.getCode())
+                  .postPackageName(p.getName())
+                  .postPackageDesc(p.getDescription())
+                  .billingMode(p.getBillingMode())
+                  .category(p.getCategory())
+                  .baseDurationDays(p.getBaseDurationDays())
+
+                  .price(p.getPrice())
+                  .dailyPrice(p.getDailyPrice())
+                  .includesPostFee(p.getIncludesPostFee())
+                  .priorityLevel(p.getPriorityLevel())
+                  .badgeLabel(p.getBadgeLabel())
+                  .showInLatest(p.getShowInLatest())
+                  .showTopSearch(p.getShowTopSearch())
+                  .listPrice(p.getListPrice())
+                  .isDefault(p.getIsDefault())
+                  .note(note)
+                  .options(optionResponses)
+                  .build();
+        }).toList();
     }
 }

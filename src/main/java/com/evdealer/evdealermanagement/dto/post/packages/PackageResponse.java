@@ -1,23 +1,23 @@
 package com.evdealer.evdealermanagement.dto.post.packages;
 
+import com.evdealer.evdealermanagement.entity.post.PostPackage;
 import com.evdealer.evdealermanagement.entity.product.Product;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class PackageResponse {
 
-    private String productId;
-    private Product.Status status;
-    private BigDecimal totalPayable;
-    private String currency;
-    private String paymentUrl;
-
+    String productId;
+    Product.Status status;
+    BigDecimal totalPayable;
+    String currency;
+    String paymentUrl;
 }
