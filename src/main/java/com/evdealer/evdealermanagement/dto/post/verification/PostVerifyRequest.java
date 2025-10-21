@@ -18,5 +18,4 @@ public class PostVerifyRequest {
     public enum ActionType {
         ACTIVE, REJECT
     }
-
 }

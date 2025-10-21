@@ -6,12 +6,14 @@ import com.cloudinary.utils.ObjectUtils;
 import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleCategoriesResponse;
+import com.evdealer.evdealermanagement.dto.vehicle.catalog.VehicleCatalogResponse;
+import com.evdealer.evdealermanagement.dto.vehicle.detail.VehicleDetailResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelRequest;
 import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelVersionRequest;
 import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelVersionResponse;
-import com.evdealer.evdealermanagement.entity.vehicle.VehicleBrands;
-import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
+import com.evdealer.evdealermanagement.entity.product.Product;
+import com.evdealer.evdealermanagement.entity.vehicle.*;
 import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import com.evdealer.evdealermanagement.mapper.vehicle.VehicleMapper;
@@ -41,24 +43,7 @@ public class VehicleService {
     private final Cloudinary cloudinary;
     private final VehicleModelRepository vmRepository;
     private final VehicleModelVersionRepository vmvRepository;
-
-    /**
-     * Lấy danh sách Vehicle Product IDs theo tên sản phẩm
-     */
-    public List<Long> getVehicleIdByName(String name) {
-        if (name == null || name.trim().isEmpty()) {
-            log.warn("Vehicle name is null or empty");
-            return List.of();
-        }
-
-        try {
-            log.debug("Getting vehicle IDs by name: {}", name);
-            return vehicleDetailsRepository.findVehicleProductIdsByName(name);
-        } catch (Exception e) {
-            log.error("Error getting vehicle IDs by name: {}", name, e);
-            return List.of();
-        }
-    }
+    private final ProductRepository productRepository;
 
     /**
      * Lấy danh sách Vehicle Product IDs theo tên hãng
@@ -74,158 +59,6 @@ public class VehicleService {
             return vehicleDetailsRepository.findVehicleProductIdsByBrand(brand);
         } catch (Exception e) {
             log.error("Error getting vehicle IDs by brand: {}", brand, e);
-            return List.of();
-        }
-    }
-
-    /**
-     * Lấy VehicleDetails theo tên sản phẩm
-     */
-    public List<VehicleDetails> getVehicleDetailsByProductName(String name) {
-        if (name == null || name.trim().isEmpty()) {
-            log.warn("Product name is null or empty");
-            return List.of();
-        }
-
-        try {
-            log.debug("Getting vehicle details by product name: {}", name);
-            return vehicleDetailsRepository.findVehicleDetailsByProductName(name);
-        } catch (Exception e) {
-            log.error("Error getting vehicle details by product name: {}", name, e);
-            return List.of();
-        }
-    }
-
-    /**
-     * Lấy VehicleDetails theo ID
-     */
-    public Optional<VehicleDetails> getVehicleDetailsById(Long id) {
-        if (id == null || id <= 0) {
-            log.warn("Invalid vehicle ID: {}", id);
-            return Optional.empty();
-        }
-
-        try {
-            log.debug("Getting vehicle details by ID: {}", id);
-            return vehicleDetailsRepository.findById(String.valueOf(id));
-        } catch (Exception e) {
-            log.error("Error getting vehicle details by ID: {}", id, e);
-            return Optional.empty();
-        }
-    }
-
-    /**
-     * Lấy tất cả VehicleDetails
-     */
-    public List<VehicleDetails> getAllVehicleDetails() {
-        try {
-            log.debug("Getting all vehicle details");
-            return vehicleDetailsRepository.findAll();
-        } catch (Exception e) {
-            log.error("Error getting all vehicle details", e);
-            return List.of();
-        }
-    }
-
-    /**
-     * Lấy xe theo model
-     */
-    public List<VehicleDetails> getVehiclesByModel(String model) {
-        if (model == null || model.trim().isEmpty()) {
-            log.warn("Vehicle model is null or empty");
-            return List.of();
-        }
-
-        try {
-            log.debug("Getting vehicles by model: {}", model);
-            return vehicleDetailsRepository.findVehiclesByModel(model);
-        } catch (Exception e) {
-            log.error("Error getting vehicles by model: {}", model, e);
-            return List.of();
-        }
-    }
-
-    /**
-     * Lấy xe theo năm sản xuất
-     */
-    public List<VehicleDetails> getVehiclesByYear(Integer year) {
-        if (year == null || year <= 0) {
-            log.warn("Invalid year: {}", year);
-            return List.of();
-        }
-
-        try {
-            log.debug("Getting vehicles by year: {}", year);
-            return vehicleDetailsRepository.findVehiclesByYear(year);
-        } catch (Exception e) {
-            log.error("Error getting vehicles by year: {}", year, e);
-            return List.of();
-        }
-    }
-
-    /**
-     * Lấy xe theo category
-     */
-    public List<VehicleDetails> getVehiclesByCategory(String categoryName) {
-        if (categoryName == null || categoryName.trim().isEmpty()) {
-            log.warn("Category name is null or empty");
-            return List.of();
-        }
-
-        try {
-            log.debug("Getting vehicles by category: {}", categoryName);
-            return vehicleDetailsRepository.findVehiclesByCategory(categoryName);
-        } catch (Exception e) {
-            log.error("Error getting vehicles by category: {}", categoryName, e);
-            return List.of();
-        }
-    }
-
-    /**
-     * Lấy xe theo price range
-     */
-    public List<VehicleDetails> getVehiclesByPriceRange(Double minPrice, Double maxPrice) {
-        if (minPrice == null || maxPrice == null || minPrice < 0 || maxPrice < minPrice) {
-            log.warn("Invalid price range: {} - {}", minPrice, maxPrice);
-            return List.of();
-        }
-
-        try {
-            log.debug("Getting vehicles by price range: {} - {}", minPrice, maxPrice);
-            return vehicleDetailsRepository.findVehiclesByPriceRange(minPrice, maxPrice);
-        } catch (Exception e) {
-            log.error("Error getting vehicles by price range: {} - {}", minPrice, maxPrice, e);
-            return List.of();
-        }
-    }
-
-    /**
-     * Lấy xe có pin tháo rời
-     */
-    public List<VehicleDetails> getVehiclesWithRemovableBattery() {
-        try {
-            log.debug("Getting vehicles with removable battery");
-            return vehicleDetailsRepository.findVehiclesWithRemovableBattery();
-        } catch (Exception e) {
-            log.error("Error getting vehicles with removable battery", e);
-            return List.of();
-        }
-    }
-
-    /**
-     * Lấy xe theo tình trạng sức khỏe pin tối thiểu
-     */
-    public List<VehicleDetails> getVehiclesByBatteryHealth(Integer minHealth) {
-        if (minHealth == null || minHealth < 0 || minHealth > 100) {
-            log.warn("Invalid battery health: {}", minHealth);
-            return List.of();
-        }
-
-        try {
-            log.debug("Getting vehicles by battery health >= {}", minHealth);
-            return vehicleDetailsRepository.findVehiclesByBatteryHealth(minHealth);
-        } catch (Exception e) {
-            log.error("Error getting vehicles by battery health: {}", minHealth, e);
             return List.of();
         }
     }
@@ -346,4 +179,64 @@ public class VehicleService {
                 .build())
                 .collect(Collectors.toList());
     }
+
+    @Transactional
+    public VehicleDetailResponse getVehicleDetailsInfo(String productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+
+        if (product.getType() == null || !product.getType().name().equals("VEHICLE")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product is not a vehicle type");
+        }
+
+        VehicleDetails details = vehicleDetailsRepository.findByProductId(productId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Vehicle details not found"));
+
+        Model model = details.getModel();
+        VehicleBrands brand = details.getBrand();
+        ModelVersion version = details.getVersion();
+        VehicleCategories category = details.getCategory();
+        VehicleCatalog catalog = details.getVehicleCatalog();
+
+        VehicleCatalogResponse catalogResponse = null;
+        if (catalog != null) {
+            catalogResponse = VehicleCatalogResponse.builder()
+                    .id(catalog.getId())
+                    .year(Integer.valueOf(catalog.getYear()))
+                    .type(catalog.getType())
+                    .color(catalog.getColor())
+                    .rangeKm(Double.valueOf(catalog.getRangeKm()))
+                    .batteryCapacityKwh(catalog.getBatteryCapacityKwh())
+                    .powerHp(catalog.getPowerHp())
+                    .topSpeedKmh(catalog.getTopSpeedKmh())
+                    .acceleration0100s(catalog.getAcceleration0100s())
+                    .weightKg(catalog.getWeightKg())
+                    .grossWeightKg(catalog.getGrossWeightKg())
+                    .lengthMm(catalog.getLengthMm())
+                    .wheelbaseMm(catalog.getWheelbaseMm())
+                    .features(catalog.getFeatures())
+                    .modelName(catalog.getModel() != null ? catalog.getModel().getName() : null)
+                    .versionName(catalog.getVersion() != null ? catalog.getVersion().getName() : null)
+                    .build();
+        }
+
+        return VehicleDetailResponse.builder()
+                .productTitle(product.getTitle())
+                .productPrice(product.getPrice())
+                .productStatus(product.getStatus().name())
+                .brandName(brand != null ? brand.getName() : null)
+                .brandLogoUrl(brand != null ? brand.getLogoUrl() : null)
+                .modelName(model != null ? model.getName() : null)
+                .versionName(version != null ? version.getName() : null)
+                .categoryName(category != null ? category.getName() : null)
+                .mileageKm(details.getMileageKm())
+                .batteryHealthPercent(details.getBatteryHealthPercent())
+                .hasRegistration(details.getHasRegistration())
+                .hasInsurance(details.getHasInsurance())
+                .warrantyMonths(details.getWarrantyMonths())
+                .vehicleCatalog(catalogResponse)
+                .build();
+    }
+
+
 }

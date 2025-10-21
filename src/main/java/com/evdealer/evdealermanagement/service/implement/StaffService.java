@@ -97,6 +97,7 @@ public class StaffService {
 
     // Generate và Lưu thông số kỹ thuật
     private void generateAndSaveVehicleSpecs(Product product) {
+
         ModelVersion version = product.getModelVersion();
         VehicleDetails details = vehicleDetailsRepository.findByProductId(product.getId()).orElse(null);
 
@@ -111,12 +112,19 @@ public class StaffService {
         }
 
         Model model = version.getModel();
+
+        // Validation: Đảm bảo model trong details khớp với version.model
+        if (details.getModel() == null || !details.getModel().getId().equals(model.getId())) {
+            log.warn("VehicleDetails model mismatch for Product {}. Updating model reference.", product.getId());
+            details.setModel(model);
+        }
+
         VehicleBrands brand = model.getBrand();
         VehicleCategories type = model.getVehicleType();
 
         String productName = product.getTitle();
         String modelName = model.getName();
-        String brandName = brand.getName();
+        String brandName = brand != null ? brand.getName() : null;
         String versionName = version.getName();
         Short manufactureYear = product.getManufactureYear();
 
@@ -125,46 +133,61 @@ public class StaffService {
             return;
         }
 
+        if (brandName == null) {
+            log.error("Model ID {} is missing Brand. Cannot generate specs.", model.getId());
+            return;
+        }
+
         if (manufactureYear == null) {
             log.warn("Product {} missing manufacture year. Defaulting to current year.", product.getId());
             manufactureYear = (short) LocalDateTime.now().getYear();
         }
 
-        Optional<VehicleCatalog> existingCatalog = vehicleCatalogRepository.findByVersionId(version.getId());
+        // Kiểm tra VehicleCatalog đã có thông số cho ModelVersion này chưa
+        Optional<VehicleCatalog> existingCatalog = vehicleCatalogRepository.findByVersion_Id(version.getId());
 
         if (existingCatalog.isEmpty()) {
-            log.info("Vehicle spec not found for ModelVersion {}. Generating new specs using Gemini...", version.getId());
+            log.info("Vehicle spec not found for ModelVersion {}. Generating new specs using Gemini...",
+                    version.getId());
 
             try {
+                // Gọi Gemini để generate specs DTO
                 VehicleCatalogDTO specsDto = geminiRestService.getVehicleSpecs(
                         productName, modelName, brandName, versionName, manufactureYear);
 
+                // Ánh xạ DTO sang Entity và lưu vào DB
                 VehicleCatalog newCatalog = VehicleCatalogMapper.mapFromDto(specsDto);
+
+                // Gán các foreign key & trường bắt buộc
                 newCatalog.setVersion(version);
                 newCatalog.setCategory(type);
                 newCatalog.setBrand(brand);
-                newCatalog.setModel(modelName);
+                newCatalog.setModel(model);
                 newCatalog.setYear(manufactureYear);
 
                 vehicleCatalogRepository.save(newCatalog);
+                log.info("Successfully generated and saved new VehicleCatalog for ModelVersion {}", version.getId());
 
-                // ✅ QUAN TRỌNG: Liên kết catalog vào VehicleDetails
-                details.setVehicleCatalog(newCatalog); // hoặc details.setCatalogId(newCatalog.getId())
+                // Liên kết catalog vào VehicleDetails
+                details.setVehicleCatalog(newCatalog);
                 vehicleDetailsRepository.save(details);
-
-                log.info("Successfully generated and linked VehicleCatalog for Product {}", product.getId());
+                log.info("Successfully linked new VehicleCatalog to Product {}", product.getId());
 
             } catch (Exception e) {
                 log.error("Failed to generate or save vehicle specs for Product ID {}: {}",
                         product.getId(), e.getMessage(), e);
             }
         } else {
-            // ✅ Nếu catalog đã tồn tại, vẫn cần link nó vào VehicleDetails
+            // Nếu catalog đã tồn tại, vẫn cần link nó vào VehicleDetails nếu chưa link
             VehicleCatalog catalog = existingCatalog.get();
-            if (details.getVehicleCatalog() == null || !details.getVehicleCatalog().getId().equals(catalog.getId())) {
+
+            if (details.getVehicleCatalog() == null ||
+                    !details.getVehicleCatalog().getId().equals(catalog.getId())) {
+
                 details.setVehicleCatalog(catalog);
                 vehicleDetailsRepository.save(details);
-                log.info("Linked existing VehicleCatalog to Product {}", product.getId());
+                log.info("Linked existing VehicleCatalog (ID: {}) to Product {}",
+                        catalog.getId(), product.getId());
             } else {
                 log.info("VehicleCatalog already linked to Product {}", product.getId());
             }

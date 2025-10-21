@@ -2,7 +2,9 @@ package com.evdealer.evdealermanagement.service.implement;
 
 import com.evdealer.evdealermanagement.dto.price.PriceSuggestion;
 import com.evdealer.evdealermanagement.dto.vehicle.catalog.VehicleCatalogDTO;
+import com.evdealer.evdealermanagement.entity.vehicle.Model;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleCatalog;
+import com.evdealer.evdealermanagement.repository.VehicleModelRepository;
 import com.evdealer.evdealermanagement.utils.PriceSerializer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -11,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.cdimascio.dotenv.Dotenv;
 import io.jsonwebtoken.lang.Maps;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
@@ -26,6 +29,7 @@ import java.util.regex.Pattern;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class GeminiRestService {
 
     private final Dotenv dotenv;
@@ -38,9 +42,7 @@ public class GeminiRestService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public GeminiRestService(Dotenv dotenv) {
-        this.dotenv = dotenv;
-    }
+    private final VehicleModelRepository vehicleModelRepository;
 
     @PostConstruct
     public void init() {
@@ -429,30 +431,34 @@ public class GeminiRestService {
             Short year) {
         try {
             String json = suggestSpecs(productName, modelName, brand, version, year);
-
             // Làm sạch dữ liệu Gemini trả về
             if (json.startsWith("```")) {
                 json = json.replaceAll("```json", "")
                         .replaceAll("```", "")
                         .trim();
             }
+            Model model = vehicleModelRepository.findByName(productName);
+            VehicleCatalogDTO dto = objectMapper.readValue(json, VehicleCatalogDTO.class);
+            dto.setModel(model);
 
             log.info("Cleaned JSON before parsing:\n{}", json);
 
-            return objectMapper.readValue(json, VehicleCatalogDTO.class);
+            return dto;
 
         } catch (JsonProcessingException e) {
             log.error("Failed to parse specs JSON for '{}': {}", productName, e.getMessage());
+            Model model = vehicleModelRepository.findByName(productName);
             return VehicleCatalogDTO.builder()
-                    .model(productName)
-                    .type("Không xác định")
+                    .model(model)
+                    .type("Cannot define")
                     .features(List.of("Chưa có dữ liệu"))
                     .build();
         } catch (Exception e) {
             log.error("Unexpected error while generating specs: {}", e.getMessage(), e);
+            Model model = vehicleModelRepository.findByName(productName);
             return VehicleCatalogDTO.builder()
-                    .model(productName)
-                    .type("Không xác định")
+                    .model(model)
+                    .type("Cannot define")
                     .features(List.of("Chưa có dữ liệu"))
                     .build();
         }

@@ -1,5 +1,6 @@
 package com.evdealer.evdealermanagement.entity.vehicle;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -19,6 +20,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class VehicleCatalog {
 
     @Id
@@ -27,13 +29,14 @@ public class VehicleCatalog {
     @Column(name = "id", columnDefinition = "CHAR(36)")
     private String id;
 
-    @Column(name = "model", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "model_id", nullable = false)
     @JsonProperty("model")
-    private String model;
+    private Model model;
 
-    @OneToOne
-    @MapsId
-    @JoinColumn(name = "version_id")
+    @ManyToOne
+    @JoinColumn(name = "version_id", nullable = false)
+    @JsonProperty("version")
     private ModelVersion version;
 
     @ManyToOne

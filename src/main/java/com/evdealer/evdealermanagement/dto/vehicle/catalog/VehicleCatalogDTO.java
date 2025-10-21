@@ -1,5 +1,6 @@
 package com.evdealer.evdealermanagement.dto.vehicle.catalog;
 
+import com.evdealer.evdealermanagement.entity.vehicle.Model;
 import com.evdealer.evdealermanagement.entity.vehicle.ModelVersion;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleBrands;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleCategories;
@@ -23,7 +24,7 @@ public class VehicleCatalogDTO {
 
     private String id;
 
-    private String model;
+    private Model model;
 
     private String version;
 

@@ -8,4 +8,7 @@ import com.evdealer.evdealermanagement.entity.vehicle.VehicleCatalog;
 
 public interface VehicleCatalogRepository extends JpaRepository<VehicleCatalog, String> {
     Optional<VehicleCatalog> findByVersionId(String versionId);
+
+    Optional<VehicleCatalog> findByVersion_Id(String versionId);
+
 }

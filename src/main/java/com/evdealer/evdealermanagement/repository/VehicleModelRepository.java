@@ -8,4 +8,6 @@ import java.util.List;
 public interface VehicleModelRepository extends JpaRepository<Model, String> {
 
     List<Model> findAllByBrand_IdAndVehicleType_Id(String brandId, String vehicleTypeId);
+
+    Model findByName(String productName);
 }

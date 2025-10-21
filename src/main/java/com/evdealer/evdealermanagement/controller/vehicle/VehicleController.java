@@ -2,6 +2,7 @@ package com.evdealer.evdealermanagement.controller.vehicle;
 
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleCategoriesResponse;
+import com.evdealer.evdealermanagement.dto.vehicle.detail.VehicleDetailResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelRequest;
 import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelVersionRequest;
@@ -40,13 +41,6 @@ public class VehicleController {
         return vehicleService.listAllVehicleNameAndLogo();
     }
 
-//    @PostMapping("/specs")
-//    public ResponseEntity<VehicleCatalogDTO> getVehicleSpecs(@RequestBody Map<String, String> body) {
-//        String name = body.get("name");
-//        VehicleCatalogDTO specs = geminiRestService.getVehicleSpecs(name);
-//        return ResponseEntity.ok(specs);
-//    }
-
     @PostMapping("/models/all")
     public List<VehicleModelResponse> getAllModels(@RequestBody VehicleModelRequest request) {
         return vehicleService.listAllVehicleModelsSorted(request);
@@ -57,5 +51,8 @@ public class VehicleController {
         return vehicleService.listAllVehicleModelVersionsSorted(request);
     }
 
-
+    @GetMapping("/catalog/{id}")
+    public VehicleDetailResponse getVehicleDetailResponse(@PathVariable String id) {
+        return vehicleService.getVehicleDetailsInfo(id);
+    }
 }
