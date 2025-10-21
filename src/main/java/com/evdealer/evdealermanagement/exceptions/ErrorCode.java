@@ -104,6 +104,9 @@ public enum ErrorCode {
     BRAND_EXISTS(4003, "Brand name already exists", HttpStatus.BAD_REQUEST),
     VERSION_NOT_FOUND(4004, "Version not found", HttpStatus.NOT_FOUND),
     MODEL_NOT_FOUND(4005, "Model name not found", HttpStatus.NOT_FOUND),
+    TYPE_NOT_FOUND(4006, "Type not found", HttpStatus.NOT_FOUND),
+    VEHICLE_NOT_FOUND(4007, "Vehicle not found", HttpStatus.NOT_FOUND),
+    CATEGORY_NOT_FOUND(4008, "Category not found", HttpStatus.NOT_FOUND),
 
 
     // --- OAuth2 / External Errors (Codes 1900 - 1999) ---
