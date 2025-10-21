@@ -20,7 +20,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class VehicleCatalog {
 
     @Id
@@ -145,4 +145,3 @@ public class VehicleCatalog {
         INACTIVE
     }
 }
-
