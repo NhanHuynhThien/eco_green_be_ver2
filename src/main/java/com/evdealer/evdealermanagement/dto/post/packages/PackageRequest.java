@@ -13,4 +13,5 @@ public class PackageRequest {
     private String packageId;
     private String paymentMethod;
     private Integer durationDays;
+
 }
