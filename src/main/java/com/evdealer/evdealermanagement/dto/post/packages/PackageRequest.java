@@ -12,6 +12,6 @@ import lombok.NoArgsConstructor;
 public class PackageRequest {
     private String packageId;
     private String paymentMethod;
-    private Integer durationDays;
+    private String optionId;
 
 }

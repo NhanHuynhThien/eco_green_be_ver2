@@ -76,6 +76,12 @@ public enum ErrorCode {
     DURATION_DAYS_MORE_THAN_ZERO(1505, "Duration days must be more than 0", HttpStatus.BAD_REQUEST),
     PACKAGE_NOT_FOUND(1506, "Package not found", HttpStatus.NOT_FOUND),
     PAYMENT_NOT_FOUND(1507, "Payment not found", HttpStatus.NOT_FOUND),
+    PACKAGE_INACTIVE(1508, "Package not found in DataBase", HttpStatus.NOT_FOUND),
+    PACKAGE_OPTION_NOT_FOUND(1509, "Package option not found", HttpStatus.NOT_FOUND),
+    PACKAGE_OPTION_NOT_BELONG_TO_PACKAGE(1510, "Package option not belong to backage", HttpStatus.BAD_REQUEST),
+    PACKAGE_DAILY_PRICE_NOT_SET(1511, "Package daily price is not set", HttpStatus.BAD_REQUEST),
+    PACKAGE_OPTION_REQUIRED(1512, "Package option is required", HttpStatus.BAD_REQUEST),
+    PACKAGE_BILLING_MODE_INVALID(1513, "Package billing mode is invalid", HttpStatus.BAD_REQUEST),
 
     // --- Wishlist Errors (Codes 1600 - 1699) ---
     WISHLIST_NOT_FOUND(1601, "Wishlist not found", HttpStatus.NOT_FOUND),
@@ -89,6 +95,7 @@ public enum ErrorCode {
     UNSUPPORTED_IMAGE_TYPE(1704, "Unsupported image type", HttpStatus.UNSUPPORTED_MEDIA_TYPE),
     IMAGE_UPLOAD_FAILED(1705, "Upload image failed", HttpStatus.INTERNAL_SERVER_ERROR),
 
+
     // --- Brand/Battery Errors (Codes 4000 - 4099) ---
     // Separated the conflicting 4004 code into unique codes 4000 and 4001
     BRAND_NOT_FOUND(4000, "Brand not found with the provided ID", HttpStatus.NOT_FOUND),
@@ -97,6 +104,7 @@ public enum ErrorCode {
     BRAND_EXISTS(4003, "Brand name already exists", HttpStatus.BAD_REQUEST),
     VERSION_NOT_FOUND(4004, "Version not found", HttpStatus.NOT_FOUND),
     MODEL_NOT_FOUND(4005, "Model name not found", HttpStatus.NOT_FOUND),
+
 
     // --- OAuth2 / External Errors (Codes 1900 - 1999) ---
     UNSUPPORTED_OAUTH2_PROVIDER(1900, "Unsupported OAuth2 provider", HttpStatus.BAD_REQUEST),
