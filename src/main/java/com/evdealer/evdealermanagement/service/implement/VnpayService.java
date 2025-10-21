@@ -49,7 +49,7 @@ public class VnpayService {
 
         vnp_Params.put("vnp_BankCode", bankCode);
         vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
-        vnp_Params.put("vnp_OrderInfo", "Thanh toán đơn hàng: " + vnp_TxnRef);
+        vnp_Params.put("vnp_OrderInfo", "Thanh toan don hang: " + vnp_TxnRef);
         vnp_Params.put("vnp_OrderType", orderType);
         vnp_Params.put("vnp_Locale", "vn");
         vnp_Params.put("vnp_ReturnUrl", VnpayConfig.vnp_ReturnUrl);
@@ -80,9 +80,9 @@ public class VnpayService {
             if (v == null || v.isEmpty())
                 continue;
 
-            query.append(URLEncoder.encode(k, StandardCharsets.US_ASCII))
+            query.append(URLEncoder.encode(k, StandardCharsets.UTF_8))
                     .append('=')
-                    .append(URLEncoder.encode(v, StandardCharsets.US_ASCII));
+                    .append(URLEncoder.encode(v, StandardCharsets.UTF_8));
             if (i < keys.size() - 1)
                 query.append('&');
         }

@@ -30,6 +30,10 @@ public class PostPayment extends BaseEntity {
     private BigDecimal amount;
 
     @ManyToOne(fetch = FetchType.LAZY)
+            @JoinColumn(name = "package_option_id", foreignKey = @ForeignKey(name = "fk_pp_opt"))
+    PostPackageOption postPackageOption;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "package_id", nullable = false, foreignKey = @ForeignKey(name = "fk_payment_package"))
     private PostPackage postPackage;
 
