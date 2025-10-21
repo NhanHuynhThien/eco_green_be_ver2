@@ -53,7 +53,6 @@ public class StaffService {
     @Transactional
     public PostVerifyResponse verifyPost(String productId, PostVerifyRequest request) {
 
-        // 1) Lấy user hiện tại (phải có quyền STAFF hoặc ADMIN)
         Account currentUser = userContextService.getCurrentUser()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized user"));
 
@@ -61,11 +60,9 @@ public class StaffService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only STAFF or ADMIN can verify posts");
         }
 
-        // 2) Load product
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
 
-        // 3) Chỉ cho phép xử lý nếu post đang ở trạng thái PENDING_REVIEW
         if (product.getStatus() != Product.Status.PENDING_REVIEW) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Only posts in PENDING_REVIEW status can be verified or rejected");
@@ -100,76 +97,77 @@ public class StaffService {
 
     // Generate và Lưu thông số kỹ thuật
     private void generateAndSaveVehicleSpecs(Product product) {
-
         ModelVersion version = product.getModelVersion();
-
         VehicleDetails details = vehicleDetailsRepository.findByProductId(product.getId()).orElse(null);
 
-        // 1. Kiểm tra và lấy các Entity cơ bản
         if (version == null || version.getModel() == null) {
             log.warn("Product ID {} is missing ModelVersion or Model. Cannot generate specs.", product.getId());
             return;
         }
 
-        Model model = version.getModel();
-
-        // 2. Lấy 4 thuộc tính cần thiết qua chuỗi quan hệ
-        // Brand và Type (VehicleType) nằm trong Model
-        VehicleBrands brand = model.getBrand();
-        VehicleCategories type = model.getVehicleType();
-
-        // Tên Model và Title
-        String productName = product.getTitle();
-        String modelName = model.getName();
-        String brandName = model.getBrand().getName();
-        String versionName = version.getName();
-        Short resolvedYear = product.getManufactureYear();
-
-        // Kiểm tra tính toàn vẹn dữ liệu
-        if (brand == null || type == null) {
-            log.error("Model ID {} is missing Brand or VehicleType. Cannot generate specs.", model.getId());
+        if (details == null) {
+            log.warn("Product ID {} is missing VehicleDetails. Cannot link catalog.", product.getId());
             return;
         }
 
-        if (resolvedYear == null) {
-            log.warn("Product {} missing manufacture year. Defaulting to current year.", product.getId());
-            resolvedYear = (short) LocalDateTime.now().getYear();
+        Model model = version.getModel();
+        VehicleBrands brand = model.getBrand();
+        VehicleCategories type = model.getVehicleType();
+
+        String productName = product.getTitle();
+        String modelName = model.getName();
+        String brandName = brand.getName();
+        String versionName = version.getName();
+        Short manufactureYear = product.getManufactureYear();
+
+        if (type == null) {
+            log.error("Model ID {} is missing VehicleType. Cannot generate specs.", model.getId());
+            return;
         }
 
-        // 3. Kiểm tra VehicleCatalog đã có thông số cho ModelVersion này chưa
+        if (manufactureYear == null) {
+            log.warn("Product {} missing manufacture year. Defaulting to current year.", product.getId());
+            manufactureYear = (short) LocalDateTime.now().getYear();
+        }
+
         Optional<VehicleCatalog> existingCatalog = vehicleCatalogRepository.findByVersionId(version.getId());
 
         if (existingCatalog.isEmpty()) {
-            log.info("Vehicle spec not found for ModelVersion {}. Generating new specs using Gemini...",
-                    version.getId());
+            log.info("Vehicle spec not found for ModelVersion {}. Generating new specs using Gemini...", version.getId());
 
             try {
-                // 4. Gọi Gemini để generate specs DTO
                 VehicleCatalogDTO specsDto = geminiRestService.getVehicleSpecs(
-                        productName,
-                        modelName,
-                        brandName,
-                        versionName, resolvedYear);
+                        productName, modelName, brandName, versionName, manufactureYear);
 
-                // 5. Ánh xạ DTO sang Entity và lưu vào DB
                 VehicleCatalog newCatalog = VehicleCatalogMapper.mapFromDto(specsDto);
-
-                // Gán các foreign key & trường bắt buộc
                 newCatalog.setVersion(version);
-                newCatalog.setCategory(type); // Lấy từ Model
-                newCatalog.setBrand(brand); // Lấy từ Model
+                newCatalog.setCategory(type);
+                newCatalog.setBrand(brand);
                 newCatalog.setModel(modelName);
-                newCatalog.setYear(resolvedYear);
+                newCatalog.setYear(manufactureYear);
 
                 vehicleCatalogRepository.save(newCatalog);
-                log.info("Successfully generated and saved new VehicleCatalog for ModelVersion {}", version.getId());
+
+                // ✅ QUAN TRỌNG: Liên kết catalog vào VehicleDetails
+                details.setVehicleCatalog(newCatalog); // hoặc details.setCatalogId(newCatalog.getId())
+                vehicleDetailsRepository.save(details);
+
+                log.info("Successfully generated and linked VehicleCatalog for Product {}", product.getId());
 
             } catch (Exception e) {
-                log.error("Failed to generate or save vehicle specs for Product ID {}: {}", product.getId(),
-                        e.getMessage(), e);
+                log.error("Failed to generate or save vehicle specs for Product ID {}: {}",
+                        product.getId(), e.getMessage(), e);
             }
         } else {
-            log.info("Vehicle spec already exists for ModelVersion {}. Skipping Gemini generation.", version.getId());
+            // ✅ Nếu catalog đã tồn tại, vẫn cần link nó vào VehicleDetails
+            VehicleCatalog catalog = existingCatalog.get();
+            if (details.getVehicleCatalog() == null || !details.getVehicleCatalog().getId().equals(catalog.getId())) {
+                details.setVehicleCatalog(catalog);
+                vehicleDetailsRepository.save(details);
+                log.info("Linked existing VehicleCatalog to Product {}", product.getId());
+            } else {
+                log.info("VehicleCatalog already linked to Product {}", product.getId());
+            }
         }
     }
 
