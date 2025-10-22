@@ -66,11 +66,13 @@ public class VehiclePostRequest {
     @PositiveOrZero(message = "Mileage must be 0 or greater")
     Integer mileageKm;
 
+    @NotBlank(message = "Please enter the vehicle model")
     String modelId;
 
     @NotNull(message = "Please enter the manufacturing year")
     @Min(value = 1900, message = "Year must be greater than or equal to 1900")
     Short year;
+
 
     String versionId;
 
