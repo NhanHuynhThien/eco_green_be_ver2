@@ -50,7 +50,6 @@ public class VehicleService {
     private final ProductRepository productRepository;
     private final ProductImagesRepository productImagesRepository;
     private final PostService postService;
-    private final VehicleDetailResponse vehicleDetailResponse;
 
     /**
      * Lấy danh sách Vehicle Product IDs theo tên sản phẩm
@@ -416,7 +415,7 @@ public class VehicleService {
     }
 
 
-
+    @Transactional
     public VehiclePostResponse updateVehiclePost(String productId, VehiclePostRequest request,
                                                  List<MultipartFile> images, String imagesMetaJson) {
         Product product = productRepository.findById(productId)
@@ -450,22 +449,33 @@ public class VehicleService {
         details.setMileageKm(request.getMileageKm());
         details.setBatteryHealthPercent(request.getBatteryHealthPercent());
 
+        if (images != null) {
+            images = images.stream()
+                    .filter(file -> file != null && !file.isEmpty())
+                    .toList();
+        }
+
+        List<ProductImageResponse> imageDtos = null;
+
         if(images != null && !images.isEmpty()) {
 
             //xóa ảnh cũ trong database
             productImagesRepository.deleteAllByProduct(product);
+            productImagesRepository.flush();
 
-            List<ProductImageResponse> imageDtos = postService.uploadAndSaveImages(product, images,  imagesMetaJson);
+            imageDtos = postService.uploadAndSaveImages(product, images,  imagesMetaJson);
 
-            product.setImages(
-                    imageDtos.stream()
+            product.getImages().clear();
+
+            List<ProductImages> newImages = imageDtos.stream()
                             .map(dto -> ProductImages.builder()
                                     .product(product)
                                     .imageUrl(dto.getUrl())
                                     .isPrimary(dto.isPrimary())
                                     .build())
-                            .toList()
-            );
+                            .collect(Collectors.toList());
+
+            product.getImages().addAll(newImages);
         }
 
         productRepository.save(product);
@@ -474,6 +484,13 @@ public class VehicleService {
         return VehiclePostResponse.builder()
                 .productId(product.getId())
                 .status(product.getStatus().name())
+                .sellerPhone(product.getSellerPhone())
+                .brandName(details.getBrand().getName())
+                .categoryName(details.getCategory().getName())
+                .modelName(details.getModel().getName())
+                .hasInsurance(details.getHasInsurance())
+                .warrantyMonths(details.getWarrantyMonths())
+                .hasRegistration(details.getHasRegistration())
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .price(request.getPrice())
@@ -486,6 +503,18 @@ public class VehicleService {
                 .categoryId(request.getCategoryId())
                 .batteryHealthPercent(request.getBatteryHealthPercent())
                 .mileageKm(request.getMileageKm())
+                .images(
+                        (imageDtos!= null && !imageDtos.isEmpty())
+                                ? imageDtos
+                                : product.getImages().stream()
+                                .map(img -> ProductImageResponse.builder()
+                                        .url(img.getImageUrl())
+                                        .width(img.getWidth())
+                                        .position(img.getPosition())
+                                        .height(img.getHeight())
+                                        .isPrimary(img.getIsPrimary())
+                                        .build())
+                                .toList())
                 .build();
     }
 }

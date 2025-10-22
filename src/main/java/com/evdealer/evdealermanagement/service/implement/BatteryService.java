@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
@@ -228,6 +229,7 @@ public class BatteryService {
         return BatteryMapper.mapToBatteryBrandsResponse(e);
     }
 
+    @Transactional
     public BatteryPostResponse updateBatteryPost(String productId, BatteryPostRequest request,
                                                  List<MultipartFile> images, String imagesMetaJson) {
         Product product = productRepository.findById(productId)
@@ -255,21 +257,31 @@ public class BatteryService {
         details.setCapacityKwh(request.getCapacityKwh());
         details.setVoltageV(request.getVoltageV());
 
+        if (images != null) {
+            images = images.stream()
+                    .filter(file -> file != null && !file.isEmpty())
+                    .toList();
+        }
+
+        List<ProductImageResponse> imageDtos = null;
+
         if(images != null && !images.isEmpty()) {
 
             productImagesRepository.deleteAllByProduct(product);
+            productImagesRepository.flush();
 
-            List<ProductImageResponse> imageDtos = postService.uploadAndSaveImages(product, images, imagesMetaJson);
+            imageDtos = postService.uploadAndSaveImages(product, images, imagesMetaJson);
 
-            product.setImages(
-                    imageDtos.stream()
+            product.getImages().clear();
+
+            List<ProductImages> newImages = imageDtos.stream()
                             .map(dto -> ProductImages.builder()
                                     .product(product)
                                     .imageUrl(dto.getUrl())
                                     .isPrimary(dto.isPrimary())
                                     .build())
-                            .toList()
-            );
+                    .collect(Collectors.toList());
+            product.getImages().addAll(newImages);
         }
 
         productRepository.save(product);
@@ -278,6 +290,10 @@ public class BatteryService {
         return BatteryPostResponse.builder()
                 .productId(product.getId())
                 .status(product.getStatus().name())
+                .sellerPhone(product.getSellerPhone())
+                .brandName(details.getBrand().getName())
+                .batteryTypeName(details.getBatteryType().getName())
+                .capacityKwh(details.getCapacityKwh())
                 .title(product.getTitle())
                 .description(product.getDescription())
                 .price(product.getPrice())
@@ -292,6 +308,18 @@ public class BatteryService {
                 .capacityKwh(details.getCapacityKwh())
                 .healthPercent(details.getHealthPercent())
                 .voltageV(details.getVoltageV())
+                .images(
+                        (imageDtos!= null && !imageDtos.isEmpty())
+                                ? imageDtos
+                                : product.getImages().stream()
+                                .map(img -> ProductImageResponse.builder()
+                                        .url(img.getImageUrl())
+                                        .width(img.getWidth())
+                                        .height(img.getHeight())
+                                        .position(img.getPosition())
+                                        .isPrimary(img.getIsPrimary())
+                                        .build())
+                                .toList())
                 .build();
     }
 }

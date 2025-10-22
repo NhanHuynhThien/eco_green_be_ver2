@@ -1,12 +1,18 @@
 package com.evdealer.evdealermanagement.controller.battery;
 
+import com.evdealer.evdealermanagement.dto.account.custom.CustomAccountDetails;
 import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsResponse;
 import com.evdealer.evdealermanagement.dto.battery.brand.BatteryTypesResponse;
+import com.evdealer.evdealermanagement.dto.post.battery.BatteryPostRequest;
+import com.evdealer.evdealermanagement.dto.post.battery.BatteryPostResponse;
 import com.evdealer.evdealermanagement.service.implement.BatteryService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.MediaType;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -27,4 +33,14 @@ public class BatteryController {
         return batteryService.listAllBatteryTypesSorted();
     }
 
+    @PutMapping(value = "/update/{productId}/draft", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public BatteryPostResponse updateBattery(
+            @PathVariable String productId,
+            @RequestPart("data") String dataJson,
+            @RequestPart("images") List<MultipartFile> images,
+            @RequestPart(value = "imagesMeta", required = false) String imagesMetaJson,
+            @AuthenticationPrincipal CustomAccountDetails user) throws JsonProcessingException {
+        BatteryPostRequest request = new ObjectMapper().readValue(dataJson, BatteryPostRequest.class);
+        return batteryService.updateBatteryPost(productId, request, images, imagesMetaJson);
+    }
 }
