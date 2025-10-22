@@ -163,7 +163,7 @@ public class PostService implements IProductPostService {
 
 
     //Support Method
-    private  void validateImages(List<MultipartFile> images){
+    public  void validateImages(List<MultipartFile> images){
         if(images == null || images.isEmpty()){
             throw new AppException(ErrorCode.MIN_1_IMAGE);
         }
@@ -185,7 +185,7 @@ public class PostService implements IProductPostService {
         }
     }
 
-    private Map<Integer, ImageMeta> parseMeta(String json) {
+    public Map<Integer, ImageMeta> parseMeta(String json) {
         if(json == null || json.isBlank()) return Map.of();
         try {
             var list = objectMapper.readValue(json, new TypeReference<List<ImageMeta>>() {
@@ -201,7 +201,7 @@ public class PostService implements IProductPostService {
 
     }
 
-    private List<ProductImageResponse> uploadAndSaveImages(Product product, List<MultipartFile> files, String metaJson) {
+    public List<ProductImageResponse> uploadAndSaveImages(Product product, List<MultipartFile> files, String metaJson) {
         Map<Integer, ImageMeta> meta = parseMeta(metaJson);
 
         //check if meta specifies primary

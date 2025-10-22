@@ -3,20 +3,26 @@ package com.evdealer.evdealermanagement.service.implement;
 import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsResponse;
 import com.evdealer.evdealermanagement.dto.battery.brand.BatteryTypesResponse;
 import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsRequest;
+import com.evdealer.evdealermanagement.dto.post.battery.BatteryPostRequest;
+import com.evdealer.evdealermanagement.dto.post.battery.BatteryPostResponse;
+import com.evdealer.evdealermanagement.dto.post.common.ProductImageResponse;
 import com.evdealer.evdealermanagement.entity.battery.BatteryBrands;
 import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
+import com.evdealer.evdealermanagement.entity.product.Product;
+import com.evdealer.evdealermanagement.entity.product.ProductImages;
 import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import com.evdealer.evdealermanagement.mapper.battery.BatteryMapper;
-import com.evdealer.evdealermanagement.repository.BatteryBrandsRepository;
-import com.evdealer.evdealermanagement.repository.BatteryDetailRepository;
-import com.evdealer.evdealermanagement.repository.BatteryTypesRepository;
+import com.evdealer.evdealermanagement.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,6 +36,9 @@ public class BatteryService {
     private final BatteryDetailRepository batteryDetailRepository;
     private final BatteryBrandsRepository batteryBrandsRepository;
     private final BatteryTypesRepository batteryTypesRepository;
+    private final ProductRepository productRepository;
+    private final PostService postService;
+    private final ProductImagesRepository productImagesRepository;
 
     /**
      * Lấy danh sách Battery Product IDs theo tên sản phẩm
@@ -218,5 +227,99 @@ public class BatteryService {
         e.setLogoUrl(req.getLogoUrl());
         e = batteryBrandsRepository.save(e);
         return BatteryMapper.mapToBatteryBrandsResponse(e);
+    }
+
+    @Transactional
+    public BatteryPostResponse updateBatteryPost(String productId, BatteryPostRequest request,
+                                                 List<MultipartFile> images, String imagesMetaJson) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        if(product.getStatus() != Product.Status.DRAFT) {
+            throw new AppException(ErrorCode.PRODUCT_NOT_DRAFT);
+        }
+
+        product.setTitle(request.getTitle());
+        product.setDescription(request.getDescription());
+        product.setPrice(request.getPrice());
+        product.setCity(request.getCity());
+        product.setDistrict(request.getDistrict());
+        product.setWard(request.getWard());
+        product.setAddressDetail(request.getAddressDetail());
+        product.setUpdatedAt(LocalDateTime.now());
+
+        BatteryDetails details = batteryDetailRepository.findByProductId(product.getId());
+        details.setProduct(product);
+        details.setBrand(batteryBrandsRepository.findById(request.getBrandId())
+                .orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND)));
+        details.setBatteryType(batteryTypesRepository.findById(request.getBatteryTypeId())
+                .orElseThrow(() -> new AppException(ErrorCode.TYPE_NOT_FOUND)));
+        details.setCapacityKwh(request.getCapacityKwh());
+        details.setVoltageV(request.getVoltageV());
+
+        if (images != null) {
+            images = images.stream()
+                    .filter(file -> file != null && !file.isEmpty())
+                    .toList();
+        }
+
+        List<ProductImageResponse> imageDtos = null;
+
+        if(images != null && !images.isEmpty()) {
+
+            productImagesRepository.deleteAllByProduct(product);
+            productImagesRepository.flush();
+
+            imageDtos = postService.uploadAndSaveImages(product, images, imagesMetaJson);
+
+            product.getImages().clear();
+
+            List<ProductImages> newImages = imageDtos.stream()
+                            .map(dto -> ProductImages.builder()
+                                    .product(product)
+                                    .imageUrl(dto.getUrl())
+                                    .isPrimary(dto.isPrimary())
+                                    .build())
+                    .collect(Collectors.toList());
+            product.getImages().addAll(newImages);
+        }
+
+        productRepository.save(product);
+        batteryDetailRepository.save(details);
+
+        return BatteryPostResponse.builder()
+                .productId(product.getId())
+                .status(product.getStatus().name())
+                .sellerPhone(product.getSellerPhone())
+                .brandName(details.getBrand().getName())
+                .batteryTypeName(details.getBatteryType().getName())
+                .capacityKwh(details.getCapacityKwh())
+                .title(product.getTitle())
+                .description(product.getDescription())
+                .price(product.getPrice())
+                .city(product.getCity())
+                .district(product.getDistrict())
+                .ward(product.getWard())
+                .addressDetail(product.getAddressDetail())
+                .createdAt(product.getCreatedAt())
+                .brandId(request.getBrandId())
+                .brandName(details.getBrand() != null ? details.getBrand().getName() : null)
+                .batteryTypeName(details.getBatteryType() != null ? details.getBatteryType().getName() : null)
+                .capacityKwh(details.getCapacityKwh())
+                .healthPercent(details.getHealthPercent())
+                .voltageV(details.getVoltageV())
+                .images(
+                        (imageDtos!= null && !imageDtos.isEmpty())
+                                ? imageDtos
+                                : product.getImages().stream()
+                                .map(img -> ProductImageResponse.builder()
+                                        .url(img.getImageUrl())
+                                        .width(img.getWidth())
+                                        .height(img.getHeight())
+                                        .position(img.getPosition())
+                                        .isPrimary(img.getIsPrimary())
+                                        .build())
+                                .toList())
+                .build();
     }
 }
