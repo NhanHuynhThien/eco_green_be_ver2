@@ -71,6 +71,7 @@ public class PaymentService {
                 throw new AppException(ErrorCode.PACKAGE_OPTION_NOT_BELONG_TO_PACKAGE);
             }
             desiredDays = ppo.getDurationDays();
+
             totalPayable = ppo.getPrice();
         } else {
             throw new AppException(ErrorCode.PACKAGE_BILLING_MODE_INVALID);
