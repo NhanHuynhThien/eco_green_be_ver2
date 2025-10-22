@@ -161,19 +161,32 @@ public class PaymentService {
 
     @Transactional
     public void handlePaymentCallback(String paymentId, boolean success) {
-        PostPayment payment = postPaymentRepository.findById(paymentId).orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
-        Product product = productRepository.findById(payment.getProductId()).orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
-        if(payment.getPaymentStatus() == PostPayment.PaymentStatus.COMPLETED) { return;}
-        if(success) {
-            payment.setPaymentStatus(PostPayment.PaymentStatus.COMPLETED);
-            product.setStatus(Product.Status.PENDING_REVIEW);
-        } else {
-            payment.setPaymentStatus(PostPayment.PaymentStatus.FAILED);
-            product.setStatus(Product.Status.DRAFT);
+        PostPayment payment = postPaymentRepository.findById(paymentId)
+                .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
+
+        Product product = productRepository.findById(payment.getProductId())
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        // Tránh xử lý lại các callback đã kết thúc
+        if (payment.getPaymentStatus() == PostPayment.PaymentStatus.COMPLETED ||
+                payment.getPaymentStatus() == PostPayment.PaymentStatus.FAILED) {
+            return;
         }
+
+        if (product.getStatus() == Product.Status.PENDING_PAYMENT) {
+            if (success) {
+                payment.setPaymentStatus(PostPayment.PaymentStatus.COMPLETED);
+                product.setStatus(Product.Status.PENDING_REVIEW);
+            } else {
+                payment.setPaymentStatus(PostPayment.PaymentStatus.FAILED);
+                product.setStatus(Product.Status.DRAFT);
+            }
+        }
+
         postPaymentRepository.save(payment);
         productRepository.save(product);
     }
+
 
     private int resolveDaysFromOption(String optionId) {
         if(optionId == null) {
@@ -182,9 +195,6 @@ public class PaymentService {
         return optionRepo.findById(optionId)
                 .map(PostPackageOption::getDurationDays).orElse(0);
     }
-
-
-
 
     // Find and show all package
     public List<PostPackageResponse> getAllPackages() {
