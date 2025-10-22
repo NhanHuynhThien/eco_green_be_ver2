@@ -129,8 +129,8 @@ public class PostService implements IProductPostService {
                         .brand(veBrandsRepo.findById(request.getBrandId()).orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND)))
                         .batteryHealthPercent(request.getBatteryHealthPercent())
                         .mileageKm(request.getMileageKm())
-                        .model(vehicleModelRepository.findById(request.getModelId()).orElseThrow(() -> new AppException(ErrorCode.MODEL_NOT_FOUND)))
-                        .version(vmvRepo.findById(request.getVersionId()).orElseThrow(() -> new AppException(ErrorCode.VERSION_NOT_FOUND)))
+                        .model(vehicleModelRepository.findById(request.getModelId()).orElse(null))
+                        .version(request.getVersionId() != null ? vmvRepo.findById(request.getVersionId()).orElseThrow(() -> new AppException(ErrorCode.VERSION_NOT_FOUND)) : null)
                         .build());
 
         List<ProductImageResponse> imageDtos = uploadAndSaveImages(product, images, imagesMetaJson);

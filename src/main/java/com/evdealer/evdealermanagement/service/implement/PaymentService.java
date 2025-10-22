@@ -30,6 +30,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -71,7 +72,8 @@ public class PaymentService {
                 throw new AppException(ErrorCode.PACKAGE_OPTION_NOT_BELONG_TO_PACKAGE);
             }
             desiredDays = ppo.getDurationDays();
-            totalPayable = ppo.getPrice();
+            Optional<PostPackage> basePackage = packageRepo.findById("99948170-ae4c-11f0-82a9-a2aad89b694c");
+            totalPayable = basePackage.get().getPrice().add(ppo.getPrice());
         } else {
             throw new AppException(ErrorCode.PACKAGE_BILLING_MODE_INVALID);
         }
@@ -186,7 +188,6 @@ public class PaymentService {
         postPaymentRepository.save(payment);
         productRepository.save(product);
     }
-
 
     private int resolveDaysFromOption(String optionId) {
         if(optionId == null) {
