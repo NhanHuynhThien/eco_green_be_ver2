@@ -56,6 +56,8 @@ public class PaymentService {
         if(pkg.getStatus() != PostPackage.Status.ACTIVE) {
             throw new AppException(ErrorCode.PACKAGE_INACTIVE);
         }
+
+        String normalizeOpitionId = normalizeString(request.getOptionId());
         //Xác định số ngày member muốn + số tiền phải trả từ DB
         int desiredDays;
         BigDecimal totalPayable;
@@ -64,7 +66,8 @@ public class PaymentService {
             desiredDays = pkg.getBaseDurationDays() != null ? pkg.getBaseDurationDays() : 30; //STANDARD: 30 days
             totalPayable = pkg.getPrice();
         } else if (pkg.getBillingMode() == PostPackage.BillingMode.PER_DAY) {
-            if(request.getOptionId() == null) {
+
+            if(normalizeOpitionId == null) {
                 throw new AppException(ErrorCode.PACKAGE_OPTION_REQUIRED);
             }
             PostPackageOption ppo = optionRepo.findById(request.getOptionId()).orElseThrow(() -> new AppException(ErrorCode.PACKAGE_OPTION_NOT_FOUND));
@@ -88,7 +91,7 @@ public class PaymentService {
                 .accountId(product.getSeller().getId())
                 .productId(product.getId())
                 .postPackage(packageRepo.findById(request.getPackageId()).orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND)))
-                .postPackageOption(optionRepo.findById(request.getOptionId()).orElse(null))
+                .postPackageOption(normalizeOpitionId != null ? optionRepo.findById(normalizeOpitionId).orElse(null) : null)
                 .amount(totalPayable)
                 .paymentMethod(PostPayment.PaymentMethod.valueOf(request.getPaymentMethod().toUpperCase()))
                 .paymentStatus(totalPayable.signum() == 0 ? PostPayment.PaymentStatus.COMPLETED : PostPayment.PaymentStatus.PENDING)
@@ -246,5 +249,12 @@ public class PaymentService {
                   .options(optionResponses)
                   .build();
         }).toList();
+    }
+
+    private String normalizeString(String value) {
+        if(value == null || value.isEmpty()) {
+            return null;
+        }
+        return value.trim();
     }
 }
