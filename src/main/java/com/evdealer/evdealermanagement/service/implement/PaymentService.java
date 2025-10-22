@@ -187,7 +187,6 @@ public class PaymentService {
         productRepository.save(product);
     }
 
-
     private int resolveDaysFromOption(String optionId) {
         if(optionId == null) {
             return 0;
