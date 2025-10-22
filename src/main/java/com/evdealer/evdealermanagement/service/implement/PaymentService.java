@@ -134,15 +134,22 @@ public class PaymentService {
                     }
 
                     case "MOMO" -> {
-                        MomoResponse res = momoService.createPaymentRequest(new MomoRequest(payment.getId(), totalPayable.toPlainString()));
+                        // Convert BigDecimal sang số nguyên (loại bỏ phần thập phân)
+                        long amountInVND = totalPayable.setScale(0, RoundingMode.HALF_UP).longValue();
+
+                        // Validate số tiền tối thiểu của MoMo (giống VNPay)
+                        if (amountInVND < 10000) {
+                            throw new AppException(ErrorCode.USER_NOT_FOUND);
+                        }
+
+                        MomoResponse res = momoService.createPaymentRequest(
+                                new MomoRequest(payment.getId(), String.valueOf(amountInVND))
+                        );
                         paymentUrl = res.getPayUrl();
                         log.info("DEBUG momoService response: {}", res);
-                        log.info("DEBUG momoService payUrl: {}", (res == null ? "res=null" : res.getPayUrl()));
+                        log.info("DEBUG momoService payUrl: {}", paymentUrl);
+                    }
 
-                    }
-                    case "BANK_TRANSFER", "CASH" -> {
-                        paymentUrl = null; // không có URL online
-                    }
                     default -> throw new IllegalArgumentException("Unsupported payment method: " + method);
                 }
             } catch (UnsupportedEncodingException e) {
