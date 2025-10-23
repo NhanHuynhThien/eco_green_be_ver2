@@ -8,6 +8,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @Table(name = "post_payments")
@@ -30,7 +33,7 @@ public class PostPayment extends BaseEntity {
     private BigDecimal amount;
 
     @ManyToOne(fetch = FetchType.LAZY)
-            @JoinColumn(name = "package_option_id", foreignKey = @ForeignKey(name = "fk_pp_opt"))
+    @JoinColumn(name = "package_option_id", foreignKey = @ForeignKey(name = "fk_pp_opt"))
     PostPackageOption postPackageOption;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -44,6 +47,9 @@ public class PostPayment extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_status")
     private PaymentStatus paymentStatus;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
     public enum PaymentMethod {
         CASH, BANK_TRANSFER, MOMO, ZALO_PAY, VNPAY

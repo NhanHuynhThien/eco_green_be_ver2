@@ -1,5 +1,8 @@
 package com.evdealer.evdealermanagement.controller.payment;
 
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -11,12 +14,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.evdealer.evdealermanagement.configurations.VnpayConfig;
 import com.evdealer.evdealermanagement.dto.payment.VnpayRequest;
 import com.evdealer.evdealermanagement.dto.payment.VnpayResponse;
 import com.evdealer.evdealermanagement.service.implement.PaymentService;
 import com.evdealer.evdealermanagement.service.implement.VnpayService;
-import com.evdealer.evdealermanagement.utils.VnpSigner;
 
 import lombok.AllArgsConstructor;
 
@@ -43,22 +44,21 @@ public class VnpayController {
     }
 
     @GetMapping("/return")
-    public ResponseEntity<?> handleReturn(@RequestParam Map<String, String> params) {
-        boolean ok = VnpSigner.verify(params, VnpayConfig.secretKey);
-        if (!ok)
-            return ResponseEntity.badRequest().body("Invalid signature");
+    public ResponseEntity<Void> handleVnpReturn(@RequestParam Map<String, String> params) {
 
-        String paymentId = params.get("vnp_TxnRef");
-        String code = params.getOrDefault("vnp_ResponseCode", "");
+        String orderId = params.get("vnp_TxnRef");
+        String code = params.get("vnp_ResponseCode");
         boolean success = "00".equalsIgnoreCase(code);
+        paymentService.handlePaymentCallback(orderId, success);
 
-        paymentService.handlePaymentCallback(paymentId, success);
+        String redirectUrl = "http://localhost:5173/"
+                + "?success=" + success
+                + "&orderId=" + URLEncoder.encode(orderId, StandardCharsets.UTF_8)
+                + "&code=" + URLEncoder.encode(code, StandardCharsets.UTF_8)
+                + "&method=VNPAY";
 
-        if ("00".equals(code)) {
-            // TODO: cập nhật đơn hàng theo vnp_TxnRef
-            return ResponseEntity.ok("Thanh toán thành công!");
-        }
-        return ResponseEntity.badRequest().body("Thanh toán thất bại! Mã lỗi: " + code);
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(redirectUrl))
+                .build();
     }
-
 }
