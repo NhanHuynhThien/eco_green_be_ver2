@@ -1,7 +1,6 @@
 package com.evdealer.evdealermanagement.utils;
 
 import com.evdealer.evdealermanagement.entity.product.Product;
-import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import lombok.AccessLevel;
@@ -68,11 +67,11 @@ public final class ProductSpecs {
     }
 
     public static Specification<Product> yearGte(Integer from) {
-        return (r, q, cb) -> from == null ? null : cb.greaterThanOrEqualTo(r.get("year"), from);
+        return (r, q, cb) -> from == null ? null : cb.greaterThanOrEqualTo(r.get("manufactureYear"), from.shortValue());
     }
 
     public static Specification<Product> yearLte(Integer to) {
-        return (r, q, cb) -> to == null ? null : cb.lessThanOrEqualTo(r.get("year"), to);
+        return (r, q, cb) -> to == null ? null : cb.lessThanOrEqualTo(r.get("manufactureYear"), to.shortValue());
     }
 
 

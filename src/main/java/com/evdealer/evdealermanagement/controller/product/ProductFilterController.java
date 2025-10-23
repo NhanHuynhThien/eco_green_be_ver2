@@ -75,49 +75,5 @@ public class ProductFilterController {
     ) {
         PageResponse<ProductDetail> response = productService.filterProducts(name, brand, type, city, district, minPrice, maxPrice, yearFrom, yearTo, pageable);
         return ResponseEntity.ok(response);
-
-//        try {
-//            log.info("Request → Filter products (name: {}, brand: {}, type: {})", name, brand, type);
-//
-//            // Validate type if provided
-//            if (type != null && !type.trim().isEmpty()) {
-//                String normalizedType = type.trim().toUpperCase();
-//                if (!normalizedType.equals("VEHICLE") && !normalizedType.equals("BATTERY")) {
-//                    log.warn("Invalid product type: {}", type);
-//                    return ResponseEntity.badRequest().build();
-//                }
-//            }
-//
-//            // Check if any filter is provided
-//            boolean hasFilters = (name != null && !name.trim().isEmpty()) ||
-//                    (brand != null && !brand.trim().isEmpty()) ||
-//                    (type != null && !type.trim().isEmpty());
-//
-//            List<ProductDetail> products;
-//
-//            if (hasFilters) {
-//                // Use multiple filters
-//                products = productService.filterProducts(name, brand, type);
-//            } else {
-//                // No filters → return all ACTIVE products
-//                log.info("No filter applied → return all ACTIVE products");
-//                products = productService.getAllProductsWithStatusActive();
-//            }
-//
-//            if (products.isEmpty()) {
-//                log.info("No products found with given filters");
-//                return ResponseEntity.noContent().build();
-//            }
-//
-//            log.info("Found {} products matching filters", products.size());
-//            return ResponseEntity.ok(products);
-//
-//        } catch (IllegalArgumentException e) {
-//            log.warn("Invalid filter parameters: {}", e.getMessage());
-//            return ResponseEntity.badRequest().build();
-//        } catch (Exception e) {
-//            log.error("Error filtering products", e);
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-//        }
     }
 }
