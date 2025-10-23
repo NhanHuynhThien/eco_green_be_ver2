@@ -18,16 +18,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-<<<<<<< Updated upstream
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-=======
-
-
 import java.math.BigDecimal;
 
-
->>>>>>> Stashed changes
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -45,7 +37,6 @@ public class ProductService implements IProductService {
     private final BatteryService batteryService;
     private final WishlistService wishlistService;
     private static final int MAX_PAGE_SIZE = 100;
-
 
     @Override
     @Transactional(readOnly = true)
@@ -334,7 +325,9 @@ public class ProductService implements IProductService {
     // NEW METHOD: Filter with multiple filters
     // ============================================
     @Transactional(readOnly = true)
-    public PageResponse<ProductDetail> filterProducts(String name, String brand, String type, String city, String district, BigDecimal minPrice, BigDecimal maxPrice, Integer yearFrom, Integer yearTo, Pageable pageable) {
+    public PageResponse<ProductDetail> filterProducts(String name, String brand, String type, String city,
+            String district, BigDecimal minPrice, BigDecimal maxPrice, Integer yearFrom, Integer yearTo,
+            Pageable pageable) {
         validateFilters(minPrice, maxPrice, yearFrom, yearTo);
         pageable = capPageSize(pageable);
 
@@ -344,7 +337,8 @@ public class ProductService implements IProductService {
                 .where(ProductSpecs.hasStatus(Product.Status.ACTIVE))
                 .and(ProductSpecs.titleLike(name))
                 .and(ProductSpecs.hasType(emunType))
-                .and(emunType == Product.ProductType.VEHICLE ? ProductSpecs.hasVehicleBrandId(brand) : ProductSpecs.hasBatteryBrandId(brand))
+                .and(emunType == Product.ProductType.VEHICLE ? ProductSpecs.hasVehicleBrandId(brand)
+                        : ProductSpecs.hasBatteryBrandId(brand))
                 .and(ProductSpecs.cityEq(city))
                 .and(ProductSpecs.districtEq(district))
                 .and(ProductSpecs.priceGte(minPrice))
@@ -360,9 +354,8 @@ public class ProductService implements IProductService {
             content = wishlistService.attachWishlistFlag(
                     accountId,
                     page.getContent(),
-                    ProductMapper::toDetailDto,             // Product -> ProductDetail
-                    ProductDetail::setIsWishlisted
-            );
+                    ProductMapper::toDetailDto, // Product -> ProductDetail
+                    ProductDetail::setIsWishlisted);
         } catch (Exception e) {
             // Không để toàn API fail vì wishlist thất bại
             content = page.getContent().stream().map(ProductMapper::toDetailDto).toList();
@@ -468,7 +461,8 @@ public class ProductService implements IProductService {
     }
 
     private Product.ProductType parseTypeOrNull(String type) {
-        if (type == null || type.isBlank()) return null;
+        if (type == null || type.isBlank())
+            return null;
         try {
             return Product.ProductType.valueOf(type.trim().toUpperCase());
         } catch (IllegalArgumentException e) {

@@ -137,8 +137,9 @@ public class PaymentService {
                     }
 
                     case "MOMO" -> {
+                        long amountInVND = totalPayable.setScale(0, RoundingMode.HALF_UP).longValue();
                         MomoResponse res = momoService
-                                .createPaymentRequest(new MomoRequest(payment.getId(), totalPayable.toPlainString()));
+                                .createPaymentRequest(new MomoRequest(payment.getId(), String.valueOf(amountInVND)));
                         paymentUrl = res.getPayUrl();
                         log.info("DEBUG momoService response: {}", res);
                         log.info("DEBUG momoService payUrl: {}", (res == null ? "res=null" : res.getPayUrl()));

@@ -41,6 +41,8 @@ public class PostVerifyMapper {
                 .updateAt(p.getUpdatedAt())
                 .modelName(modelName)
                 .versionName(versionName)
+                .featuredEndAt(p.getFeaturedEndAt())
+                .expiresAt(p.getExpiresAt())
                 .packageName(payment != null && payment.getPostPackage() != null
                         ? payment.getPostPackage().getName()
                         : null)
