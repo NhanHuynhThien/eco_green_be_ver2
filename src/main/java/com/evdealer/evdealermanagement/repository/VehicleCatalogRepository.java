@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import com.evdealer.evdealermanagement.entity.vehicle.Model;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleCatalog;
 
 public interface VehicleCatalogRepository extends JpaRepository<VehicleCatalog, String> {
@@ -14,6 +15,6 @@ public interface VehicleCatalogRepository extends JpaRepository<VehicleCatalog, 
     Optional<VehicleCatalog> findByVersionIdAndBrandIdAndModelAndYear(
             String versionId,
             String brandId,
-            String model,
+            Model model,
             Short year);
 }

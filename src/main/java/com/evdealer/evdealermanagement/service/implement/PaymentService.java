@@ -46,28 +46,31 @@ public class PaymentService {
 
     @Transactional
     public PackageResponse choosePackage(String productId, PackageRequest request) {
-        Product product = productRepository.findById(productId).orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
-        if(product.getStatus() != Product.Status.DRAFT) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+        if (product.getStatus() != Product.Status.DRAFT) {
             throw new AppException(ErrorCode.PRODUCT_NOT_DRAFT);
         }
 
-        PostPackage pkg = packageRepo.findById(request.getPackageId()).orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
-        if(pkg.getStatus() != PostPackage.Status.ACTIVE) {
+        PostPackage pkg = packageRepo.findById(request.getPackageId())
+                .orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
+        if (pkg.getStatus() != PostPackage.Status.ACTIVE) {
             throw new AppException(ErrorCode.PACKAGE_INACTIVE);
         }
-        //Xác định số ngày member muốn + số tiền phải trả từ DB
+        // Xác định số ngày member muốn + số tiền phải trả từ DB
         int desiredDays;
         BigDecimal totalPayable;
 
-        if(pkg.getBillingMode() == PostPackage.BillingMode.FIXED) {
-            desiredDays = pkg.getBaseDurationDays() != null ? pkg.getBaseDurationDays() : 30; //STANDARD: 30 days
+        if (pkg.getBillingMode() == PostPackage.BillingMode.FIXED) {
+            desiredDays = pkg.getBaseDurationDays() != null ? pkg.getBaseDurationDays() : 30; // STANDARD: 30 days
             totalPayable = pkg.getPrice();
         } else if (pkg.getBillingMode() == PostPackage.BillingMode.PER_DAY) {
-            if(request.getOptionId() == null) {
+            if (request.getOptionId() == null) {
                 throw new AppException(ErrorCode.PACKAGE_OPTION_REQUIRED);
             }
-            PostPackageOption ppo = optionRepo.findById(request.getOptionId()).orElseThrow(() -> new AppException(ErrorCode.PACKAGE_OPTION_NOT_FOUND));
-            if(!ppo.getPostPackage().getId().equals(pkg.getId())) {
+            PostPackageOption ppo = optionRepo.findById(request.getOptionId())
+                    .orElseThrow(() -> new AppException(ErrorCode.PACKAGE_OPTION_NOT_FOUND));
+            if (!ppo.getPostPackage().getId().equals(pkg.getId())) {
                 throw new AppException(ErrorCode.PACKAGE_OPTION_NOT_BELONG_TO_PACKAGE);
             }
             desiredDays = ppo.getDurationDays();
@@ -76,33 +79,36 @@ public class PaymentService {
             throw new AppException(ErrorCode.PACKAGE_BILLING_MODE_INVALID);
         }
 
-        //Miễn phí lần đầu
-        boolean isFirstPost = !postPaymentRepository.existsByAccountIdAndPaymentStatus(product.getSeller().getId(), PostPayment.PaymentStatus.COMPLETED);
-        if("STANDARD".equalsIgnoreCase(pkg.getCode()) && isFirstPost) {
+        // Miễn phí lần đầu
+        boolean isFirstPost = !postPaymentRepository.existsByAccountIdAndPaymentStatus(product.getSeller().getId(),
+                PostPayment.PaymentStatus.COMPLETED);
+        if ("STANDARD".equalsIgnoreCase(pkg.getCode()) && isFirstPost) {
             totalPayable = BigDecimal.ZERO;
         }
-        //Save DB
+        // Save DB
         PostPayment payment = PostPayment.builder()
                 .accountId(product.getSeller().getId())
                 .productId(product.getId())
-                .postPackage(packageRepo.findById(request.getPackageId()).orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND)))
+                .postPackage(packageRepo.findById(request.getPackageId())
+                        .orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND)))
                 .postPackageOption(optionRepo.findById(request.getOptionId()).orElse(null))
                 .amount(totalPayable)
                 .paymentMethod(PostPayment.PaymentMethod.valueOf(request.getPaymentMethod().toUpperCase()))
-                .paymentStatus(totalPayable.signum() == 0 ? PostPayment.PaymentStatus.COMPLETED : PostPayment.PaymentStatus.PENDING)
+                .paymentStatus(totalPayable.signum() == 0 ? PostPayment.PaymentStatus.COMPLETED
+                        : PostPayment.PaymentStatus.PENDING)
                 .build();
 
         postPaymentRepository.save(payment);
 
-        //update product status
-        if(totalPayable.signum() == 0) {
+        // update product status
+        if (totalPayable.signum() == 0) {
             product.setStatus(Product.Status.PENDING_REVIEW);
         } else {
             product.setStatus(Product.Status.PENDING_PAYMENT);
         }
         productRepository.save(product);
 
-        //Tạo link than toán
+        // Tạo link than toán
         log.info("DEBUG before payment URL: totalPayable={}, signum={}, method='{}'",
                 totalPayable,
                 (totalPayable == null ? "null" : totalPayable.signum()),
@@ -112,7 +118,8 @@ public class PaymentService {
 
         if (totalPayable != null && totalPayable.compareTo(BigDecimal.ZERO) > 0) {
             try {
-                String method = request.getPaymentMethod() == null ? "" : request.getPaymentMethod().trim().toUpperCase();
+                String method = request.getPaymentMethod() == null ? ""
+                        : request.getPaymentMethod().trim().toUpperCase();
                 switch (method) {
                     case "VNPAY" -> {
                         // Convert BigDecimal sang số nguyên (loại bỏ phần thập phân)
@@ -124,18 +131,40 @@ public class PaymentService {
                         }
 
                         VnpayResponse res = vnpayService.createPayment(
-                                new VnpayRequest(payment.getId(), String.valueOf(amountInVND))
-                        );
+                                new VnpayRequest(payment.getId(), String.valueOf(amountInVND)));
                         paymentUrl = res.getPaymentUrl();
                         log.info("DEBUG vnpayService response: {}", res);
                         log.info("DEBUG vnpayService paymentUrl: {}", paymentUrl);
                     }
 
                     case "MOMO" -> {
-                        MomoResponse res = momoService.createPaymentRequest(new MomoRequest(payment.getId(), totalPayable.toPlainString()));
-                        paymentUrl = res.getPayUrl();
+                        // 1) Round về số nguyên VND và enforce ngưỡng tối thiểu (ví dụ 1000)
+                        long amountVnd = totalPayable.setScale(0, RoundingMode.HALF_UP).longValueExact();
+                        if (amountVnd < 1000) {
+                            throw new AppException(ErrorCode.USER_NOT_FOUND);
+                        }
+
+                        MomoResponse res = momoService.createPaymentRequest(
+                                new MomoRequest(payment.getId(), String.valueOf(amountVnd)));
                         log.info("DEBUG momoService response: {}", res);
-                        log.info("DEBUG momoService payUrl: {}", (res == null ? "res=null" : res.getPayUrl()));
+
+                        // 2) Bắt buộc kiểm tra resultCode
+                        if (res == null || res.getResultCode() == null) {
+                            throw new AppException(ErrorCode.ACCOUNT_INACTIVE); // tự định nghĩa
+                        }
+                        if (res.getResultCode() != 0) {
+                            // log chi tiết để tra soát
+                            throw new AppException(ErrorCode.ACCOUNT_INACTIVE);
+                        }
+
+                        // 3) Ưu tiên payUrl; nếu không có thì fallback deeplink/qrCodeUrl
+                        paymentUrl = res.getPayUrl();
+                        if (paymentUrl == null || paymentUrl.isBlank()) {
+                            paymentUrl = (res.getDeeplink() != null && !res.getDeeplink().isBlank())
+                                    ? res.getDeeplink()
+                                    : res.getQrCodeUrl();
+                        }
+                        log.info("DEBUG momoService url chosen: {}", paymentUrl);
 
                     }
                     case "BANK_TRANSFER", "CASH" -> {
@@ -147,7 +176,6 @@ public class PaymentService {
                 throw new RuntimeException("Encoding error when creating payment URL", e);
             }
         }
-
 
         return PackageResponse.builder()
                 .productId(product.getId())
@@ -161,30 +189,39 @@ public class PaymentService {
 
     @Transactional
     public void handlePaymentCallback(String paymentId, boolean success) {
-        PostPayment payment = postPaymentRepository.findById(paymentId).orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
-        Product product = productRepository.findById(payment.getProductId()).orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
-        if(payment.getPaymentStatus() == PostPayment.PaymentStatus.COMPLETED) { return;}
-        if(success) {
-            payment.setPaymentStatus(PostPayment.PaymentStatus.COMPLETED);
-            product.setStatus(Product.Status.PENDING_REVIEW);
-        } else {
-            payment.setPaymentStatus(PostPayment.PaymentStatus.FAILED);
-            product.setStatus(Product.Status.DRAFT);
+        PostPayment payment = postPaymentRepository.findById(paymentId)
+                .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
+
+        Product product = productRepository.findById(payment.getProductId())
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        // Tránh xử lý lại các callback đã kết thúc
+        if (payment.getPaymentStatus() == PostPayment.PaymentStatus.COMPLETED ||
+                payment.getPaymentStatus() == PostPayment.PaymentStatus.FAILED) {
+            return;
         }
+
+        if (product.getStatus() == Product.Status.PENDING_PAYMENT) {
+            if (success) {
+                payment.setPaymentStatus(PostPayment.PaymentStatus.COMPLETED);
+                product.setStatus(Product.Status.PENDING_REVIEW);
+            } else {
+                payment.setPaymentStatus(PostPayment.PaymentStatus.FAILED);
+                product.setStatus(Product.Status.DRAFT);
+            }
+        }
+
         postPaymentRepository.save(payment);
         productRepository.save(product);
     }
 
     private int resolveDaysFromOption(String optionId) {
-        if(optionId == null) {
+        if (optionId == null) {
             return 0;
         }
         return optionRepo.findById(optionId)
                 .map(PostPackageOption::getDurationDays).orElse(0);
     }
-
-
-
 
     // Find and show all package
     public List<PostPackageResponse> getAllPackages() {
@@ -192,41 +229,43 @@ public class PaymentService {
         var packages = packageRepo.findByStatusOrderByPriorityLevelDesc(PostPackage.Status.ACTIVE);
 
         return packages.stream().map(p -> {
-          List<PostPackageOptionResponse> optionResponses =   optionRepo.findByPostPackage_IdAndStatusOrderBySortOrderAsc(p.getId(), PostPackageOption.Status.ACTIVE).stream()
-                  .map(o -> PostPackageOptionResponse.builder()
-                          .id(o.getId())
-                          .name(o.getName())
-                          .durationDays(o.getDurationDays())
-                          .price(o.getPrice())
-                          .listPrice(o.getListPrice())
-                          .isDefault(o.getIsDefault())
-                          .sortOrder(o.getSortOrder())
-                          .build())
-                  .toList();
+            List<PostPackageOptionResponse> optionResponses = optionRepo
+                    .findByPostPackage_IdAndStatusOrderBySortOrderAsc(p.getId(), PostPackageOption.Status.ACTIVE)
+                    .stream()
+                    .map(o -> PostPackageOptionResponse.builder()
+                            .id(o.getId())
+                            .name(o.getName())
+                            .durationDays(o.getDurationDays())
+                            .price(o.getPrice())
+                            .listPrice(o.getListPrice())
+                            .isDefault(o.getIsDefault())
+                            .sortOrder(o.getSortOrder())
+                            .build())
+                    .toList();
 
-          String note = "STANDARD".equals(p.getCode()) ? "Miễn phí lần đăng đầu tiên" : null;
+            String note = "STANDARD".equals(p.getCode()) ? "Miễn phí lần đăng đầu tiên" : null;
 
-          return PostPackageResponse.builder()
-                  .postPackageId(p.getId())
-                  .postPackageCode(p.getCode())
-                  .postPackageName(p.getName())
-                  .postPackageDesc(p.getDescription())
-                  .billingMode(p.getBillingMode())
-                  .category(p.getCategory())
-                  .baseDurationDays(p.getBaseDurationDays())
+            return PostPackageResponse.builder()
+                    .postPackageId(p.getId())
+                    .postPackageCode(p.getCode())
+                    .postPackageName(p.getName())
+                    .postPackageDesc(p.getDescription())
+                    .billingMode(p.getBillingMode())
+                    .category(p.getCategory())
+                    .baseDurationDays(p.getBaseDurationDays())
 
-                  .price(p.getPrice())
-                  .dailyPrice(p.getDailyPrice())
-                  .includesPostFee(p.getIncludesPostFee())
-                  .priorityLevel(p.getPriorityLevel())
-                  .badgeLabel(p.getBadgeLabel())
-                  .showInLatest(p.getShowInLatest())
-                  .showTopSearch(p.getShowTopSearch())
-                  .listPrice(p.getListPrice())
-                  .isDefault(p.getIsDefault())
-                  .note(note)
-                  .options(optionResponses)
-                  .build();
+                    .price(p.getPrice())
+                    .dailyPrice(p.getDailyPrice())
+                    .includesPostFee(p.getIncludesPostFee())
+                    .priorityLevel(p.getPriorityLevel())
+                    .badgeLabel(p.getBadgeLabel())
+                    .showInLatest(p.getShowInLatest())
+                    .showTopSearch(p.getShowTopSearch())
+                    .listPrice(p.getListPrice())
+                    .isDefault(p.getIsDefault())
+                    .note(note)
+                    .options(optionResponses)
+                    .build();
         }).toList();
     }
 }

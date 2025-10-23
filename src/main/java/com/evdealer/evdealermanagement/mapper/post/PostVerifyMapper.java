@@ -74,6 +74,8 @@ public class PostVerifyMapper {
                 .sellerName(product.getSeller().getFullName())
                 .sellerId(product.getSeller().getId())
                 .sellerPhone(product.getSellerPhone())
+                .featuredEndAt(product.getFeaturedEndAt())
+                .expiresAt(product.getExpiresAt())
                 .updateAt(product.getUpdatedAt())
                 .build();
     }

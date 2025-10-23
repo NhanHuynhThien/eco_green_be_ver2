@@ -34,4 +34,7 @@ public class PostVerifyResponse {
     private String sellerId;
     private String sellerName;
     private String sellerPhone;
-}
+
+    private LocalDateTime featuredEndAt;
+    private LocalDateTime expiresAt;
+};

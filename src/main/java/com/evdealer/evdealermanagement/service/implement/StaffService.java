@@ -73,6 +73,23 @@ public class StaffService {
             product.setStatus(Product.Status.ACTIVE);
             product.setRejectReason(null);
 
+            PostPayment payment = postPaymentRepository
+                    .findTopByProductIdAndPaymentStatusOrderByCreatedAtDesc(
+                            product.getId(), PostPayment.PaymentStatus.COMPLETED)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "No completed payment found for this product"));
+
+            int elevatedDays = 0;
+            if (payment.getPostPackageOption() != null) {
+                Integer d = payment.getPostPackageOption().getDurationDays(); // 1/3/5/7...
+                elevatedDays = (d != null ? d : 0);
+            }
+
+            // 3) Ghi mốc thời gian theo yêu cầu
+            LocalDateTime now = LocalDateTime.now();
+            product.setFeaturedEndAt(elevatedDays > 0 ? now.plusDays(elevatedDays) : null);
+            product.setExpiresAt(now.plusDays(30));
+
             // 4) LOGIC MỚI: Xử lý thông số kỹ thuật xe sau khi DUYỆT BÀI
             if (isVehicleProduct(product)) {
                 generateAndSaveVehicleSpecs(product);
