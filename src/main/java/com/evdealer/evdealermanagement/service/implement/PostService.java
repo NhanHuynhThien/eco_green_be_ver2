@@ -11,7 +11,6 @@ import com.evdealer.evdealermanagement.dto.post.vehicle.VehiclePostResponse;
 import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.product.ProductImages;
-import com.evdealer.evdealermanagement.entity.vehicle.VehicleCatalog;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
 import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
@@ -26,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -129,8 +127,8 @@ public class PostService implements IProductPostService {
                         .brand(veBrandsRepo.findById(request.getBrandId()).orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND)))
                         .batteryHealthPercent(request.getBatteryHealthPercent())
                         .mileageKm(request.getMileageKm())
-                        .model(vehicleModelRepository.findById(request.getModelId()).orElseThrow(() -> new AppException(ErrorCode.MODEL_NOT_FOUND)))
-                        .version(vmvRepo.findById(request.getVersionId()).orElseThrow(() -> new AppException(ErrorCode.VERSION_NOT_FOUND)))
+                        .model(vehicleModelRepository.findById(request.getModelId()).orElse(null))
+                        .version(request.getVersionId() != null ? vmvRepo.findById(request.getVersionId()).orElseThrow(() -> new AppException(ErrorCode.VERSION_NOT_FOUND)) : null)
                         .build());
 
         List<ProductImageResponse> imageDtos = uploadAndSaveImages(product, images, imagesMetaJson);
@@ -161,9 +159,8 @@ public class PostService implements IProductPostService {
 
     }
 
-
     //Support Method
-    private  void validateImages(List<MultipartFile> images){
+    public  void validateImages(List<MultipartFile> images){
         if(images == null || images.isEmpty()){
             throw new AppException(ErrorCode.MIN_1_IMAGE);
         }
@@ -185,7 +182,7 @@ public class PostService implements IProductPostService {
         }
     }
 
-    private Map<Integer, ImageMeta> parseMeta(String json) {
+    public Map<Integer, ImageMeta> parseMeta(String json) {
         if(json == null || json.isBlank()) return Map.of();
         try {
             var list = objectMapper.readValue(json, new TypeReference<List<ImageMeta>>() {
@@ -201,7 +198,7 @@ public class PostService implements IProductPostService {
 
     }
 
-    private List<ProductImageResponse> uploadAndSaveImages(Product product, List<MultipartFile> files, String metaJson) {
+    public List<ProductImageResponse> uploadAndSaveImages(Product product, List<MultipartFile> files, String metaJson) {
         Map<Integer, ImageMeta> meta = parseMeta(metaJson);
 
         //check if meta specifies primary

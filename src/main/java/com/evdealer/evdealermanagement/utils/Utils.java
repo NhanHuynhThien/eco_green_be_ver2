@@ -1,10 +1,8 @@
 package com.evdealer.evdealermanagement.utils;
 
 import lombok.experimental.UtilityClass;
-import java.util.Random;
 import java.util.regex.Pattern;
 
-import java.util.regex.Pattern;
 
 @UtilityClass
 public class Utils {

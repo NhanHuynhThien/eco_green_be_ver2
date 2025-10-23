@@ -2,7 +2,6 @@ package com.evdealer.evdealermanagement.dto.account.register;
 
 import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.utils.REGREX;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;

@@ -1,5 +1,6 @@
 package com.evdealer.evdealermanagement.controller.member;
 
+import com.evdealer.evdealermanagement.dto.account.custom.CustomAccountDetails;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.service.implement.MemberService;
@@ -21,8 +22,9 @@ public class MemberProductController {
             Authentication authentication,
             @RequestParam Product.Status status
     ) {
-        // Lấy thông tin người dùng hiện tại từ JWT token
-        String sellerId = authentication.getName();
+        CustomAccountDetails customAccountDetails = (CustomAccountDetails) authentication.getPrincipal();
+
+        String sellerId = customAccountDetails.getAccountId();
 
         return memberService.getProductsByStatus(sellerId, status);
     }

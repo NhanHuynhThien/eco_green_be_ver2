@@ -18,18 +18,16 @@ import com.evdealer.evdealermanagement.repository.PostPackageOptionRepository;
 import com.evdealer.evdealermanagement.repository.PostPackageRepository;
 import com.evdealer.evdealermanagement.repository.PostPaymentRepository;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
-import jakarta.persistence.Table;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -74,7 +72,8 @@ public class PaymentService {
                 throw new AppException(ErrorCode.PACKAGE_OPTION_NOT_BELONG_TO_PACKAGE);
             }
             desiredDays = ppo.getDurationDays();
-            totalPayable = ppo.getPrice();
+            Optional<PostPackage> basePackage = packageRepo.findById("99948170-ae4c-11f0-82a9-a2aad89b694c");
+            totalPayable = basePackage.get().getPrice().add(ppo.getPrice());
         } else {
             throw new AppException(ErrorCode.PACKAGE_BILLING_MODE_INVALID);
         }
@@ -138,38 +137,14 @@ public class PaymentService {
                     }
 
                     case "MOMO" -> {
-                        // 1) Round về số nguyên VND và enforce ngưỡng tối thiểu (ví dụ 1000)
-                        long amountVnd = totalPayable.setScale(0, RoundingMode.HALF_UP).longValueExact();
-                        if (amountVnd < 1000) {
-                            throw new AppException(ErrorCode.USER_NOT_FOUND);
-                        }
-
-                        MomoResponse res = momoService.createPaymentRequest(
-                                new MomoRequest(payment.getId(), String.valueOf(amountVnd)));
-                        log.info("DEBUG momoService response: {}", res);
-
-                        // 2) Bắt buộc kiểm tra resultCode
-                        if (res == null || res.getResultCode() == null) {
-                            throw new AppException(ErrorCode.ACCOUNT_INACTIVE); // tự định nghĩa
-                        }
-                        if (res.getResultCode() != 0) {
-                            // log chi tiết để tra soát
-                            throw new AppException(ErrorCode.ACCOUNT_INACTIVE);
-                        }
-
-                        // 3) Ưu tiên payUrl; nếu không có thì fallback deeplink/qrCodeUrl
+                        MomoResponse res = momoService
+                                .createPaymentRequest(new MomoRequest(payment.getId(), totalPayable.toPlainString()));
                         paymentUrl = res.getPayUrl();
-                        if (paymentUrl == null || paymentUrl.isBlank()) {
-                            paymentUrl = (res.getDeeplink() != null && !res.getDeeplink().isBlank())
-                                    ? res.getDeeplink()
-                                    : res.getQrCodeUrl();
-                        }
-                        log.info("DEBUG momoService url chosen: {}", paymentUrl);
+                        log.info("DEBUG momoService response: {}", res);
+                        log.info("DEBUG momoService payUrl: {}", (res == null ? "res=null" : res.getPayUrl()));
 
                     }
-                    case "BANK_TRANSFER", "CASH" -> {
-                        paymentUrl = null; // không có URL online
-                    }
+
                     default -> throw new IllegalArgumentException("Unsupported payment method: " + method);
                 }
             } catch (UnsupportedEncodingException e) {
@@ -267,5 +242,12 @@ public class PaymentService {
                     .options(optionResponses)
                     .build();
         }).toList();
+    }
+
+    private String normalizeString(String value) {
+        if (value == null || value.isEmpty()) {
+            return null;
+        }
+        return value.trim();
     }
 }

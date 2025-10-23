@@ -53,4 +53,8 @@ public interface BatteryDetailRepository extends JpaRepository<BatteryDetails, S
            "LEFT JOIN bd.brand b " +
            "WHERE b.name IN :brandNames OR b.name IS NULL")
     List<BatteryDetails> findByBrandNameIn(@Param("brandNames") List<String> brandNames);
+
+    @Query("SELECT bd FROM BatteryDetails bd WHERE bd.product.id = :productId")
+    BatteryDetails findByProductId(@Param("productId") String productId);
+
 }

@@ -1,18 +1,11 @@
 package com.evdealer.evdealermanagement.dto.vehicle.catalog;
 
 import com.evdealer.evdealermanagement.entity.vehicle.Model;
-import com.evdealer.evdealermanagement.entity.vehicle.ModelVersion;
-import com.evdealer.evdealermanagement.entity.vehicle.VehicleBrands;
-import com.evdealer.evdealermanagement.entity.vehicle.VehicleCategories;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.Column;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 

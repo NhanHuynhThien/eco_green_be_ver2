@@ -7,6 +7,10 @@ import com.evdealer.evdealermanagement.service.implement.StaffService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -32,17 +36,26 @@ public class StaffVerifyPostController {
 
     @GetMapping("/pending/review")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-    public ResponseEntity<List<PostVerifyResponse>> getPendingPosts() {
-        List<PostVerifyResponse> pendingPosts = staffService.getListVerifyPost();
+    public ResponseEntity<Page<PostVerifyResponse>> getPendingPosts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<PostVerifyResponse> pendingPosts = staffService.getListVerifyPost(pageable);
         return ResponseEntity.ok(pendingPosts);
     }
 
     @GetMapping("/pending/review/type")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-    public ResponseEntity<List<PostVerifyResponse>> getPendingPostsByType(
-            @RequestParam(name = "type", required = false) Product.ProductType type) {
-        List<PostVerifyResponse> pendingPosts = staffService.getListVerifyPostByType(type);
+    public ResponseEntity<Page<PostVerifyResponse>> getPendingPostsByType(
+            @RequestParam(name = "type", required = false) Product.ProductType type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<PostVerifyResponse> pendingPosts = staffService.getListVerifyPostByType(type, pageable);
         return ResponseEntity.ok(pendingPosts);
     }
+
 
 }

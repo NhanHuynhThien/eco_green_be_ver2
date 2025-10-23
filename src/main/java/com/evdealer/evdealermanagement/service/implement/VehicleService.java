@@ -1,9 +1,11 @@
 package com.evdealer.evdealermanagement.service.implement;
 
+import com.evdealer.evdealermanagement.dto.post.common.ProductImageResponse;
+import com.evdealer.evdealermanagement.dto.post.vehicle.VehiclePostRequest;
+import com.evdealer.evdealermanagement.dto.post.vehicle.VehiclePostResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsRequest;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
-import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleCategoriesResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.catalog.VehicleCatalogResponse;
@@ -13,6 +15,7 @@ import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelVersionRequest;
 import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelVersionResponse;
 import com.evdealer.evdealermanagement.entity.product.Product;
+import com.evdealer.evdealermanagement.entity.product.ProductImages;
 import com.evdealer.evdealermanagement.entity.vehicle.*;
 import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
@@ -27,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,6 +48,26 @@ public class VehicleService {
     private final VehicleModelRepository vmRepository;
     private final VehicleModelVersionRepository vmvRepository;
     private final ProductRepository productRepository;
+    private final ProductImagesRepository productImagesRepository;
+    private final PostService postService;
+
+    /**
+     * Lấy danh sách Vehicle Product IDs theo tên sản phẩm
+     */
+    public List<Long> getVehicleIdByName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            log.warn("Vehicle name is null or empty");
+            return List.of();
+        }
+
+        try {
+            log.debug("Getting vehicle IDs by name: {}", name);
+            return vehicleDetailsRepository.findVehicleProductIdsByName(name);
+        } catch (Exception e) {
+            log.error("Error getting vehicle IDs by name: {}", name, e);
+            return List.of();
+        }
+    }
 
     /**
      * Lấy danh sách Vehicle Product IDs theo tên hãng
@@ -59,6 +83,158 @@ public class VehicleService {
             return vehicleDetailsRepository.findVehicleProductIdsByBrand(brand);
         } catch (Exception e) {
             log.error("Error getting vehicle IDs by brand: {}", brand, e);
+            return List.of();
+        }
+    }
+
+    /**
+     * Lấy VehicleDetails theo tên sản phẩm
+     */
+    public List<VehicleDetails> getVehicleDetailsByProductName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            log.warn("Product name is null or empty");
+            return List.of();
+        }
+
+        try {
+            log.debug("Getting vehicle details by product name: {}", name);
+            return vehicleDetailsRepository.findVehicleDetailsByProductName(name);
+        } catch (Exception e) {
+            log.error("Error getting vehicle details by product name: {}", name, e);
+            return List.of();
+        }
+    }
+
+    /**
+     * Lấy VehicleDetails theo ID
+     */
+    public Optional<VehicleDetails> getVehicleDetailsById(Long id) {
+        if (id == null || id <= 0) {
+            log.warn("Invalid vehicle ID: {}", id);
+            return Optional.empty();
+        }
+
+        try {
+            log.debug("Getting vehicle details by ID: {}", id);
+            return vehicleDetailsRepository.findById(String.valueOf(id));
+        } catch (Exception e) {
+            log.error("Error getting vehicle details by ID: {}", id, e);
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Lấy tất cả VehicleDetails
+     */
+    public List<VehicleDetails> getAllVehicleDetails() {
+        try {
+            log.debug("Getting all vehicle details");
+            return vehicleDetailsRepository.findAll();
+        } catch (Exception e) {
+            log.error("Error getting all vehicle details", e);
+            return List.of();
+        }
+    }
+
+    /**
+     * Lấy xe theo model
+     */
+    public List<VehicleDetails> getVehiclesByModel(String model) {
+        if (model == null || model.trim().isEmpty()) {
+            log.warn("Vehicle model is null or empty");
+            return List.of();
+        }
+
+        try {
+            log.debug("Getting vehicles by model: {}", model);
+            return vehicleDetailsRepository.findVehiclesByModel(model);
+        } catch (Exception e) {
+            log.error("Error getting vehicles by model: {}", model, e);
+            return List.of();
+        }
+    }
+
+    /**
+     * Lấy xe theo năm sản xuất
+     */
+    public List<VehicleDetails> getVehiclesByYear(Integer year) {
+        if (year == null || year <= 0) {
+            log.warn("Invalid year: {}", year);
+            return List.of();
+        }
+
+        try {
+            log.debug("Getting vehicles by year: {}", year);
+            return vehicleDetailsRepository.findVehiclesByYear(year);
+        } catch (Exception e) {
+            log.error("Error getting vehicles by year: {}", year, e);
+            return List.of();
+        }
+    }
+
+    /**
+     * Lấy xe theo category
+     */
+    public List<VehicleDetails> getVehiclesByCategory(String categoryName) {
+        if (categoryName == null || categoryName.trim().isEmpty()) {
+            log.warn("Category name is null or empty");
+            return List.of();
+        }
+
+        try {
+            log.debug("Getting vehicles by category: {}", categoryName);
+            return vehicleDetailsRepository.findVehiclesByCategory(categoryName);
+        } catch (Exception e) {
+            log.error("Error getting vehicles by category: {}", categoryName, e);
+            return List.of();
+        }
+    }
+
+    /**
+     * Lấy xe theo price range
+     */
+    public List<VehicleDetails> getVehiclesByPriceRange(Double minPrice, Double maxPrice) {
+        if (minPrice == null || maxPrice == null || minPrice < 0 || maxPrice < minPrice) {
+            log.warn("Invalid price range: {} - {}", minPrice, maxPrice);
+            return List.of();
+        }
+
+        try {
+            log.debug("Getting vehicles by price range: {} - {}", minPrice, maxPrice);
+            return vehicleDetailsRepository.findVehiclesByPriceRange(minPrice, maxPrice);
+        } catch (Exception e) {
+            log.error("Error getting vehicles by price range: {} - {}", minPrice, maxPrice, e);
+            return List.of();
+        }
+    }
+
+    /**
+     * Lấy xe có pin tháo rời
+     */
+    public List<VehicleDetails> getVehiclesWithRemovableBattery() {
+        try {
+            log.debug("Getting vehicles with removable battery");
+            return vehicleDetailsRepository.findVehiclesWithRemovableBattery();
+        } catch (Exception e) {
+            log.error("Error getting vehicles with removable battery", e);
+            return List.of();
+        }
+    }
+
+    /**
+     * Lấy xe theo tình trạng sức khỏe pin tối thiểu
+     */
+    public List<VehicleDetails> getVehiclesByBatteryHealth(Integer minHealth) {
+        if (minHealth == null || minHealth < 0 || minHealth > 100) {
+            log.warn("Invalid battery health: {}", minHealth);
+            return List.of();
+        }
+
+        try {
+            log.debug("Getting vehicles by battery health >= {}", minHealth);
+            return vehicleDetailsRepository.findVehiclesByBatteryHealth(minHealth);
+        } catch (Exception e) {
+            log.error("Error getting vehicles by battery health: {}", minHealth, e);
             return List.of();
         }
     }
@@ -239,4 +415,106 @@ public class VehicleService {
     }
 
 
+    @Transactional
+    public VehiclePostResponse updateVehiclePost(String productId, VehiclePostRequest request,
+                                                 List<MultipartFile> images, String imagesMetaJson) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        if(product.getStatus() != Product.Status.DRAFT) {
+            throw new AppException(ErrorCode.PRODUCT_NOT_DRAFT);
+        }
+
+        product.setTitle(request.getTitle());
+        product.setDescription(request.getDescription());
+        product.setPrice(request.getPrice());
+        product.setCity(request.getCity());
+        product.setDistrict(request.getDistrict());
+        product.setWard(request.getWard());
+        product.setAddressDetail(request.getAddressDetail());
+        product.setManufactureYear(request.getYear());
+        product.setUpdatedAt(LocalDateTime.now());
+
+        VehicleDetails details = vehicleDetailsRepository.findByProductId(product.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.VEHICLE_NOT_FOUND));
+        details.setProduct(product);
+        details.setBrand(vehicleBrandsRepository.findById(request.getBrandId())
+        .orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND)));
+        details.setCategory(vehicleCategoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND)));
+        details.setModel(vmRepository.findById(request.getModelId())
+                .orElseThrow(() -> new AppException(ErrorCode.MODEL_NOT_FOUND)));
+        details.setVersion(vmvRepository.findById(request.getVersionId())
+                .orElseThrow(() -> new AppException(ErrorCode.VERSION_NOT_FOUND)));
+        details.setMileageKm(request.getMileageKm());
+        details.setBatteryHealthPercent(request.getBatteryHealthPercent());
+
+        if (images != null) {
+            images = images.stream()
+                    .filter(file -> file != null && !file.isEmpty())
+                    .toList();
+        }
+
+        List<ProductImageResponse> imageDtos = null;
+
+        if(images != null && !images.isEmpty()) {
+
+            //xóa ảnh cũ trong database
+            productImagesRepository.deleteAllByProduct(product);
+            productImagesRepository.flush();
+
+            imageDtos = postService.uploadAndSaveImages(product, images,  imagesMetaJson);
+
+            product.getImages().clear();
+
+            List<ProductImages> newImages = imageDtos.stream()
+                            .map(dto -> ProductImages.builder()
+                                    .product(product)
+                                    .imageUrl(dto.getUrl())
+                                    .isPrimary(dto.isPrimary())
+                                    .build())
+                            .collect(Collectors.toList());
+
+            product.getImages().addAll(newImages);
+        }
+
+        productRepository.save(product);
+        vehicleDetailsRepository.save(details);
+
+        return VehiclePostResponse.builder()
+                .productId(product.getId())
+                .status(product.getStatus().name())
+                .sellerPhone(product.getSellerPhone())
+                .brandName(details.getBrand().getName())
+                .categoryName(details.getCategory().getName())
+                .modelName(details.getModel().getName())
+                .hasInsurance(details.getHasInsurance())
+                .warrantyMonths(details.getWarrantyMonths())
+                .hasRegistration(details.getHasRegistration())
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .price(request.getPrice())
+                .city(request.getCity())
+                .district(request.getDistrict())
+                .ward(request.getWard())
+                .addressDetail(request.getAddressDetail())
+                .createdAt(LocalDateTime.now())
+                .brandId(request.getBrandId())
+                .categoryId(request.getCategoryId())
+                .batteryHealthPercent(request.getBatteryHealthPercent())
+                .mileageKm(request.getMileageKm())
+                .images(
+                        (imageDtos!= null && !imageDtos.isEmpty())
+                                ? imageDtos
+                                : product.getImages().stream()
+                                .map(img -> ProductImageResponse.builder()
+                                        .url(img.getImageUrl())
+                                        .width(img.getWidth())
+                                        .position(img.getPosition())
+                                        .height(img.getHeight())
+                                        .isPrimary(img.getIsPrimary())
+                                        .build())
+                                .toList())
+                .build();
+    }
 }

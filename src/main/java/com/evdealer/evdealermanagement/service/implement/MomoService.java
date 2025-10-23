@@ -27,7 +27,7 @@ public class MomoService {
     private static final String ACCESS_KEY = "F8BBA842ECF85";
     private static final String SECRET_KEY = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
     private static final String REDIRECT_URL = "http://localhost:8080/api/momo/return";
-    private static final String IPN_URL = "https://callback.url/notify";
+    private static final String IPN_URL = "http://localhost:8080/api/momo/ipn";
     private static final String REQUEST_TYPE = "payWithMethod";
 
     public MomoResponse createPaymentRequest(MomoRequest paymentRequest) {
@@ -48,7 +48,7 @@ public class MomoService {
             String orderInfo = "SN Mobile";
 
             // extraData = Base64(JSON) để mang productId
-            String extraDataJson = "{\"productId\":" + paymentRequest.getId() + "}";
+            String extraDataJson = "{\"productId\":\"" + paymentRequest.getId() + "\"}";
             String extraData = Base64.getEncoder()
                     .encodeToString(extraDataJson.getBytes(StandardCharsets.UTF_8));
 

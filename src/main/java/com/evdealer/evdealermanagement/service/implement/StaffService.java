@@ -19,7 +19,8 @@ import com.evdealer.evdealermanagement.repository.ProductRepository;
 import com.evdealer.evdealermanagement.repository.VehicleCatalogRepository;
 import com.evdealer.evdealermanagement.repository.VehicleDetailsRepository;
 
-import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
@@ -28,6 +29,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -211,42 +214,38 @@ public class StaffService {
         }
     }
 
-    @Transactional
-    public List<PostVerifyResponse> getListVerifyPost() {
+    @Transactional(readOnly = true)
+    public Page<PostVerifyResponse> getListVerifyPost(Pageable pageable) {
+        Page<Product> productsPage = productRepository.findByStatus(Product.Status.PENDING_REVIEW, pageable);
 
-        List<Product> products = productRepository.findByStatus(Product.Status.PENDING_REVIEW);
-        List<PostVerifyResponse> responses = new ArrayList<>();
-        for (Product product : products) {
+        return productsPage.map(product -> {
             PostPayment payment = postPaymentRepository
                     .findTopByProductIdAndPaymentStatusOrderByIdDesc(
                             product.getId(),
                             PostPayment.PaymentStatus.COMPLETED)
                     .orElse(null);
-            PostVerifyResponse response = PostVerifyMapper.mapToPostVerifyResponse(product, payment);
-            responses.add(response);
-        }
-        return responses;
+            return PostVerifyMapper.mapToPostVerifyResponse(product, payment);
+        });
     }
 
-    @Transactional
-    public List<PostVerifyResponse> getListVerifyPostByType(Product.ProductType type) {
-        List<Product> products;
+    @Transactional(readOnly = true)
+    public Page<PostVerifyResponse> getListVerifyPostByType(Product.ProductType type, Pageable pageable) {
+        Page<Product> productsPage;
         if (type != null) {
-            products = productRepository.findByStatusAndType(Product.Status.PENDING_REVIEW, type);
+            productsPage = productRepository.findByStatusAndType(Product.Status.PENDING_REVIEW, type, pageable);
         } else {
-            products = productRepository.findByStatus(Product.Status.PENDING_REVIEW);
+            productsPage = productRepository.findByStatus(Product.Status.PENDING_REVIEW, pageable);
         }
-        List<PostVerifyResponse> responses = new ArrayList<>();
-        for (Product product : products) {
+
+        return productsPage.map(product -> {
             PostPayment payment = postPaymentRepository
                     .findTopByProductIdAndPaymentStatusOrderByIdDesc(
                             product.getId(),
                             PostPayment.PaymentStatus.COMPLETED)
                     .orElse(null);
-            PostVerifyResponse response = PostVerifyMapper.mapToPostVerifyResponse(product, payment);
-            responses.add(response);
-        }
-        return responses;
+            return PostVerifyMapper.mapToPostVerifyResponse(product, payment);
+        });
     }
+
 
 }
