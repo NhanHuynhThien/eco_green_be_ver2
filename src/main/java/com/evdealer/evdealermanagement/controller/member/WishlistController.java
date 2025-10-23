@@ -2,7 +2,7 @@ package com.evdealer.evdealermanagement.controller.member;
 
 import com.evdealer.evdealermanagement.dto.account.custom.CustomAccountDetails;
 import com.evdealer.evdealermanagement.dto.wishlist.WishlistItemResponse;
-import com.evdealer.evdealermanagement.dto.wishlist.WishlistPageResponse;
+import com.evdealer.evdealermanagement.dto.common.PageResponse;
 import com.evdealer.evdealermanagement.dto.wishlist.WishlistRequest;
 import com.evdealer.evdealermanagement.service.implement.WishlistService;
 import lombok.RequiredArgsConstructor;
@@ -21,8 +21,8 @@ public class WishlistController {
     private final WishlistService wishlistService;
 
     @GetMapping
-    public WishlistPageResponse<WishlistItemResponse> listWishlist(@AuthenticationPrincipal CustomAccountDetails user,
-            @PageableDefault(size = 10, sort = "addedAt", direction = Sort.Direction.DESC) Pageable pageable) {
+    public PageResponse<WishlistItemResponse> listWishlist(@AuthenticationPrincipal CustomAccountDetails user,
+                                                           @PageableDefault(size = 10, sort = "addedAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return wishlistService.listWishlistItem(user.getAccountId(), pageable);
     }
 
