@@ -159,7 +159,6 @@ public class PostService implements IProductPostService {
 
     }
 
-
     //Support Method
     public  void validateImages(List<MultipartFile> images){
         if(images == null || images.isEmpty()){

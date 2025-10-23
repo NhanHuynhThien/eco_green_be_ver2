@@ -19,12 +19,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-<<<<<<< Updated upstream
-=======
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
->>>>>>> Stashed changes
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
