@@ -12,6 +12,8 @@ import com.evdealer.evdealermanagement.entity.vehicle.VehicleBrands;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleCatalog;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleCategories;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
+import com.evdealer.evdealermanagement.exceptions.AppException;
+import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import com.evdealer.evdealermanagement.mapper.post.PostVerifyMapper;
 import com.evdealer.evdealermanagement.mapper.vehicle.VehicleCatalogMapper;
 import com.evdealer.evdealermanagement.repository.PostPaymentRepository;
@@ -24,13 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -54,7 +53,7 @@ public class StaffService {
     private VehicleDetailsRepository vehicleDetailsRepository;
 
     @Transactional
-    public PostVerifyResponse verifyPost(String productId, PostVerifyRequest request) {
+    public PostVerifyResponse verifyPostActive(String productId) {
 
         Account currentUser = userContextService.getCurrentUser()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized user"));
@@ -71,38 +70,29 @@ public class StaffService {
                     "Only posts in PENDING_REVIEW status can be verified or rejected");
         }
 
-        // Xử lý action
-        if (request.getAction() == PostVerifyRequest.ActionType.ACTIVE) {
-            product.setStatus(Product.Status.ACTIVE);
-            product.setRejectReason(null);
+        product.setStatus(Product.Status.ACTIVE);
+        product.setRejectReason(null);
 
-            PostPayment payment = postPaymentRepository
-                    .findTopByProductIdAndPaymentStatusOrderByCreatedAtDesc(
-                            product.getId(), PostPayment.PaymentStatus.COMPLETED)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                            "No completed payment found for this product"));
+        PostPayment payment = postPaymentRepository
+                .findTopByProductIdAndPaymentStatusOrderByCreatedAtDesc(
+                        product.getId(), PostPayment.PaymentStatus.COMPLETED)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "No completed payment found for this product"));
 
-            int elevatedDays = 0;
-            if (payment.getPostPackageOption() != null) {
-                Integer d = payment.getPostPackageOption().getDurationDays(); // 1/3/5/7...
-                elevatedDays = (d != null ? d : 0);
-            }
+        int elevatedDays = 0;
+        if (payment.getPostPackageOption() != null) {
+            Integer d = payment.getPostPackageOption().getDurationDays(); // 1/3/5/7...
+            elevatedDays = (d != null ? d : 0);
+        }
 
-            // 3) Ghi mốc thời gian theo yêu cầu
-            LocalDateTime now = LocalDateTime.now();
-            product.setFeaturedEndAt(elevatedDays > 0 ? now.plusDays(elevatedDays) : null);
-            product.setExpiresAt(now.plusDays(30));
+        // 3) Ghi mốc thời gian theo yêu cầu
+        LocalDateTime now = LocalDateTime.now();
+        product.setFeaturedEndAt(elevatedDays > 0 ? now.plusDays(elevatedDays) : null);
+        product.setExpiresAt(now.plusDays(30));
 
-            // 4) LOGIC MỚI: Xử lý thông số kỹ thuật xe sau khi DUYỆT BÀI
-            if (isVehicleProduct(product)) {
-                generateAndSaveVehicleSpecs(product);
-            }
-
-        } else if (request.getAction() == PostVerifyRequest.ActionType.REJECT) {
-            product.setStatus(Product.Status.REJECTED);
-            product.setRejectReason(request.getRejectReason());
-        } else {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported action");
+        // 4) Xử lý thông số kỹ thuật xe sau khi DUYỆT BÀI
+        if (isVehicleProduct(product)) {
+            generateAndSaveVehicleSpecs(product);
         }
 
         product.setApprovedBy(currentUser);
@@ -113,6 +103,19 @@ public class StaffService {
 
     private boolean isVehicleProduct(Product product) {
         return product.getType() != null && "VEHICLE".equals(product.getType().name());
+    }
+
+    @Transactional
+    public PostVerifyResponse verifyPostReject(String productId, String rejectReason) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        product.setStatus(Product.Status.REJECTED);
+        product.setRejectReason(rejectReason);
+        product.setUpdatedAt(LocalDateTime.now());
+        productRepository.save(product);
+
+        return PostVerifyMapper.mapToPostVerifyResponse(product);
     }
 
     // Generate và Lưu thông số kỹ thuật
@@ -246,6 +249,5 @@ public class StaffService {
             return PostVerifyMapper.mapToPostVerifyResponse(product, payment);
         });
     }
-
 
 }

@@ -1,5 +1,6 @@
 package com.evdealer.evdealermanagement.dto.post.verification;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
@@ -10,12 +11,7 @@ import lombok.*;
 @Builder
 public class PostVerifyRequest {
 
-    @NotNull(message = "Action must not be null")
-    private ActionType action;
-
+    @NotBlank(message = "Reject reason must not be empty")
     private String rejectReason;
 
-    public enum ActionType {
-        ACTIVE, REJECT
-    }
 }
