@@ -3,6 +3,7 @@ package com.evdealer.evdealermanagement.controller.vehicle;
 import com.evdealer.evdealermanagement.dto.account.custom.CustomAccountDetails;
 import com.evdealer.evdealermanagement.dto.post.vehicle.VehiclePostRequest;
 import com.evdealer.evdealermanagement.dto.post.vehicle.VehiclePostResponse;
+import com.evdealer.evdealermanagement.dto.product.similar.SimilarProductResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleCategoriesResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.detail.VehicleDetailResponse;
@@ -19,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -80,5 +82,11 @@ public class VehicleController {
     @GetMapping("/catalog/{id}")
     public VehicleDetailResponse getVehicleDetailResponse(@PathVariable String id) {
         return vehicleService.getVehicleDetailsInfo(id);
+    }
+
+    @GetMapping("/{productId}/similar")
+    public ResponseEntity<List<SimilarProductResponse>> getSimilarVehicles(@PathVariable String productId) {
+        List<SimilarProductResponse> result = vehicleService.getSimilarVehicles(productId);
+        return ResponseEntity.ok(result);
     }
 }
