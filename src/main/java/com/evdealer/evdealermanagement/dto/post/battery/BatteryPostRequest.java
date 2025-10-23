@@ -1,16 +1,10 @@
 package com.evdealer.evdealermanagement.dto.post.battery;
 
-import com.evdealer.evdealermanagement.entity.BaseEntity;
-import com.evdealer.evdealermanagement.entity.battery.BatteryBrands;
-import com.evdealer.evdealermanagement.entity.battery.BatteryTypes;
-import com.evdealer.evdealermanagement.entity.product.Product;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Data
 @Builder

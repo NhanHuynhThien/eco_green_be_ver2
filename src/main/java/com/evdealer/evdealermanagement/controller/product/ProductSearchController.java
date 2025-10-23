@@ -42,7 +42,7 @@ public class ProductSearchController {
     }
 
     /**
-     * Tìm sản phẩm theo ID
+     * Find Product By ID
      */
     @GetMapping("/{id}")
     public ResponseEntity<ProductDetail> getProductById(@PathVariable String id) {

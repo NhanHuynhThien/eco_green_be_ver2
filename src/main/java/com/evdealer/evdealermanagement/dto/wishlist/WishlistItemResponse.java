@@ -1,6 +1,5 @@
 package com.evdealer.evdealermanagement.dto.wishlist;
 
-import jakarta.persistence.Column;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 

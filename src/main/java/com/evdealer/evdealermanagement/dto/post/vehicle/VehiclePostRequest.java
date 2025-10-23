@@ -1,14 +1,10 @@
 package com.evdealer.evdealermanagement.dto.post.vehicle;
 
-import com.evdealer.evdealermanagement.entity.product.Product;
-import com.evdealer.evdealermanagement.entity.vehicle.Model;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Data
 @Builder
