@@ -16,5 +16,5 @@ public class ReportRequest {
     String productId;
     String phone;
     String email;
-    String repostReason;
+    String reportReason;
 }
