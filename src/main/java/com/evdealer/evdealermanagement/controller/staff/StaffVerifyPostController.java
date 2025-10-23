@@ -7,11 +7,13 @@ import com.evdealer.evdealermanagement.service.implement.StaffService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/staff/post")
@@ -20,28 +22,42 @@ public class StaffVerifyPostController {
 
     private final StaffService staffService;
 
-    @PutMapping("/{productId}/verify")
+    @PostMapping("/{productId}/verify/active")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-    public ResponseEntity<PostVerifyResponse> verifyPost(
+    public ResponseEntity<PostVerifyResponse> approvePost(@PathVariable String productId) {
+        PostVerifyResponse response = staffService.verifyPostActive(productId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{productId}/verify/reject")
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    public ResponseEntity<PostVerifyResponse> rejectPost(
             @PathVariable String productId,
             @Valid @RequestBody PostVerifyRequest request) {
-
-        PostVerifyResponse response = staffService.verifyPost(productId, request);
+        PostVerifyResponse response = staffService.verifyPostReject(productId, request.getRejectReason());
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/pending/review")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-    public ResponseEntity<List<PostVerifyResponse>> getPendingPosts() {
-        List<PostVerifyResponse> pendingPosts = staffService.getListVerifyPost();
+    public ResponseEntity<Page<PostVerifyResponse>> getPendingPosts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<PostVerifyResponse> pendingPosts = staffService.getListVerifyPost(pageable);
         return ResponseEntity.ok(pendingPosts);
     }
 
     @GetMapping("/pending/review/type")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-    public ResponseEntity<List<PostVerifyResponse>> getPendingPostsByType(
-            @RequestParam(name = "type", required = false) Product.ProductType type) {
-        List<PostVerifyResponse> pendingPosts = staffService.getListVerifyPostByType(type);
+    public ResponseEntity<Page<PostVerifyResponse>> getPendingPostsByType(
+            @RequestParam(name = "type", required = false) Product.ProductType type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<PostVerifyResponse> pendingPosts = staffService.getListVerifyPostByType(type, pageable);
         return ResponseEntity.ok(pendingPosts);
     }
 

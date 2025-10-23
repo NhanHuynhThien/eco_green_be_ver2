@@ -22,7 +22,6 @@ public class MemberProductController {
             Authentication authentication,
             @RequestParam Product.Status status
     ) {
-        // Lấy thông tin người dùng hiện tại từ JWT token
         CustomAccountDetails customAccountDetails = (CustomAccountDetails) authentication.getPrincipal();
 
         String sellerId = customAccountDetails.getAccountId();

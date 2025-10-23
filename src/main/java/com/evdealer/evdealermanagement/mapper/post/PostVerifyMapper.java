@@ -35,9 +35,14 @@ public class PostVerifyMapper {
                 .title(p.getTitle())
                 .thumbnail(thumbnail)
                 .productType(p.getType())
+                .sellerName(p.getSeller().getFullName())
+                .sellerId(p.getSeller().getId())
+                .sellerPhone(p.getSellerPhone())
                 .updateAt(p.getUpdatedAt())
                 .modelName(modelName)
                 .versionName(versionName)
+                .featuredEndAt(p.getFeaturedEndAt())
+                .expiresAt(p.getExpiresAt())
                 .packageName(payment != null && payment.getPostPackage() != null
                         ? payment.getPostPackage().getName()
                         : null)
@@ -68,6 +73,11 @@ public class PostVerifyMapper {
                 .rejectReason(product.getRejectReason())
                 .modelName(modelName)
                 .versionName(versionName)
+                .sellerName(product.getSeller().getFullName())
+                .sellerId(product.getSeller().getId())
+                .sellerPhone(product.getSellerPhone())
+                .featuredEndAt(product.getFeaturedEndAt())
+                .expiresAt(product.getExpiresAt())
                 .updateAt(product.getUpdatedAt())
                 .build();
     }

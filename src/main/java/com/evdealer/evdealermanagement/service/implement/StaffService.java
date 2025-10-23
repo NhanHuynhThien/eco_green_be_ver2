@@ -12,6 +12,8 @@ import com.evdealer.evdealermanagement.entity.vehicle.VehicleBrands;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleCatalog;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleCategories;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
+import com.evdealer.evdealermanagement.exceptions.AppException;
+import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import com.evdealer.evdealermanagement.mapper.post.PostVerifyMapper;
 import com.evdealer.evdealermanagement.mapper.vehicle.VehicleCatalogMapper;
 import com.evdealer.evdealermanagement.repository.PostPaymentRepository;
@@ -19,15 +21,15 @@ import com.evdealer.evdealermanagement.repository.ProductRepository;
 import com.evdealer.evdealermanagement.repository.VehicleCatalogRepository;
 import com.evdealer.evdealermanagement.repository.VehicleDetailsRepository;
 
-import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -51,7 +53,7 @@ public class StaffService {
     private VehicleDetailsRepository vehicleDetailsRepository;
 
     @Transactional
-    public PostVerifyResponse verifyPost(String productId, PostVerifyRequest request) {
+    public PostVerifyResponse verifyPostActive(String productId) {
 
         Account currentUser = userContextService.getCurrentUser()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized user"));
@@ -68,21 +70,29 @@ public class StaffService {
                     "Only posts in PENDING_REVIEW status can be verified or rejected");
         }
 
-        // Xử lý action
-        if (request.getAction() == PostVerifyRequest.ActionType.ACTIVE) {
-            product.setStatus(Product.Status.ACTIVE);
-            product.setRejectReason(null);
+        product.setStatus(Product.Status.ACTIVE);
+        product.setRejectReason(null);
 
-            // 4) LOGIC MỚI: Xử lý thông số kỹ thuật xe sau khi DUYỆT BÀI
-            if (isVehicleProduct(product)) {
-                generateAndSaveVehicleSpecs(product);
-            }
+        PostPayment payment = postPaymentRepository
+                .findTopByProductIdAndPaymentStatusOrderByCreatedAtDesc(
+                        product.getId(), PostPayment.PaymentStatus.COMPLETED)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "No completed payment found for this product"));
 
-        } else if (request.getAction() == PostVerifyRequest.ActionType.REJECT) {
-            product.setStatus(Product.Status.REJECTED);
-            product.setRejectReason(request.getRejectReason());
-        } else {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported action");
+        int elevatedDays = 0;
+        if (payment.getPostPackageOption() != null) {
+            Integer d = payment.getPostPackageOption().getDurationDays(); // 1/3/5/7...
+            elevatedDays = (d != null ? d : 0);
+        }
+
+        // 3) Ghi mốc thời gian theo yêu cầu
+        LocalDateTime now = LocalDateTime.now();
+        product.setFeaturedEndAt(elevatedDays > 0 ? now.plusDays(elevatedDays) : null);
+        product.setExpiresAt(now.plusDays(30));
+
+        // 4) Xử lý thông số kỹ thuật xe sau khi DUYỆT BÀI
+        if (isVehicleProduct(product)) {
+            generateAndSaveVehicleSpecs(product);
         }
 
         product.setApprovedBy(currentUser);
@@ -93,6 +103,19 @@ public class StaffService {
 
     private boolean isVehicleProduct(Product product) {
         return product.getType() != null && "VEHICLE".equals(product.getType().name());
+    }
+
+    @Transactional
+    public PostVerifyResponse verifyPostReject(String productId, String rejectReason) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        product.setStatus(Product.Status.REJECTED);
+        product.setRejectReason(rejectReason);
+        product.setUpdatedAt(LocalDateTime.now());
+        productRepository.save(product);
+
+        return PostVerifyMapper.mapToPostVerifyResponse(product);
     }
 
     // Generate và Lưu thông số kỹ thuật
@@ -194,42 +217,37 @@ public class StaffService {
         }
     }
 
-    @Transactional
-    public List<PostVerifyResponse> getListVerifyPost() {
+    @Transactional(readOnly = true)
+    public Page<PostVerifyResponse> getListVerifyPost(Pageable pageable) {
+        Page<Product> productsPage = productRepository.findByStatus(Product.Status.PENDING_REVIEW, pageable);
 
-        List<Product> products = productRepository.findByStatus(Product.Status.PENDING_REVIEW);
-        List<PostVerifyResponse> responses = new ArrayList<>();
-        for (Product product : products) {
+        return productsPage.map(product -> {
             PostPayment payment = postPaymentRepository
                     .findTopByProductIdAndPaymentStatusOrderByIdDesc(
                             product.getId(),
                             PostPayment.PaymentStatus.COMPLETED)
                     .orElse(null);
-            PostVerifyResponse response = PostVerifyMapper.mapToPostVerifyResponse(product, payment);
-            responses.add(response);
-        }
-        return responses;
+            return PostVerifyMapper.mapToPostVerifyResponse(product, payment);
+        });
     }
 
-    @Transactional
-    public List<PostVerifyResponse> getListVerifyPostByType(Product.ProductType type) {
-        List<Product> products;
+    @Transactional(readOnly = true)
+    public Page<PostVerifyResponse> getListVerifyPostByType(Product.ProductType type, Pageable pageable) {
+        Page<Product> productsPage;
         if (type != null) {
-            products = productRepository.findByStatusAndType(Product.Status.PENDING_REVIEW, type);
+            productsPage = productRepository.findByStatusAndType(Product.Status.PENDING_REVIEW, type, pageable);
         } else {
-            products = productRepository.findByStatus(Product.Status.PENDING_REVIEW);
+            productsPage = productRepository.findByStatus(Product.Status.PENDING_REVIEW, pageable);
         }
-        List<PostVerifyResponse> responses = new ArrayList<>();
-        for (Product product : products) {
+
+        return productsPage.map(product -> {
             PostPayment payment = postPaymentRepository
                     .findTopByProductIdAndPaymentStatusOrderByIdDesc(
                             product.getId(),
                             PostPayment.PaymentStatus.COMPLETED)
                     .orElse(null);
-            PostVerifyResponse response = PostVerifyMapper.mapToPostVerifyResponse(product, payment);
-            responses.add(response);
-        }
-        return responses;
+            return PostVerifyMapper.mapToPostVerifyResponse(product, payment);
+        });
     }
 
 }

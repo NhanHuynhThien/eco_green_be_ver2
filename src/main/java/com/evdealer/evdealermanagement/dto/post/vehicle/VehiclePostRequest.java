@@ -1,14 +1,10 @@
 package com.evdealer.evdealermanagement.dto.post.vehicle;
 
-import com.evdealer.evdealermanagement.entity.product.Product;
-import com.evdealer.evdealermanagement.entity.vehicle.Model;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -66,11 +62,13 @@ public class VehiclePostRequest {
     @PositiveOrZero(message = "Mileage must be 0 or greater")
     Integer mileageKm;
 
+    @NotBlank(message = "Please enter the vehicle model")
     String modelId;
 
     @NotNull(message = "Please enter the manufacturing year")
     @Min(value = 1900, message = "Year must be greater than or equal to 1900")
     Short year;
+
 
     String versionId;
 

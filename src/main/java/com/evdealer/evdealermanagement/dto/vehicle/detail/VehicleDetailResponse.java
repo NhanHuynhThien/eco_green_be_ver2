@@ -1,7 +1,6 @@
 package com.evdealer.evdealermanagement.dto.vehicle.detail;
 
 import com.evdealer.evdealermanagement.dto.vehicle.catalog.VehicleCatalogResponse;
-import com.evdealer.evdealermanagement.entity.vehicle.VehicleCatalog;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

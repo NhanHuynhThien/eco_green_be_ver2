@@ -1,12 +1,10 @@
 package com.evdealer.evdealermanagement.dto.post.packages;
 
-import com.evdealer.evdealermanagement.entity.post.PostPackage;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Data
 @AllArgsConstructor

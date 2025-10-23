@@ -1,14 +1,11 @@
 package com.evdealer.evdealermanagement.service.implement;
 
-import com.evdealer.evdealermanagement.dto.account.custom.CustomAccountDetails;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
 import jakarta.transaction.Transactional;
-import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,5 +22,6 @@ public class MemberService {
         return productRepository.findBySellerAndStatus(sellerId, status)
                 .stream().map(ProductDetail::fromEntity).toList();
     }
+
 
 }
