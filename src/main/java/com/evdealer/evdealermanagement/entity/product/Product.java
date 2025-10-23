@@ -2,8 +2,10 @@ package com.evdealer.evdealermanagement.entity.product;
 
 import com.evdealer.evdealermanagement.entity.BaseEntity;
 import com.evdealer.evdealermanagement.entity.account.Account;
+import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
 import com.evdealer.evdealermanagement.entity.vehicle.ModelVersion;
 
+import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -104,6 +106,12 @@ public class Product extends BaseEntity {
 
     @Column(name = "manufacture_year")
     private Short manufactureYear;
+
+    @OneToOne(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private VehicleDetails vehicleDetails;
+
+    @OneToOne(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private BatteryDetails batteryDetails;
 
     public enum ProductType {
         BATTERY, VEHICLE

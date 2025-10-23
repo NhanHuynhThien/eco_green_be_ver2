@@ -1,5 +1,6 @@
 package com.evdealer.evdealermanagement.service.implement;
 
+import com.evdealer.evdealermanagement.dto.common.PageResponse;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
 import com.evdealer.evdealermanagement.dto.product.moderation.ProductPendingResponse;
 import com.evdealer.evdealermanagement.entity.account.Account;
@@ -7,12 +8,23 @@ import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.mapper.product.ProductMapper;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
 import com.evdealer.evdealermanagement.service.contract.IProductService;
+import com.evdealer.evdealermanagement.utils.ProductSpecs;
 import com.evdealer.evdealermanagement.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+<<<<<<< Updated upstream
+=======
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+>>>>>>> Stashed changes
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -29,6 +41,8 @@ public class ProductService implements IProductService {
     private final VehicleService vehicleService;
     private final BatteryService batteryService;
     private final WishlistService wishlistService;
+    private static final int MAX_PAGE_SIZE = 100;
+
 
     @Override
     @Transactional(readOnly = true)
@@ -317,92 +331,128 @@ public class ProductService implements IProductService {
     // NEW METHOD: Filter with multiple filters
     // ============================================
     @Transactional(readOnly = true)
-    public List<ProductDetail> filterProducts(String name, String brand, String type) {
+    public PageResponse<ProductDetail> filterProducts(String name, String brand, String type, String city, String district, BigDecimal minPrice, BigDecimal maxPrice, Integer yearFrom, Integer yearTo, Pageable pageable) {
+        validateFilters(minPrice, maxPrice, yearFrom, yearTo);
+        pageable = capPageSize(pageable);
+
+        Product.ProductType emunType = parseTypeOrNull(type);
+
+        Specification<Product> spec = Specification
+                .where(ProductSpecs.hasStatus(Product.Status.ACTIVE))
+                .and(ProductSpecs.titleLike(name))
+                .and(ProductSpecs.hasType(emunType))
+                .and(emunType == Product.ProductType.VEHICLE ? ProductSpecs.hasVehicleBrandId(brand) : ProductSpecs.hasBatteryBrandId(brand))
+                .and(ProductSpecs.cityEq(city))
+                .and(ProductSpecs.districtEq(district))
+                .and(ProductSpecs.priceGte(minPrice))
+                .and(ProductSpecs.priceLte(maxPrice))
+                .and(ProductSpecs.yearGte(yearFrom))
+                .and(ProductSpecs.yearLte(yearTo));
+
+        Page<Product> page = productRepository.findAll(spec, pageable);
+
+        String accountId = SecurityUtils.getCurrentAccountId(); // có thể null nếu chưa đăng nhập
+        List<ProductDetail> content;
         try {
-            log.info("=== START filterProducts: name={}, brand={}, type={} ===", name, brand, type);
-
-            // Start with all ACTIVE products
-            List<Product> products = productRepository.findAll()
-                    .stream()
-                    .filter(product -> product.getStatus() == Product.Status.ACTIVE)
-                    .collect(Collectors.toList());
-
-            log.info("Initial ACTIVE products count: {}", products.size());
-
-            if (products.isEmpty()) {
-                log.warn("No active products found in database");
-                return List.of();
-            }
-
-            // Apply name filter
-            if (name != null && !name.trim().isEmpty()) {
-                String searchName = name.trim().toLowerCase();
-                products = products.stream()
-                        .filter(p -> p.getTitle() != null &&
-                                p.getTitle().toLowerCase().contains(searchName))
-                        .collect(Collectors.toList());
-                log.info("After name filter '{}': {} products", name, products.size());
-            }
-
-            // Apply type filter
-            if (type != null && !type.trim().isEmpty()) {
-                try {
-                    Product.ProductType enumType = Product.ProductType.valueOf(type.trim().toUpperCase());
-                    products = products.stream()
-                            .filter(p -> p.getType() == enumType)
-                            .collect(Collectors.toList());
-                    log.info("After type filter '{}': {} products", type, products.size());
-                } catch (IllegalArgumentException e) {
-                    log.error("Invalid product type: {}", type);
-                    throw new IllegalArgumentException("Invalid product type: " + type);
-                }
-            }
-
-            // Apply brand filter
-            if (brand != null && !brand.trim().isEmpty()) {
-                List<String> productIdsByBrand = getProductIdsByBrand(brand.trim());
-                products = products.stream()
-                        .filter(p -> productIdsByBrand.contains(p.getId()))
-                        .collect(Collectors.toList());
-                log.info("After brand filter '{}': {} products", brand, products.size());
-            }
-
-            if (products.isEmpty()) {
-                log.info("No products match the filter criteria");
-                return List.of();
-            }
-
-            String accountId = SecurityUtils.getCurrentAccountId();
-            List<ProductDetail> result;
-
-            try {
-                result = wishlistService.attachWishlistFlag(
-                        accountId,
-                        products,
-                        ProductMapper::toDetailDto,
-                        ProductDetail::setIsWishlisted);
-            } catch (Exception e) {
-                log.error("Error attaching wishlist flags, using basic mapping", e);
-                result = products.stream()
-                        .map(ProductMapper::toDetailDto)
-                        .collect(Collectors.toList());
-            }
-
-            // Sort by createdAt with null-safe comparator
-            result.sort(Comparator.comparing(
-                    ProductDetail::getCreatedAt,
-                    Comparator.nullsLast(Comparator.naturalOrder())));
-
-            log.info("=== END filterProducts: {} products found ===", result.size());
-            return result;
-
-        } catch (IllegalArgumentException e) {
-            log.error("Invalid filter parameter: {}", e.getMessage());
-            throw e;
+            content = wishlistService.attachWishlistFlag(
+                    accountId,
+                    page.getContent(),
+                    ProductMapper::toDetailDto,             // Product -> ProductDetail
+                    ProductDetail::setIsWishlisted
+            );
         } catch (Exception e) {
-            log.error("FATAL ERROR in filterProducts", e);
-            throw new RuntimeException("Failed to filter products: " + e.getMessage(), e);
+            // Không để toàn API fail vì wishlist thất bại
+            content = page.getContent().stream().map(ProductMapper::toDetailDto).toList();
         }
+
+        // Lưu ý: thứ tự trả về đã theo pageable.sort (không cần sort lại ở đây)
+        return PageResponse.of(content, page);
+
+//        try {
+//            log.info("=== START filterProducts: name={}, brand={}, type={} ===", name, brand, type);
+//
+//            // Start with all ACTIVE products
+//            List<Product> products = productRepository.findAll()
+//                    .stream()
+//                    .filter(product -> product.getStatus() == Product.Status.ACTIVE)
+//                    .collect(Collectors.toList());
+//
+//            log.info("Initial ACTIVE products count: {}", products.size());
+//
+//            if (products.isEmpty()) {
+//                log.warn("No active products found in database");
+//                return List.of();
+//            }
+//
+//            // Apply name filter
+//            if (name != null && !name.trim().isEmpty()) {
+//                String searchName = name.trim().toLowerCase();
+//                products = products.stream()
+//                        .filter(p -> p.getTitle() != null &&
+//                                p.getTitle().toLowerCase().contains(searchName))
+//                        .collect(Collectors.toList());
+//                log.info("After name filter '{}': {} products", name, products.size());
+//            }
+//
+//            // Apply type filter
+//            if (type != null && !type.trim().isEmpty()) {
+//                try {
+//                    Product.ProductType enumType = Product.ProductType.valueOf(type.trim().toUpperCase());
+//                    products = products.stream()
+//                            .filter(p -> p.getType() == enumType)
+//                            .collect(Collectors.toList());
+//                    log.info("After type filter '{}': {} products", type, products.size());
+//                } catch (IllegalArgumentException e) {
+//                    log.error("Invalid product type: {}", type);
+//                    throw new IllegalArgumentException("Invalid product type: " + type);
+//                }
+//            }
+//
+//            // Apply brand filter
+//            if (brand != null && !brand.trim().isEmpty()) {
+//                List<String> productIdsByBrand = getProductIdsByBrand(brand.trim());
+//                products = products.stream()
+//                        .filter(p -> productIdsByBrand.contains(p.getId()))
+//                        .collect(Collectors.toList());
+//                log.info("After brand filter '{}': {} products", brand, products.size());
+//            }
+//
+//            if (products.isEmpty()) {
+//                log.info("No products match the filter criteria");
+//                return List.of();
+//            }
+//
+//            String accountId = SecurityUtils.getCurrentAccountId();
+//            List<ProductDetail> result;
+//
+//            try {
+//                result = wishlistService.attachWishlistFlag(
+//                        accountId,
+//                        products,
+//                        ProductMapper::toDetailDto,
+//                        ProductDetail::setIsWishlisted);
+//            } catch (Exception e) {
+//                log.error("Error attaching wishlist flags, using basic mapping", e);
+//                result = products.stream()
+//                        .map(ProductMapper::toDetailDto)
+//                        .collect(Collectors.toList());
+//            }
+//
+//            // Sort by createdAt with null-safe comparator
+//            result.sort(Comparator.comparing(
+//                    ProductDetail::getCreatedAt,
+//                    Comparator.nullsLast(Comparator.naturalOrder())));
+//
+//            log.info("=== END filterProducts: {} products found ===", result.size());
+//            return result;
+//
+//        } catch (IllegalArgumentException e) {
+//            log.error("Invalid filter parameter: {}", e.getMessage());
+//            throw e;
+//        } catch (Exception e) {
+//            log.error("FATAL ERROR in filterProducts", e);
+//            throw new RuntimeException("Failed to filter products: " + e.getMessage(), e);
+//        }
     }
 
     // ============================================
@@ -479,5 +529,33 @@ public class ProductService implements IProductService {
             statuses.add(status.name());
         }
         return statuses;
+    }
+
+    private void validateFilters(BigDecimal minPrice, BigDecimal maxPrice, Integer yearFrom, Integer yearTo) {
+        if (minPrice != null && minPrice.signum() < 0) {
+            throw new IllegalArgumentException("minPrice must be >= 0");
+        }
+        if (minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0) {
+            throw new IllegalArgumentException("minPrice cannot be greater than maxPrice");
+        }
+        if (yearFrom != null && yearTo != null && yearFrom > yearTo) {
+            throw new IllegalArgumentException("yearFrom cannot be greater than yearTo");
+        }
+    }
+
+    private Pageable capPageSize(Pageable pageable) {
+        if (pageable.getPageSize() > MAX_PAGE_SIZE) {
+            return PageRequest.of(pageable.getPageNumber(), MAX_PAGE_SIZE, pageable.getSort());
+        }
+        return pageable;
+    }
+
+    private Product.ProductType parseTypeOrNull(String type) {
+        if (type == null || type.isBlank()) return null;
+        try {
+            return Product.ProductType.valueOf(type.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid product type: " + type);
+        }
     }
 }
