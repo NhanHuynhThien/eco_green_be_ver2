@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class ProductReportCountResponse {
-
     String productId;
-    Long reportCount;
+    String productName;
+    Integer reportCount;
 }
