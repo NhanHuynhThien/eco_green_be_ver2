@@ -16,11 +16,18 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+<<<<<<< Updated upstream
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+=======
+
+
+import java.math.BigDecimal;
+
+
+>>>>>>> Stashed changes
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -363,92 +370,6 @@ public class ProductService implements IProductService {
 
         // Lưu ý: thứ tự trả về đã theo pageable.sort (không cần sort lại ở đây)
         return PageResponse.of(content, page);
-
-//        try {
-//            log.info("=== START filterProducts: name={}, brand={}, type={} ===", name, brand, type);
-//
-//            // Start with all ACTIVE products
-//            List<Product> products = productRepository.findAll()
-//                    .stream()
-//                    .filter(product -> product.getStatus() == Product.Status.ACTIVE)
-//                    .collect(Collectors.toList());
-//
-//            log.info("Initial ACTIVE products count: {}", products.size());
-//
-//            if (products.isEmpty()) {
-//                log.warn("No active products found in database");
-//                return List.of();
-//            }
-//
-//            // Apply name filter
-//            if (name != null && !name.trim().isEmpty()) {
-//                String searchName = name.trim().toLowerCase();
-//                products = products.stream()
-//                        .filter(p -> p.getTitle() != null &&
-//                                p.getTitle().toLowerCase().contains(searchName))
-//                        .collect(Collectors.toList());
-//                log.info("After name filter '{}': {} products", name, products.size());
-//            }
-//
-//            // Apply type filter
-//            if (type != null && !type.trim().isEmpty()) {
-//                try {
-//                    Product.ProductType enumType = Product.ProductType.valueOf(type.trim().toUpperCase());
-//                    products = products.stream()
-//                            .filter(p -> p.getType() == enumType)
-//                            .collect(Collectors.toList());
-//                    log.info("After type filter '{}': {} products", type, products.size());
-//                } catch (IllegalArgumentException e) {
-//                    log.error("Invalid product type: {}", type);
-//                    throw new IllegalArgumentException("Invalid product type: " + type);
-//                }
-//            }
-//
-//            // Apply brand filter
-//            if (brand != null && !brand.trim().isEmpty()) {
-//                List<String> productIdsByBrand = getProductIdsByBrand(brand.trim());
-//                products = products.stream()
-//                        .filter(p -> productIdsByBrand.contains(p.getId()))
-//                        .collect(Collectors.toList());
-//                log.info("After brand filter '{}': {} products", brand, products.size());
-//            }
-//
-//            if (products.isEmpty()) {
-//                log.info("No products match the filter criteria");
-//                return List.of();
-//            }
-//
-//            String accountId = SecurityUtils.getCurrentAccountId();
-//            List<ProductDetail> result;
-//
-//            try {
-//                result = wishlistService.attachWishlistFlag(
-//                        accountId,
-//                        products,
-//                        ProductMapper::toDetailDto,
-//                        ProductDetail::setIsWishlisted);
-//            } catch (Exception e) {
-//                log.error("Error attaching wishlist flags, using basic mapping", e);
-//                result = products.stream()
-//                        .map(ProductMapper::toDetailDto)
-//                        .collect(Collectors.toList());
-//            }
-//
-//            // Sort by createdAt with null-safe comparator
-//            result.sort(Comparator.comparing(
-//                    ProductDetail::getCreatedAt,
-//                    Comparator.nullsLast(Comparator.naturalOrder())));
-//
-//            log.info("=== END filterProducts: {} products found ===", result.size());
-//            return result;
-//
-//        } catch (IllegalArgumentException e) {
-//            log.error("Invalid filter parameter: {}", e.getMessage());
-//            throw e;
-//        } catch (Exception e) {
-//            log.error("FATAL ERROR in filterProducts", e);
-//            throw new RuntimeException("Failed to filter products: " + e.getMessage(), e);
-//        }
     }
 
     // ============================================
