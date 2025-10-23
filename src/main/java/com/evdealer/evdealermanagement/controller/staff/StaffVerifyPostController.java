@@ -15,8 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/staff/post")
 @RequiredArgsConstructor
@@ -24,13 +22,19 @@ public class StaffVerifyPostController {
 
     private final StaffService staffService;
 
-    @PutMapping("/{productId}/verify")
+    @PostMapping("/{productId}/verify/active")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-    public ResponseEntity<PostVerifyResponse> verifyPost(
+    public ResponseEntity<PostVerifyResponse> approvePost(@PathVariable String productId) {
+        PostVerifyResponse response = staffService.verifyPostActive(productId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{productId}/verify/reject")
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    public ResponseEntity<PostVerifyResponse> rejectPost(
             @PathVariable String productId,
             @Valid @RequestBody PostVerifyRequest request) {
-
-        PostVerifyResponse response = staffService.verifyPost(productId, request);
+        PostVerifyResponse response = staffService.verifyPostReject(productId, request.getRejectReason());
         return ResponseEntity.ok(response);
     }
 
@@ -56,6 +60,5 @@ public class StaffVerifyPostController {
         Page<PostVerifyResponse> pendingPosts = staffService.getListVerifyPostByType(type, pageable);
         return ResponseEntity.ok(pendingPosts);
     }
-
 
 }
