@@ -10,14 +10,19 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
-@EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "report")
-@Data
-@AllArgsConstructor
+@Table(
+        name = "report",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"product_id", "email"})
+)
+@Getter
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@EqualsAndHashCode(callSuper = true, exclude = "product")
+@ToString(exclude = "product")
 public class Report extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -33,6 +38,7 @@ public class Report extends BaseEntity {
     @Column(name = "report_reason", length = 255, nullable = false)
     String reportReason;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
     ReportStatus status = ReportStatus.PENDING;
@@ -49,5 +55,4 @@ public class Report extends BaseEntity {
         PENDING,
         RESOLVED
     }
-
 }

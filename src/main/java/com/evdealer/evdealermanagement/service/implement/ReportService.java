@@ -5,6 +5,8 @@ import com.evdealer.evdealermanagement.dto.post.report.ReportRequest;
 import com.evdealer.evdealermanagement.dto.post.report.ReportResponse;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.report.Report;
+import com.evdealer.evdealermanagement.exceptions.AppException;
+import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import com.evdealer.evdealermanagement.mapper.report.ReportMapper;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
 import com.evdealer.evdealermanagement.repository.ReportRepository;
@@ -13,8 +15,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -101,4 +105,21 @@ public class ReportService {
         return reportRepository.findAllBy(pageable)
                 .map(ReportMapper::toResponse);
     }
+
+    @Transactional
+    public Report.ReportStatus updateStatusReport(String reportId) {
+        // Lấy report theo id
+        Report report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
+
+        // Cập nhật trạng thái
+        report.setStatus(Report.ReportStatus.RESOLVED);
+
+        // Lưu lại DB
+        reportRepository.save(report);
+
+        // Trả về trạng thái mới
+        return report.getStatus();
+    }
+
 }
