@@ -1,5 +1,6 @@
 package com.evdealer.evdealermanagement.repository;
 
+import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -84,4 +85,24 @@ public interface VehicleDetailsRepository extends JpaRepository<VehicleDetails, 
         @Query("SELECT vd FROM VehicleDetails vd " +
                         "WHERE vd.product.id = :productId")
         Optional<VehicleDetails> findByProductId(@Param("productId") String productId);
+
+        // Tìm xe tương tự theo model
+        @Query("SELECT vd.product FROM VehicleDetails vd " +
+                "WHERE vd.model.id = :modelId " +
+                "AND vd.product.id <> :productId " +
+                "AND vd.product.status = 'ACTIVE'" +
+                "ORDER BY vd.product.createdAt DESC")
+        List<Product> findSimilarVehiclesByModel(@Param("modelId") String modelId,
+                                                 @Param("productId") String productId);
+
+        // Tìm xe tương tự theo brand
+        @Query("SELECT vd.product FROM VehicleDetails vd " +
+                "WHERE vd.brand.id = :brandId " +
+                "AND vd.model.id <> :modelId " +
+                "AND vd.product.id <> :productId " +
+                "AND vd.product.status = 'ACTIVE'" +
+                "ORDER BY vd.product.createdAt DESC")
+        List<Product> findSimilarVehiclesByBrand(@Param("brandId") String brandId,
+                                                 @Param("modelId") String modelId,
+                                                 @Param("productId") String productId);
 }
