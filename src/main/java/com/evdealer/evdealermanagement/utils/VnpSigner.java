@@ -3,20 +3,14 @@ package com.evdealer.evdealermanagement.utils;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import com.evdealer.evdealermanagement.configurations.VnpayConfig;
 
 public final class VnpSigner {
 
-    private VnpSigner() {
-    }
+    private VnpSigner() {}
 
-    // Lấy chuỗi data để ký: sort key, encode name & value, nối bằng '&'
     public static String buildDataToHash(Map<String, String> params) {
         List<String> keys = new ArrayList<>(params.keySet());
         Collections.sort(keys);
@@ -25,14 +19,12 @@ public final class VnpSigner {
         for (int i = 0; i < keys.size(); i++) {
             String k = keys.get(i);
             String v = params.get(k);
-            if (v == null || v.isEmpty())
-                continue;
+            if (v == null || v.isEmpty()) continue;
 
             sb.append(URLEncode(k)).append('=').append(URLEncode(v));
             if (i < keys.size() - 1)
                 sb.append('&');
         }
-        // Xóa '&' thừa nếu key cuối trống:
         int n = sb.length();
         if (n > 0 && sb.charAt(n - 1) == '&')
             sb.setLength(n - 1);
@@ -57,7 +49,6 @@ public final class VnpSigner {
 
     private static String URLEncode(String s) {
         try {
-            // VNPay sample: US_ASCII
             return URLEncoder.encode(s, StandardCharsets.US_ASCII.toString());
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);

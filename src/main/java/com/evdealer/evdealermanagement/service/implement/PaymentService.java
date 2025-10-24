@@ -116,40 +116,37 @@ public class PaymentService {
         String paymentUrl = null;
 
         if (totalPayable != null && totalPayable.compareTo(BigDecimal.ZERO) > 0) {
-            try {
-                String method = request.getPaymentMethod() == null ? ""
-                        : request.getPaymentMethod().trim().toUpperCase();
-                switch (method) {
-                    case "VNPAY" -> {
-                        // Convert BigDecimal sang số nguyên (loại bỏ phần thập phân)
-                        long amountInVND = totalPayable.setScale(0, RoundingMode.HALF_UP).longValue();
+            String method = request.getPaymentMethod() == null ? ""
+                    : request.getPaymentMethod().trim().toUpperCase();
+            switch (method) {
+                case "VNPAY" -> {
+                    // Convert BigDecimal sang số nguyên (loại bỏ phần thập phân)
+                    long amountInVND = totalPayable.setScale(0, RoundingMode.HALF_UP).longValue();
 
-                        // Validate số tiền tối thiểu của VNPay
-                        if (amountInVND < 10000) {
-                            throw new AppException(ErrorCode.USER_NOT_FOUND);
-                        }
-
-                        VnpayResponse res = vnpayService.createPayment(
-                                new VnpayRequest(payment.getId(), String.valueOf(amountInVND)));
-                        paymentUrl = res.getPaymentUrl();
-                        log.info("DEBUG vnpayService response: {}", res);
-                        log.info("DEBUG vnpayService paymentUrl: {}", paymentUrl);
+                    // Validate số tiền tối thiểu của VNPay
+                    if (amountInVND < 10000) {
+                        throw new AppException(ErrorCode.USER_NOT_FOUND);
                     }
 
-                    case "MOMO" -> {
-                        long amountInVND = totalPayable.setScale(0, RoundingMode.HALF_UP).longValue();
-                        MomoResponse res = momoService
-                                .createPaymentRequest(new MomoRequest(payment.getId(), String.valueOf(amountInVND)));
-                        paymentUrl = res.getPayUrl();
-                        log.info("DEBUG momoService response: {}", res);
-                        log.info("DEBUG momoService payUrl: {}", (res == null ? "res=null" : res.getPayUrl()));
+                    VnpayResponse res = vnpayService.createPayment(
+                            new VnpayRequest(payment.getId(), String.valueOf(amountInVND), "Thanh toan don hang #" + payment.getId()));
 
-                    }
-
-                    default -> throw new IllegalArgumentException("Unsupported payment method: " + method);
+                    paymentUrl = res.getPaymentUrl();
+                    log.info("DEBUG vnpayService response: {}", res);
+                    log.info("DEBUG vnpayService paymentUrl: {}", paymentUrl);
                 }
-            } catch (UnsupportedEncodingException e) {
-                throw new RuntimeException("Encoding error when creating payment URL", e);
+
+                case "MOMO" -> {
+                    long amountInVND = totalPayable.setScale(0, RoundingMode.HALF_UP).longValue();
+                    MomoResponse res = momoService
+                            .createPaymentRequest(new MomoRequest(payment.getId(), String.valueOf(amountInVND)));
+                    paymentUrl = res.getPayUrl();
+                    log.info("DEBUG momoService response: {}", res);
+                    log.info("DEBUG momoService payUrl: {}", (res == null ? "res=null" : res.getPayUrl()));
+
+                }
+
+                default -> throw new IllegalArgumentException("Unsupported payment method: " + method);
             }
         }
 
@@ -196,13 +193,13 @@ public class PaymentService {
         productRepository.save(product);
     }
 
-    private int resolveDaysFromOption(String optionId) {
-        if (optionId == null) {
-            return 0;
-        }
-        return optionRepo.findById(optionId)
-                .map(PostPackageOption::getDurationDays).orElse(0);
-    }
+//    private int resolveDaysFromOption(String optionId) {
+//        if (optionId == null) {
+//            return 0;
+//        }
+//        return optionRepo.findById(optionId)
+//                .map(PostPackageOption::getDurationDays).orElse(0);
+//    }
 
     // Find and show all package
     public List<PostPackageResponse> getAllPackages() {
