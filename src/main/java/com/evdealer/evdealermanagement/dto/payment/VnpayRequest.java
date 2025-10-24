@@ -10,5 +10,4 @@ import lombok.NoArgsConstructor;
 public class VnpayRequest {
     private String id;
     private String amount;
-    private String returnUrl;
 }
