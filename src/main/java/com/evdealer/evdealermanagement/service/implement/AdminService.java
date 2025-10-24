@@ -53,7 +53,7 @@ public class AdminService {
         return getAccountsByRole(Account.Role.STAFF);
     }
 
-    private List<Account> getAccountsByRole(Account.Role role) {
+    public List<Account> getAccountsByRole(Account.Role role) {
         try {
             List<Account> accountList = accountRepository.findByRole(role)
                     .stream()
@@ -67,7 +67,6 @@ public class AdminService {
             return List.of();
         }
     }
-
 
     public boolean deleteAccount(String id) {
         try {
