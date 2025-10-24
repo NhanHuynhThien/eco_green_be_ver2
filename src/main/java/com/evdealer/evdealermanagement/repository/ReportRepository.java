@@ -3,6 +3,7 @@ package com.evdealer.evdealermanagement.repository;
 import com.evdealer.evdealermanagement.entity.report.Report;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -19,4 +20,7 @@ public interface ReportRepository extends JpaRepository<Report, String> {
             "GROUP BY r.product.id, r.product.title " +
             "ORDER BY reportCount DESC")
     Page<Object[]> findProductReportStatistics(Pageable pageable);
+
+    @EntityGraph(attributePaths = { "product" })
+    Page<Report> findAllBy(Pageable pageable);
 }

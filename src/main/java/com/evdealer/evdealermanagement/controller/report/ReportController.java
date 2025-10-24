@@ -31,4 +31,17 @@ public class ReportController {
         Page<ProductReportCountResponse> reportStats = reportService.getProductReportStatistic(page, size);
         return ResponseEntity.ok(reportStats);
     }
+
+    @GetMapping("/show")
+    @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
+    public ResponseEntity<Page<ReportResponse>> showListReport(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Page<ReportResponse> result = reportService.getReportPage(page, size);
+        if (result.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(result);
+    }
 }
