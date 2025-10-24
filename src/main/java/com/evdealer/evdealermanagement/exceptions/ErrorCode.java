@@ -107,6 +107,7 @@ public enum ErrorCode {
     TYPE_NOT_FOUND(4006, "Type not found", HttpStatus.NOT_FOUND),
     VEHICLE_NOT_FOUND(4007, "Vehicle not found", HttpStatus.NOT_FOUND),
     CATEGORY_NOT_FOUND(4008, "Category not found", HttpStatus.NOT_FOUND),
+    BATTERY_NOT_FOUND(4009, "Battery Not Found", HttpStatus.NOT_FOUND),
 
 
     // --- OAuth2 / External Errors (Codes 1900 - 1999) ---

@@ -1,6 +1,7 @@
 package com.evdealer.evdealermanagement.repository;
 
 import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
+import com.evdealer.evdealermanagement.entity.product.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface BatteryDetailRepository extends JpaRepository<BatteryDetails, String> {
@@ -56,5 +58,26 @@ public interface BatteryDetailRepository extends JpaRepository<BatteryDetails, S
 
     @Query("SELECT bd FROM BatteryDetails bd WHERE bd.product.id = :productId")
     BatteryDetails findByProductId(@Param("productId") String productId);
+
+    @Query("SELECT bd.product FROM BatteryDetails bd " +
+            "WHERE bd.batteryType.id = :batteryTypeId " +
+            "AND bd.product.id <> :productId " +
+            "AND bd.product.status = 'ACTIVE' " +
+            "ORDER BY bd.product.createdAt DESC")
+    List<Product> findSimilarBatteriesByType(@Param("batteryTypeId") String batteryTypeId,
+                                             @Param("productId") String productId);
+
+    @Query("SELECT bd.product FROM BatteryDetails bd " +
+            "WHERE bd.brand.id = :brandId " +
+            "AND bd.batteryType.id <> :batteryTypeId " +
+            "AND bd.product.id <> :productId " +
+            "AND bd.product.status = 'ACTIVE' " +
+            "ORDER BY bd.product.createdAt DESC")
+    List<Product> findSimilarBatteriesByBrand(@Param("brandId") String brandId,
+                                              @Param("batteryTypeId" ) String batteryTypeId,
+                                              @Param("productId") String productId);
+
+    @Query("SELECT bd FROM BatteryDetails bd WHERE bd.product.id = :productId")
+    Optional<BatteryDetails> findByProductsId(@Param("productId") String productId);
 
 }
