@@ -129,7 +129,13 @@ public class ProductService implements IProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<ProductDetail> getProductByName(String name, Pageable pageable) {
+    public PageResponse<ProductDetail> getProductByName(String name,
+                                                        String city,
+                                                        BigDecimal minPrice,
+                                                        BigDecimal maxPrice,
+                                                        Integer yearFrom,
+                                                        Integer yearTo,
+                                                        Pageable pageable) {
 
         pageable = capPageSize(pageable);
         if (name == null || name.trim().isEmpty()) {
@@ -148,6 +154,22 @@ public class ProductService implements IProductService {
         Specification<Product> spec = Specification
                 .where(ProductSpecs.hasStatus(Product.Status.ACTIVE))
                 .and(ProductSpecs.titleLike(name));
+
+        if (city != null && !city.isBlank()) {
+            spec = spec.and(ProductSpecs.cityEq(city));
+        }
+        if (minPrice != null) {
+            spec = spec.and(ProductSpecs.priceGte(minPrice));
+        }
+        if (maxPrice != null) {
+            spec = spec.and(ProductSpecs.priceLte(maxPrice));
+        }
+        if (yearFrom != null) {
+            spec = spec.and(ProductSpecs.yearGte(yearFrom));
+        }
+        if (yearTo != null) {
+            spec = spec.and(ProductSpecs.yearLte(yearTo));
+        }
 
         Page<Product> products = productRepository.findAll(spec, pageable);
 
