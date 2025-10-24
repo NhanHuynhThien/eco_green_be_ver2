@@ -3,6 +3,7 @@ package com.evdealer.evdealermanagement.service.implement;
 import com.evdealer.evdealermanagement.dto.post.common.ProductImageResponse;
 import com.evdealer.evdealermanagement.dto.post.vehicle.VehiclePostRequest;
 import com.evdealer.evdealermanagement.dto.post.vehicle.VehiclePostResponse;
+import com.evdealer.evdealermanagement.dto.product.similar.SimilarProductResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsRequest;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
@@ -31,6 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -516,5 +518,45 @@ public class VehicleService {
                                         .build())
                                 .toList())
                 .build();
+    }
+
+    @Transactional
+    public List<SimilarProductResponse> getSimilarVehicles(String productId) {
+
+        VehicleDetails details = vehicleDetailsRepository.findByProductId(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.VEHICLE_NOT_FOUND));
+
+        String modelId = details.getModel().getId();
+        String brandId = details.getBrand().getId();
+
+        List<Product> similar = new ArrayList<>(vehicleDetailsRepository.findSimilarVehiclesByModel(modelId, productId));
+        List<Product> similarBrand = vehicleDetailsRepository.findSimilarVehiclesByBrand(brandId, modelId, productId);
+
+        for (Product p : similarBrand) {
+            boolean alreadyExisted = similar.stream()
+                    .anyMatch(sp -> sp.getId().equals(p.getId()));
+            if(!alreadyExisted) {
+                similar.add(p);
+            }
+        }
+
+        return similar.stream()
+                .map(p -> {
+                    VehicleDetails v = vehicleDetailsRepository.findByProductId(p.getId())
+                            .orElse(null);
+
+                    return SimilarProductResponse.builder()
+                            .productId(p.getId())
+                            .tittle(p.getTitle())
+                            .price(p.getPrice())
+                            .brandName(v != null && v.getBrand() != null ? v.getBrand().getName() : null)
+                            .modelName(v != null && v.getModel() != null ? v.getModel().getName() : null)
+                            .images(
+                                    p.getImages() != null && !p.getImages().isEmpty()
+                                        ? p.getImages().get(0).getImageUrl() : null
+                            )
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 }
