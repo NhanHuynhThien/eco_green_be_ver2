@@ -47,18 +47,21 @@ public class VnpayController {
     @GetMapping("/return")
     public void vnpayReturn(@RequestParam Map<String, String> params, HttpServletResponse response) throws IOException {
         log.info("VNPay return params: {}", params);
+
         String paymentId = params.get("vnp_TxnRef");
+        String responseCode = params.get("vnp_ResponseCode");
 
-        boolean isValid = vnpayService.verifyPaymentSignature(params);
-        paymentService.handlePaymentCallback(paymentId, isValid);
+        boolean validSignature = vnpayService.verifyPaymentSignature(params);
+        boolean success = validSignature && "00".equals(responseCode);
 
-        // FE mặc định (đặt trùng với DEFAULT_FRONTEND_URL trong service)
+        // Ghi nhận thanh toán đúng chuẩn
+        paymentService.handlePaymentCallback(paymentId, success);
+
+        // FE mặc định
         String frontendReturnUrl = "http://localhost:5173/payment/return";
+        String redirectUrl = frontendReturnUrl + "?status=" + (success ? "success" : "fail");
 
-        // Redirect FE hiển thị kết quả
-        String redirectUrl = frontendReturnUrl + "?status=" + (isValid ? "success" : "fail");
         log.info("Redirecting user to FE: {}", redirectUrl);
-
         response.sendRedirect(redirectUrl);
     }
 
