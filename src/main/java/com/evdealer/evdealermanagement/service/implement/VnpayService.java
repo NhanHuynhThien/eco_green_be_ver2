@@ -67,6 +67,12 @@ public class VnpayService {
             vnpParams.put("vnp_OrderInfo", "Thanh toan don hang: " + orderId);
             vnpParams.put("vnp_OrderType", "other");
             vnpParams.put("vnp_Locale", "vn");
+
+            // ipn
+            String ipnUrl = vnpayProperties.getReturnUrl().replace("/return", "/vnpay_ipn");
+            vnpParams.put("vnp_IpnUrl", ipnUrl);
+
+            // url Fe
             String vnp_ReturnUrl = request.getReturnUrl();
             if (vnp_ReturnUrl == null || vnp_ReturnUrl.isBlank()) {
                 vnp_ReturnUrl = vnpayProperties.getReturnUrl(); // fallback nếu FE không gửi

@@ -20,5 +20,6 @@ public class VnpayProperties {
     @Value("${vnpay.api-url}")
     private String apiUrl;
 
+    @Value("${vnpay.return-url}")
     private String returnUrl;
 }

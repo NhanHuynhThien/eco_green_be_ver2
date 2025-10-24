@@ -68,6 +68,7 @@ public class WebSecurityConfigs {
                         .hasAnyRole("MEMBER", "ADMIN", "STAFF")
                         .requestMatchers(
                                 "/api/vnpayment", "/api/vnpayment/return",
+                                "/api/vnpayment/vnpay_ipn",
                                 "/api/momo", "/api/momo/return", "/api/momo/ipn")
                         .permitAll()
                         .requestMatchers("battery/brands/all", "battery/types/all",
