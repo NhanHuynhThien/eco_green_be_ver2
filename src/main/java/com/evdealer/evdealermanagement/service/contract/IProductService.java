@@ -1,6 +1,8 @@
 package com.evdealer.evdealermanagement.service.contract;
 
+import com.evdealer.evdealermanagement.dto.common.PageResponse;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -31,7 +33,7 @@ public interface IProductService {
      * @return List of matching product details, empty list if none found
      * @throws IllegalArgumentException if name is null or empty
      */
-    List<ProductDetail> getProductByName(String name);
+    PageResponse<ProductDetail> getProductByName(String name, Pageable pageable);
 
     /**
      * Retrieves products by their type/category

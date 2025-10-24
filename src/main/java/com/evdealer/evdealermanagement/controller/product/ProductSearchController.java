@@ -1,9 +1,13 @@
 package com.evdealer.evdealermanagement.controller.product;
 
+import com.evdealer.evdealermanagement.dto.common.PageResponse;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
 import com.evdealer.evdealermanagement.service.implement.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -70,7 +74,8 @@ public class ProductSearchController {
      * Tìm sản phẩm theo tên
      */
     @GetMapping("/by-name")
-    public ResponseEntity<List<ProductDetail>> getProductsByName(@RequestParam String name) {
+    public ResponseEntity<PageResponse<ProductDetail>> getProductsByName(@RequestParam String name,
+                                                                         @PageableDefault(page = 0, size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         try {
             if (name == null || name.trim().isEmpty()) {
                 log.warn("Invalid name parameter");
@@ -78,9 +83,9 @@ public class ProductSearchController {
             }
 
             log.info("Request → Search products by name: {}", name);
-            List<ProductDetail> products = productService.getProductByName(name.trim());
+            PageResponse<ProductDetail> products = productService.getProductByName(name.trim(), pageable);
 
-            if (products.isEmpty()) {
+            if (products == null || products.getItems() == null || products.getItems().isEmpty()) {
                 log.info("No products found with name: {}", name);
                 return ResponseEntity.noContent().build();
             }

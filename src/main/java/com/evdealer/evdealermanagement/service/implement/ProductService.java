@@ -20,10 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -132,44 +129,33 @@ public class ProductService implements IProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductDetail> getProductByName(String name) {
+    public PageResponse<ProductDetail> getProductByName(String name, Pageable pageable) {
+
+        pageable = capPageSize(pageable);
         if (name == null || name.trim().isEmpty()) {
             log.warn("Product name is null or empty");
-            return List.of();
+            return PageResponse.<ProductDetail>builder()
+                    .items(Collections.emptyList())
+                    .page(0)
+                    .size(0)
+                    .totalElements(0)
+                    .totalPages(0)
+                    .hasNextPage(false)
+                    .hasPreviousPage(false)
+                    .build();
         }
 
-        try {
-            log.info("Searching products by name: {}", name);
+        Specification<Product> spec = Specification
+                .where(ProductSpecs.hasStatus(Product.Status.ACTIVE))
+                .and(ProductSpecs.titleLike(name));
 
-            String accountId = SecurityUtils.getCurrentAccountId();
-            List<Product> products = productRepository.findTitlesByTitleContainingIgnoreCase(name.trim());
+        Page<Product> products = productRepository.findAll(spec, pageable);
 
-            if (products.isEmpty()) {
-                log.info("No products found with name: {}", name);
-                return List.of();
-            }
+        List<ProductDetail> content = toDetailsWithWishlist(products.getContent());
 
-            List<ProductDetail> result;
-            try {
-                result = wishlistService.attachWishlistFlag(
-                        accountId,
-                        products,
-                        ProductMapper::toDetailDto,
-                        ProductDetail::setIsWishlisted);
-            } catch (Exception e) {
-                log.error("Error attaching wishlist flags, using basic mapping", e);
-                result = products.stream()
-                        .map(ProductMapper::toDetailDto)
-                        .collect(Collectors.toList());
-            }
+        return PageResponse.of(content, products);
 
-            log.info("Found {} products matching name: {}", result.size(), name);
-            return result;
 
-        } catch (Exception e) {
-            log.error("Error searching products by name: {}", name, e);
-            return List.of();
-        }
     }
 
     @Override
@@ -376,7 +362,7 @@ public class ProductService implements IProductService {
             List<String> vehicleProductIds = vehicleService.getVehicleIdByBrand(brand)
                     .stream()
                     .map(String::valueOf)
-                    .collect(Collectors.toList());
+                    .toList();
 
             // Get battery product IDs
             List<String> batteryProductIds = batteryService.getBatteryIdByBrand(brand);
@@ -469,4 +455,23 @@ public class ProductService implements IProductService {
             throw new IllegalArgumentException("Invalid product type: " + type);
         }
     }
+
+    private List<ProductDetail> toDetailsWithWishlist(List<Product> products) {
+        if (products == null || products.isEmpty()) {
+            return List.of();
+        }
+        String accontId = SecurityUtils.getCurrentAccountId();
+        try {
+            return wishlistService.attachWishlistFlag(
+                    accontId,
+                    products,
+                    ProductMapper::toDetailDto,
+                    ProductDetail::setIsWishlisted
+            );
+        } catch (Exception e) {
+            log.warn("Attach wishlist failed, fallback basic mapping", e);
+            return products.stream().map(ProductMapper::toDetailDto).toList();
+        }
+    }
+
 }
