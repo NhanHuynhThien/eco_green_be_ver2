@@ -5,11 +5,13 @@ import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsResponse;
 import com.evdealer.evdealermanagement.dto.battery.brand.BatteryTypesResponse;
 import com.evdealer.evdealermanagement.dto.post.battery.BatteryPostRequest;
 import com.evdealer.evdealermanagement.dto.post.battery.BatteryPostResponse;
+import com.evdealer.evdealermanagement.dto.product.similar.SimilarProductResponse;
 import com.evdealer.evdealermanagement.service.implement.BatteryService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,5 +44,11 @@ public class BatteryController {
             @AuthenticationPrincipal CustomAccountDetails user) throws JsonProcessingException {
         BatteryPostRequest request = new ObjectMapper().readValue(dataJson, BatteryPostRequest.class);
         return batteryService.updateBatteryPost(productId, request, images, imagesMetaJson);
+    }
+
+    @GetMapping("/{productId}/similar")
+    public ResponseEntity<List<SimilarProductResponse>> getSimilarBatteries(@PathVariable String productId) {
+        List<SimilarProductResponse> result = batteryService.getSimilarBatteries(productId);
+        return ResponseEntity.ok(result);
     }
 }

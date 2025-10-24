@@ -6,6 +6,7 @@ import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsRequest;
 import com.evdealer.evdealermanagement.dto.post.battery.BatteryPostRequest;
 import com.evdealer.evdealermanagement.dto.post.battery.BatteryPostResponse;
 import com.evdealer.evdealermanagement.dto.post.common.ProductImageResponse;
+import com.evdealer.evdealermanagement.dto.product.similar.SimilarProductResponse;
 import com.evdealer.evdealermanagement.entity.battery.BatteryBrands;
 import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
 import com.evdealer.evdealermanagement.entity.product.Product;
@@ -23,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -321,5 +323,45 @@ public class BatteryService {
                                         .build())
                                 .toList())
                 .build();
+    }
+
+    @Transactional
+    public List<SimilarProductResponse> getSimilarBatteries(String productId) {
+
+        BatteryDetails details = batteryDetailRepository.findByProductsId(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.BATTERY_NOT_FOUND));
+
+        String batteryTypeId = details.getBatteryType().getId();
+        String brandId =  details.getBrand().getId();
+
+        List<Product> similar = new ArrayList<>(batteryDetailRepository.findSimilarBatteriesByType(batteryTypeId, productId));
+        List<Product> similarBrand = batteryDetailRepository.findSimilarBatteriesByBrand(brandId, batteryTypeId, productId);
+
+        for (Product p : similarBrand) {
+            boolean alreadyExisted = similar.stream()
+                    .anyMatch(sp -> sp.getId().equals(p.getId()));
+            if(!alreadyExisted) {
+                similar.add(p);
+            }
+        }
+
+        return similar.stream()
+                .map(p -> {
+                    BatteryDetails b = batteryDetailRepository.findByProductsId(p.getId())
+                            .orElse(null);
+
+                    return SimilarProductResponse.builder()
+                            .productId(p.getId())
+                            .tittle(p.getTitle())
+                            .price(p.getPrice())
+                            .brandName(b != null && b.getBrand() != null ? b.getBrand().getName() : null)
+                            .modelName(b != null && b.getBatteryType() != null ? b.getBatteryType().getName() : null)
+                            .images(
+                                    p.getImages() != null && !p.getImages().isEmpty()
+                                    ? p.getImages().get(0).getImageUrl() : null
+                            )
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 }
