@@ -180,6 +180,7 @@ public class PaymentService {
         if (product.getStatus() == Product.Status.PENDING_PAYMENT) {
             if (success) {
                 payment.setPaymentStatus(PostPayment.PaymentStatus.COMPLETED);
+                product.setPostingFee(product.getPostingFee().add(payment.getAmount()));
                 product.setStatus(Product.Status.PENDING_REVIEW);
             } else {
                 payment.setPaymentStatus(PostPayment.PaymentStatus.FAILED);

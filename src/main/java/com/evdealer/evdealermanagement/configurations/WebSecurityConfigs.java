@@ -63,6 +63,7 @@ public class WebSecurityConfigs {
                                                                 "/gemini/**")
                                                 .permitAll()
                                                 .requestMatchers("/admin/**").hasRole("ADMIN")
+                                                .requestMatchers("/staff/**").hasAnyRole("STAFF", "ADMIN")
                                                 .requestMatchers("/member/**", "/profile/**", "/password/**")
                                                 .hasAnyRole("MEMBER", "ADMIN", "STAFF")
                                                 .requestMatchers(

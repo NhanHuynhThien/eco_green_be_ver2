@@ -50,7 +50,7 @@
         }
 
         @GetMapping("/all-posting-fee")
-        @PreAuthorize("hasRole('ADMIN')")
+        @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
         public ResponseEntity<String> getAllPostingFee() {
             try {
                 String totalPostingFee = adminService.getTotalFee();

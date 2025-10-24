@@ -10,6 +10,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "report")
 @Data
@@ -43,8 +44,6 @@ public class Report extends BaseEntity {
     @UpdateTimestamp
     @Column(name = "updated_at")
     LocalDateTime updatedAt;
-
-
 
     public enum ReportStatus {
         PENDING,
