@@ -19,7 +19,8 @@ public class ReportResponse {
     String productName;
     String phone;
     String email;
-    String repostReason;
+    String reportReason;
     Report.ReportStatus status;
     LocalDateTime createdAt;
+    LocalDateTime updateAt;
 }
