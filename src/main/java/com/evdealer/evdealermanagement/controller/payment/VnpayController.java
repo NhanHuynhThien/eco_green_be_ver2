@@ -2,8 +2,6 @@ package com.evdealer.evdealermanagement.controller.payment;
 
 import com.evdealer.evdealermanagement.dto.payment.VnpayRequest;
 import com.evdealer.evdealermanagement.dto.payment.VnpayResponse;
-import com.evdealer.evdealermanagement.dto.post.packages.PackageRequest;
-import com.evdealer.evdealermanagement.dto.post.packages.PackageResponse;
 import com.evdealer.evdealermanagement.service.implement.PaymentService;
 import com.evdealer.evdealermanagement.service.implement.VnpayService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -37,6 +35,7 @@ public class VnpayController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new VnpayResponse(null, null, e.getMessage()));
         } catch (Exception e) {
+            log.error("Error creating payment", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new VnpayResponse(null, null, "Đã xảy ra lỗi khi tạo thanh toán!"));
         }
@@ -53,11 +52,11 @@ public class VnpayController {
         boolean isValid = vnpayService.verifyPaymentSignature(params);
         paymentService.handlePaymentCallback(paymentId, isValid);
 
-        // Lấy frontend URL theo paymentId
-        String frontendUrl = vnpayService.getFrontendReturnUrl(paymentId);
+        // FE mặc định (đặt trùng với DEFAULT_FRONTEND_URL trong service)
+        String frontendReturnUrl = "http://localhost:5173/payment/return";
 
-        // Thêm status
-        String redirectUrl = frontendUrl + "?status=" + (isValid ? "success" : "fail");
+        // Redirect FE hiển thị kết quả
+        String redirectUrl = frontendReturnUrl + "?status=" + (isValid ? "success" : "fail");
         log.info("Redirecting user to FE: {}", redirectUrl);
 
         response.sendRedirect(redirectUrl);
@@ -68,13 +67,16 @@ public class VnpayController {
      */
     @PostMapping("/vnpay_ipn")
     public ResponseEntity<String> vnpayIpn(@RequestParam Map<String, String> params) {
+        log.info("VNPay IPN params: {}", params);
+
         boolean isValid = vnpayService.verifyPaymentSignature(params);
         if (isValid) {
             String paymentId = params.get("vnp_TxnRef");
-            log.info("IPN verified for payment {}", paymentId);
             paymentService.handlePaymentCallback(paymentId, true);
             return ResponseEntity.ok("OK");
         }
+
+        log.error("Invalid VNPay IPN signature");
         return ResponseEntity.badRequest().body("Fail");
     }
 }
