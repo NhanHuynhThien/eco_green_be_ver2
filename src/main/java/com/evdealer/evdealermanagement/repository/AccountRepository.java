@@ -37,4 +37,6 @@ public interface AccountRepository extends JpaRepository<Account, String> {
 
     List<Account> findByRole(Account.Role role);
 
+    long countByRole(Account.Role role);
+
 }
