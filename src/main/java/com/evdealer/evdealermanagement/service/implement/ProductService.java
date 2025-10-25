@@ -138,6 +138,7 @@ public class ProductService implements IProductService {
                                                         Pageable pageable) {
 
         pageable = capPageSize(pageable);
+        validateFilters(minPrice, maxPrice, yearFrom, yearTo);
         if (name == null || name.trim().isEmpty()) {
             log.warn("Product name is null or empty");
             return PageResponse.<ProductDetail>builder()
@@ -153,24 +154,12 @@ public class ProductService implements IProductService {
 
         Specification<Product> spec = Specification
                 .where(ProductSpecs.hasStatus(Product.Status.ACTIVE))
-                .and(ProductSpecs.titleLike(name));
-
-        if (city != null && !city.isBlank()) {
-            spec = spec.and(ProductSpecs.cityEq(city));
-        }
-        if (minPrice != null) {
-            spec = spec.and(ProductSpecs.priceGte(minPrice));
-        }
-        if (maxPrice != null) {
-            spec = spec.and(ProductSpecs.priceLte(maxPrice));
-        }
-        if (yearFrom != null) {
-            spec = spec.and(ProductSpecs.yearGte(yearFrom));
-        }
-        if (yearTo != null) {
-            spec = spec.and(ProductSpecs.yearLte(yearTo));
-        }
-
+                .and(ProductSpecs.titleLike(name))
+                .and(ProductSpecs.cityEq(city))
+                .and(ProductSpecs.priceGte(minPrice))
+                .and(ProductSpecs.priceLte(maxPrice))
+                .and(ProductSpecs.yearGte(yearFrom))
+                .and(ProductSpecs.yearLte(yearTo));
         Page<Product> products = productRepository.findAll(spec, pageable);
 
         List<ProductDetail> content = toDetailsWithWishlist(products.getContent());
