@@ -3,52 +3,52 @@ package com.evdealer.evdealermanagement.exceptions;
 import com.evdealer.evdealermanagement.dto.account.response.ApiResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    /**
-     * Handle validation errors (Bean Validation)
-     */
-    @ExceptionHandler(value = MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse> handleValidation(MethodArgumentNotValidException exception) {
-        // Kiểm tra null safety
-        FieldError fieldError = exception.getFieldError();
 
-        if (fieldError == null) {
-            ApiResponse apiResponse = new ApiResponse();
-            apiResponse.setCode(ErrorCode.INVALID_INPUT.getCode());
-            apiResponse.setMessage(ErrorCode.INVALID_INPUT.getMessage());
-            return ResponseEntity.badRequest().body(apiResponse);
-        }
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse> handleValidation(MethodArgumentNotValidException ex) {
 
-        String enumKey = fieldError.getDefaultMessage();
-        ErrorCode errorCode;
+        // Tạo đối tượng chứa tất cả các lỗi chi tiết (có thể đặt vào trường 'details' của ApiResponse)
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach(error -> {
+            // Cần kiểm tra nếu lỗi không phải FieldError (ví dụ lỗi ở cấp độ đối tượng)
+            if (error instanceof FieldError) {
+                String fieldName = ((FieldError) error).getField();
+                String errorMessage = error.getDefaultMessage();
+                errors.put(fieldName, errorMessage);
+            } else {
+                errors.put(error.getObjectName(), error.getDefaultMessage());
+            }
+        });
 
-        try {
-            errorCode = ErrorCode.valueOf(enumKey);
-        } catch (IllegalArgumentException e) {
-            logger.warn("Invalid error code key: {}", enumKey);
-            errorCode = ErrorCode.INVALID_KEY;
-        }
-
+        // Trả về ApiResponse tiêu chuẩn
         ApiResponse apiResponse = new ApiResponse();
-        apiResponse.setCode(errorCode.getCode());
-        apiResponse.setMessage(errorCode.getMessage());
+        // Sử dụng một mã lỗi chung cho lỗi Validation
+        apiResponse.setCode(ErrorCode.INVALID_INPUT.getCode());
+        // Thông báo có thể nói rõ là lỗi validation
+        apiResponse.setMessage("Validation failed");
+        apiResponse.setResult(errors); // Đính kèm chi tiết lỗi
 
         return ResponseEntity
-                .status(errorCode.getHttpStatus())  // ← Sửa: Dùng httpStatus từ ErrorCode
+                .badRequest() // HTTP Status 400
                 .body(apiResponse);
     }
-
     /**
      * Handle custom AppException
      */
