@@ -66,7 +66,7 @@ public class VnpayService {
             vnpParams.put("vnp_CreateDate", createDate);
             vnpParams.put("vnp_ExpireDate", expireDate);
 
-            // ✅ FIX: Dùng returnUrl từ config thay vì hardcode
+            // FIX: Dùng returnUrl từ config thay vì hardcode
             vnpParams.put("vnp_ReturnUrl", vnpayProperties.getReturnUrl());
 
             // Hash dữ liệu theo chuẩn VNPay
@@ -76,8 +76,7 @@ public class VnpayService {
             String queryUrl = buildQueryUrl(vnpParams);
             String paymentUrl = vnpayProperties.getPayUrl() + "?" + queryUrl + "&vnp_SecureHash=" + secureHash;
 
-            log.info("✅ Payment URL created for transaction [{}]", transactionId);
-            log.info("Return URL: {}", vnpayProperties.getReturnUrl());
+            log.info("Payment URL created for transaction [{}]", transactionId);
             log.info("CreateDate: {}, ExpireDate: {}", createDate, expireDate);
 
             return VnpayResponse.builder()
@@ -96,7 +95,7 @@ public class VnpayService {
         try {
             String receivedHash = params.get("vnp_SecureHash");
             if (receivedHash == null || receivedHash.isEmpty()) {
-                log.error("❌ vnp_SecureHash is missing");
+                log.error("vnp_SecureHash is missing");
                 return false;
             }
 
@@ -109,9 +108,9 @@ public class VnpayService {
 
             boolean isValid = receivedHash.equalsIgnoreCase(calculatedHash);
             if (isValid) {
-                log.info("✅ Signature verification SUCCESS");
+                log.info("Signature verification SUCCESS");
             } else {
-                log.error("❌ Signature verification FAILED");
+                log.error("Signature verification FAILED");
                 log.error("Received hash: {}", receivedHash);
                 log.error("Calculated hash: {}", calculatedHash);
                 log.error("Hash data: {}", hashData);
@@ -119,7 +118,7 @@ public class VnpayService {
 
             return isValid;
         } catch (Exception e) {
-            log.error("❌ Error verifying signature", e);
+            log.error("Error verifying signature", e);
             return false;
         }
     }

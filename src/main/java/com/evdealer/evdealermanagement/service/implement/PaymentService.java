@@ -25,6 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 @Service
@@ -38,6 +41,13 @@ public class PaymentService {
     private final PostPaymentRepository postPaymentRepository;
     private final VnpayService vnpayService;
     private final MomoService momoService;
+
+    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private PostPayment build;
+
+    private LocalDateTime nowVietNam () {
+        return ZonedDateTime.now(VIETNAM_ZONE).toLocalDateTime();
+    }
 
     @Transactional
     public PackageResponse choosePackage(String productId, PackageRequest request) {
@@ -87,22 +97,10 @@ public class PaymentService {
             totalPayable = BigDecimal.ZERO;
         }
 
-        PostPayment payment = PostPayment.builder()
-                .accountId(product.getSeller().getId())
-                .productId(product.getId())
-                .postPackage(pkg)
-                .postPackageOption(optionRepo.findById(request.getOptionId()).orElse(null))
-                .amount(totalPayable)
-                .paymentMethod(request.getPaymentMethod() != null
-                        ? PostPayment.PaymentMethod.valueOf(request.getPaymentMethod().toUpperCase())
-                        : null)
-                .paymentStatus(totalPayable.signum() == 0
-                        ? PostPayment.PaymentStatus.COMPLETED
-                        : PostPayment.PaymentStatus.PENDING)
-                .build();
+        PostPayment payment = build;
 
         postPaymentRepository.save(payment);
-        log.info("💾 Payment saved with ID: {}", payment.getId());
+        log.info("Payment saved with ID: {}", payment.getId());
 
         // update product status
         product.setStatus(totalPayable.signum() == 0
@@ -147,11 +145,11 @@ public class PaymentService {
 
         PostPayment payment = postPaymentRepository.findById(paymentId)
                 .orElseThrow(() -> {
-                    log.error("❌ Payment not found: {}", paymentId);
+                    log.error("Payment not found: {}", paymentId);
                     return new AppException(ErrorCode.PAYMENT_NOT_FOUND);
                 });
 
-        log.info("📦 Payment found: ID={}, Status={}, Amount={}",
+        log.info("Payment found: ID={}, Status={}, Amount={}",
                 payment.getId(), payment.getPaymentStatus(), payment.getAmount());
 
         Product product = productRepository.findById(payment.getProductId())
@@ -160,7 +158,7 @@ public class PaymentService {
                     return new AppException(ErrorCode.PRODUCT_NOT_FOUND);
                 });
 
-        log.info("📦 Product found: ID={}, Status={}", product.getId(), product.getStatus());
+        log.info("Product found: ID={}, Status={}", product.getId(), product.getStatus());
 
         // Skip nếu đã xử lý rồi
         if (payment.getPaymentStatus() == PostPayment.PaymentStatus.COMPLETED ||
@@ -171,7 +169,7 @@ public class PaymentService {
 
         if (product.getStatus() == Product.Status.PENDING_PAYMENT) {
             if (success) {
-                log.info("✅ Payment successful - Updating to COMPLETED");
+                log.info("Payment successful - Updating to COMPLETED");
                 payment.setPaymentStatus(PostPayment.PaymentStatus.COMPLETED);
 
                 if (product.getPostingFee() == null) {
