@@ -5,6 +5,9 @@ import com.evdealer.evdealermanagement.dto.post.report.ReportRequest;
 import com.evdealer.evdealermanagement.dto.post.report.ReportResponse;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.report.Report;
+import com.evdealer.evdealermanagement.exceptions.AppException;
+import com.evdealer.evdealermanagement.exceptions.ErrorCode;
+import com.evdealer.evdealermanagement.mapper.report.ReportMapper;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
 import com.evdealer.evdealermanagement.repository.ReportRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -12,8 +15,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,7 +28,7 @@ public class ReportService {
     private final ProductRepository productRepository;
     // Không cần AmountReportRepository nữa
 
-    public ReportResponse createReport(ReportRequest request){
+    public ReportResponse createReport(ReportRequest request) {
         log.info("[REPORT] Received new report request for product {}", request.getProductId());
         log.debug("[REPORT] Request detail: {}", request);
 
@@ -49,7 +54,7 @@ public class ReportService {
                 .productId(product.getId())
                 .phone(saved.getPhone())
                 .email(saved.getEmail())
-                .repostReason(saved.getReportReason())
+                .reportReason(saved.getReportReason())
                 .status(saved.getStatus())
                 .createdAt(saved.getCreatedAt())
                 .build();
@@ -68,8 +73,8 @@ public class ReportService {
         // Map sang DTO
         List<ProductReportCountResponse> responses = reportStats.stream()
                 .map(row -> ProductReportCountResponse.builder()
-                        .productId((String) row[0])           // product.id
-                        .productName((String) row[1])         // product.title
+                        .productId((String) row[0]) // product.id
+                        .productName((String) row[1]) // product.title
                         .reportCount(((Long) row[2]).intValue()) // COUNT(r)
                         .build())
                 .toList();
@@ -94,4 +99,27 @@ public class ReportService {
             throw new IllegalArgumentException("Report reason is too long (max 255 chars)");
         }
     }
+
+    public Page<ReportResponse> getReportPage(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return reportRepository.findAllBy(pageable)
+                .map(ReportMapper::toResponse);
+    }
+
+    @Transactional
+    public Report.ReportStatus updateStatusReport(String reportId) {
+        // Lấy report theo id
+        Report report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new AppException(ErrorCode.REPORT_NOT_FOUND));
+
+        // Cập nhật trạng thái
+        report.setStatus(Report.ReportStatus.RESOLVED);
+
+        // Lưu lại DB
+        reportRepository.save(report);
+
+        // Trả về trạng thái mới
+        return report.getStatus();
+    }
+
 }

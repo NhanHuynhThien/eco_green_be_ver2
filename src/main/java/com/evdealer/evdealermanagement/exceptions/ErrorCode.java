@@ -109,11 +109,14 @@ public enum ErrorCode {
     CATEGORY_NOT_FOUND(4008, "Category not found", HttpStatus.NOT_FOUND),
     BATTERY_NOT_FOUND(4009, "Battery Not Found", HttpStatus.NOT_FOUND),
 
+    REPORT_NOT_FOUND(4000, "Report not found", HttpStatus.NOT_FOUND),
 
     // --- OAuth2 / External Errors (Codes 1900 - 1999) ---
     UNSUPPORTED_OAUTH2_PROVIDER(1900, "Unsupported OAuth2 provider", HttpStatus.BAD_REQUEST),
     OAUTH2_GOOGLE_PROCESS_FAILED(1901, "Error processing Google login", HttpStatus.BAD_REQUEST),
     OAUTH2_FACEBOOK_PROCESS_FAILED(1902, "Error processing Facebook login", HttpStatus.BAD_REQUEST);
+
+
 
     private final int code;
     private final String message;

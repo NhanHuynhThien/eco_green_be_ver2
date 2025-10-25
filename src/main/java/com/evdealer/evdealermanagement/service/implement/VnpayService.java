@@ -22,8 +22,6 @@ public class VnpayService {
 
     private final VnpayProperties vnpayProperties;
 
-    private final Map<String, String> frontendReturnUrls = new HashMap<>();
-
     private static final String DEFAULT_FRONTEND_URL = "http://localhost:5173/payment/return";
 
     @PostConstruct
@@ -38,14 +36,24 @@ public class VnpayService {
 
     public VnpayResponse createPayment(VnpayRequest request) {
         try {
-
             if (request.getAmount() == null || request.getAmount().isEmpty()) {
                 throw new IllegalArgumentException("Số tiền không hợp lệ");
             }
 
+            // Tạo mã giao dịch duy nhất
             String transactionId = request.getId() != null ? request.getId() : UUID.randomUUID().toString();
-            String createDate = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
 
+            // Thiết lập múi giờ VN
+            TimeZone tz = TimeZone.getTimeZone("Asia/Ho_Chi_Minh");
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+            dateFormat.setTimeZone(tz);
+
+            String createDate = dateFormat.format(new Date());
+            Calendar expireTime = Calendar.getInstance(tz);
+            expireTime.add(Calendar.MINUTE, 15);
+            String expireDate = dateFormat.format(expireTime.getTime());
+
+            // Các tham số gửi lên VNPay
             Map<String, String> vnpParams = new TreeMap<>();
             vnpParams.put("vnp_Version", "2.1.0");
             vnpParams.put("vnp_Command", "pay");
@@ -56,27 +64,22 @@ public class VnpayService {
             vnpParams.put("vnp_OrderInfo", "Thanh toán đơn hàng: " + transactionId);
             vnpParams.put("vnp_OrderType", "other");
             vnpParams.put("vnp_Locale", "vn");
-
-            // IPN URL (backend callback)
-//            String ipnUrl = vnpayProperties.getReturnUrl().replace("/return", "/vnpay_ipn");
-//            vnpParams.put("vnp_IpnUrl", ipnUrl);
-
-            vnpParams.put("vnp_ReturnUrl", DEFAULT_FRONTEND_URL);
             vnpParams.put("vnp_IpAddr", "127.0.0.1");
             vnpParams.put("vnp_CreateDate", createDate);
+            vnpParams.put("vnp_ExpireDate", expireDate);
 
+            // URL mà VNPay redirect sau khi thanh toán xong
+            vnpParams.put("vnp_ReturnUrl", DEFAULT_FRONTEND_URL);
 
-            Calendar expireTime = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
-            expireTime.add(Calendar.MINUTE, 15);
-            vnpParams.put("vnp_ExpireDate", new SimpleDateFormat("yyyyMMddHHmmss").format(expireTime.getTime()));
-
+            // Hash dữ liệu theo chuẩn VNPay
             String hashData = buildHashData(vnpParams);
             String secureHash = VnpayConfig.hmacSHA512(vnpayProperties.getSecretKey(), hashData);
 
             String queryUrl = buildQueryUrl(vnpParams);
             String paymentUrl = vnpayProperties.getPayUrl() + "?" + queryUrl + "&vnp_SecureHash=" + secureHash;
 
-            log.info("Payment URL created for transaction [{}]", transactionId);
+            log.info("✅ Payment URL created for transaction [{}]", transactionId);
+            log.info("CreateDate: {}, ExpireDate: {}", createDate, expireDate);
 
             return VnpayResponse.builder()
                     .paymentUrl(paymentUrl)
@@ -85,17 +88,9 @@ public class VnpayService {
                     .build();
 
         } catch (Exception e) {
-            log.error("Error creating payment", e);
+            log.error("❌ Error creating payment", e);
             throw new RuntimeException("Không thể tạo thanh toán: " + e.getMessage());
         }
-    }
-
-    public void saveFrontendReturnUrl(String transactionId, String frontendUrl) {
-        frontendReturnUrls.put(transactionId, frontendUrl != null ? frontendUrl : DEFAULT_FRONTEND_URL);
-    }
-
-    public String getFrontendReturnUrl(String transactionId) {
-        return frontendReturnUrls.getOrDefault(transactionId, DEFAULT_FRONTEND_URL);
     }
 
     public boolean verifyPaymentSignature(Map<String, String> params) {
@@ -111,13 +106,12 @@ public class VnpayService {
             String calculatedHash = VnpayConfig.hmacSHA512(vnpayProperties.getSecretKey(), hashData);
 
             boolean isValid = receivedHash.equalsIgnoreCase(calculatedHash);
-
-            if (isValid) log.info("Signature verification SUCCESS");
-            else log.error("Signature verification FAILED, Hash data: {}", hashData);
+            if (isValid) log.info("✅ Signature verification SUCCESS");
+            else log.error("❌ Signature verification FAILED, Hash data: {}", hashData);
 
             return isValid;
         } catch (Exception e) {
-            log.error("Error verifying signature", e);
+            log.error("❌ Error verifying signature", e);
             return false;
         }
     }
