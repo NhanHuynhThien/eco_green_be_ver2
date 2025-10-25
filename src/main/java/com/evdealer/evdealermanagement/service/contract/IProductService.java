@@ -17,8 +17,9 @@ public interface IProductService {
      * Retrieves all available products
      * @return List of all product details, empty list if no products found or error occurs
      */
-    List<ProductDetail> getAllProductsWithStatusActive();
+    PageResponse<ProductDetail> getAllProductsWithStatus(String status, Pageable pageable);
 
+    PageResponse<ProductDetail> getAllProductsWithStatusAll(Pageable pageable);
     /**
      * Retrieves a product by its unique identifier
      * @param id the product ID to search for

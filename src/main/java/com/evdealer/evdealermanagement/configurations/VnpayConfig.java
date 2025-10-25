@@ -1,6 +1,7 @@
 package com.evdealer.evdealermanagement.configurations;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import javax.crypto.Mac;
@@ -27,6 +28,7 @@ public class VnpayConfig {
 
     // ======================== Utility Methods ========================
 
+
     public static String md5(String message) {
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
@@ -39,6 +41,7 @@ public class VnpayConfig {
         }
     }
 
+
     public static String Sha256(String message) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -50,6 +53,7 @@ public class VnpayConfig {
             return "";
         }
     }
+
 
     public String hashAllFields(Map<String, String> fields) {
         List<String> fieldNames = new ArrayList<>(fields.keySet());
@@ -67,6 +71,7 @@ public class VnpayConfig {
         return hmacSHA512(secretKey, sb.toString());
     }
 
+
     public static String hmacSHA512(final String key, final String data) {
         try {
             Mac hmac512 = Mac.getInstance("HmacSHA512");
@@ -82,6 +87,7 @@ public class VnpayConfig {
         }
     }
 
+
     public static String getIpAddress(HttpServletRequest request) {
         String ipAddress = request.getHeader("X-FORWARDED-FOR");
         if (ipAddress == null) {
@@ -89,6 +95,7 @@ public class VnpayConfig {
         }
         return ipAddress;
     }
+
 
     public static String getRandomNumber(int len) {
         Random rnd = new Random();
@@ -98,6 +105,7 @@ public class VnpayConfig {
         }
         return sb.toString();
     }
+
 
     public boolean isValidSignature(Map<String, String> allParams) {
         Map<String, String> params = new HashMap<>(allParams);

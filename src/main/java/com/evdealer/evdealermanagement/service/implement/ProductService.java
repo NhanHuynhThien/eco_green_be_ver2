@@ -12,6 +12,7 @@ import com.evdealer.evdealermanagement.utils.ProductSpecs;
 import com.evdealer.evdealermanagement.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -37,55 +38,41 @@ public class ProductService implements IProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductDetail> getAllProductsWithStatusActive() {
+    public PageResponse<ProductDetail> getAllProductsWithStatus(String status, Pageable pageable) {
         try {
-            log.info("=== START getAllProductsWithStatusActive ===");
+            log.info("=== START getAllProductsWithStatus===");
+            pageable = capPageSize(pageable);
 
-            String accountId = SecurityUtils.getCurrentAccountId();
-            log.info("Current accountId: {}", accountId);
+            // Validate status
+            Product.Status statusEnum = validateAndParseStatus(status);
 
-            // Get ACTIVE products
-            List<Product> products = productRepository.findAll().stream()
-                    .filter(p -> p.getStatus() == Product.Status.ACTIVE)
-                    .collect(Collectors.toList());
-
-            log.info("Found {} ACTIVE products from DB", products.size());
-
-            if (products.isEmpty()) {
-                log.warn("No active products in database!");
-                return List.of();
-            }
-
-            // Attach isWishlisted + map to ProductDetail with error handling
-            List<ProductDetail> result;
-            try {
-                result = wishlistService.attachWishlistFlag(
-                        accountId,
-                        products,
-                        ProductMapper::toDetailDto,
-                        ProductDetail::setIsWishlisted);
-                log.info("Successfully mapped {} products to DTOs", result.size());
-            } catch (Exception e) {
-                log.error("Error in wishlistService.attachWishlistFlag, falling back to basic mapping", e);
-                // Fallback: Map without wishlist
-                result = products.stream()
-                        .map(ProductMapper::toDetailDto)
-                        .collect(Collectors.toList());
-            }
-
-            // Sort with null-safe comparator
-            result.sort(Comparator.comparing(
-                    ProductDetail::getCreatedAt,
-                    Comparator.nullsLast(Comparator.naturalOrder())));
-
-            log.info("=== END getAllProductsWithStatusActive: {} products ===", result.size());
-            return result;
-
+            Specification<Product> specification = Specification.where(ProductSpecs.hasStatus(statusEnum));
+            Page<Product> products = productRepository.findAll(specification, pageable);
+            List<ProductDetail> content = toDetailsWithWishlist(products.getContent());
+            return PageResponse.of(content, products);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid status value: {}", status);
+            throw new IllegalArgumentException("Invalid status: " + status + ". Valid values: " +
+                    Arrays.toString(Product.Status.values()));
         } catch (Exception e) {
-            log.error("FATAL ERROR in getAllProductsWithStatusActive", e);
-            throw new RuntimeException("Failed to get all active products: " + e.getMessage(), e);
+            log.error("FATAL ERROR in getAllProductsWithStatus", e);
+            throw new RuntimeException("Failed to get all products by status: " + e.getMessage(), e);
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ProductDetail> getAllProductsWithStatusAll(Pageable pageable) {
+        pageable = capPageSize(pageable);
+        Specification<Product> spec = Specification.where(ProductSpecs.all());
+        log.info("=== START getAllProductsWithStatusAll==");
+        log.info("spec =  {}", spec);
+        Page<Product> products = productRepository.findAll(spec, pageable);
+        log.info("products =  {}", products);
+        List<ProductDetail> content = toDetailsWithWishlist(products.getContent());
+        return PageResponse.of(content, products);
+    }
+
 
     @Override
     @Transactional(readOnly = true)
@@ -482,6 +469,17 @@ public class ProductService implements IProductService {
         } catch (Exception e) {
             log.warn("Attach wishlist failed, fallback basic mapping", e);
             return products.stream().map(ProductMapper::toDetailDto).toList();
+        }
+    }
+
+    public Product.Status validateAndParseStatus(String status) {
+        if(status == null || status.isBlank()) {
+            throw new IllegalArgumentException("status cannot be null or blank");
+        }
+        try {
+            return Product.Status.valueOf(status.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid product status: " + status);
         }
     }
 
