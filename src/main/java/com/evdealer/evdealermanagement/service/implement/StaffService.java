@@ -26,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +43,8 @@ public class StaffService {
     @Autowired
     private ProductRepository productRepository;
 
+    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+
     @Autowired
     private UserContextService userContextService;
     @Autowired
@@ -51,6 +55,10 @@ public class StaffService {
     private GeminiRestService geminiRestService;
     @Autowired
     private VehicleDetailsRepository vehicleDetailsRepository;
+
+    private LocalDateTime nowVietNam () {
+        return ZonedDateTime.now(VIETNAM_ZONE).toLocalDateTime();
+    }
 
     @Transactional
     public PostVerifyResponse verifyPostActive(String productId) {
@@ -86,7 +94,7 @@ public class StaffService {
         }
 
         // 3) Ghi mốc thời gian theo yêu cầu
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = nowVietNam();
         product.setFeaturedEndAt(elevatedDays > 0 ? now.plusDays(elevatedDays) : null);
         product.setExpiresAt(now.plusDays(30));
 
@@ -96,7 +104,7 @@ public class StaffService {
         }
 
         product.setApprovedBy(currentUser);
-        product.setUpdatedAt(LocalDateTime.now());
+        product.setUpdatedAt(nowVietNam);
         productRepository.save(product);
         return PostVerifyMapper.mapToPostVerifyResponse(product);
     }

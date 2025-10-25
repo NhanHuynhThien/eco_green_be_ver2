@@ -28,8 +28,8 @@ public class PostVerifyResponse {
     private String versionName;
 
     // ========== Package / Fee ==========
-    private String packageName; // post_packages.name
-    private BigDecimal amount; // post_payments.amount
+    private String packageName;
+    private BigDecimal amount;
 
     private String sellerId;
     private String sellerName;
