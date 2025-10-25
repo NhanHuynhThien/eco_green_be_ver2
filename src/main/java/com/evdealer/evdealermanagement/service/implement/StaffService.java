@@ -104,7 +104,7 @@ public class StaffService {
         }
 
         product.setApprovedBy(currentUser);
-        product.setUpdatedAt(nowVietNam);
+        product.setUpdatedAt(nowVietNam());
         productRepository.save(product);
         return PostVerifyMapper.mapToPostVerifyResponse(product);
     }
