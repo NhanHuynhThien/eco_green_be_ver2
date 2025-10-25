@@ -4,6 +4,7 @@ import com.evdealer.evdealermanagement.dto.common.PageResponse;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
 import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,7 +34,13 @@ public interface IProductService {
      * @return List of matching product details, empty list if none found
      * @throws IllegalArgumentException if name is null or empty
      */
-    PageResponse<ProductDetail> getProductByName(String name, Pageable pageable);
+    PageResponse<ProductDetail> getProductByName(String name,
+                                                 String city,
+                                                 BigDecimal minPrice,
+                                                 BigDecimal maxPrice,
+                                                 Integer yearFrom,
+                                                 Integer yearTo,
+                                                 Pageable pageable);
 
     /**
      * Retrieves products by their type/category

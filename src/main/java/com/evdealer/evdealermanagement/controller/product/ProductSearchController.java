@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -75,6 +76,11 @@ public class ProductSearchController {
      */
     @GetMapping("/by-name")
     public ResponseEntity<PageResponse<ProductDetail>> getProductsByName(@RequestParam String name,
+                                                                         @RequestParam(required = false) String city,
+                                                                         @RequestParam(required = false) BigDecimal minPrice,
+                                                                         @RequestParam(required = false) BigDecimal maxPrice,
+                                                                         @RequestParam(required = false) Integer yearFrom,
+                                                                         @RequestParam(required = false) Integer yearTo,
                                                                          @PageableDefault(page = 0, size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         try {
             if (name == null || name.trim().isEmpty()) {
@@ -83,7 +89,8 @@ public class ProductSearchController {
             }
 
             log.info("Request → Search products by name: {}", name);
-            PageResponse<ProductDetail> products = productService.getProductByName(name.trim(), pageable);
+            PageResponse<ProductDetail> products = productService.getProductByName(name.trim(),
+                    city, minPrice, maxPrice, yearFrom, yearTo, pageable);
 
             if (products == null || products.getItems() == null || products.getItems().isEmpty()) {
                 log.info("No products found with name: {}", name);
