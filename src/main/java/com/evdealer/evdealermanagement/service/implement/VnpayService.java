@@ -22,15 +22,13 @@ public class VnpayService {
 
     private final VnpayProperties vnpayProperties;
 
-    private static final String DEFAULT_FRONTEND_URL = "http://localhost:5173/payment/return";
-
     @PostConstruct
     public void checkConfig() {
         log.info("=== VNPay Configuration ===");
         log.info("TMN Code: {}", vnpayProperties.getTmnCode());
         log.info("Secret Key: {}", vnpayProperties.getSecretKey());
         log.info("Pay URL: {}", vnpayProperties.getPayUrl());
-        log.info("Backend Callback URL: {}", vnpayProperties.getReturnUrl());
+        log.info("Return URL: {}", vnpayProperties.getReturnUrl());
         log.info("===========================");
     }
 
@@ -61,15 +59,15 @@ public class VnpayService {
             vnpParams.put("vnp_Amount", String.valueOf(Integer.parseInt(request.getAmount()) * 100));
             vnpParams.put("vnp_CurrCode", "VND");
             vnpParams.put("vnp_TxnRef", transactionId);
-            vnpParams.put("vnp_OrderInfo", "Thanh toán đơn hàng: " + transactionId);
+            vnpParams.put("vnp_OrderInfo", "Thanh toan don hang: " + transactionId);
             vnpParams.put("vnp_OrderType", "other");
             vnpParams.put("vnp_Locale", "vn");
             vnpParams.put("vnp_IpAddr", "127.0.0.1");
             vnpParams.put("vnp_CreateDate", createDate);
             vnpParams.put("vnp_ExpireDate", expireDate);
 
-            // URL mà VNPay redirect sau khi thanh toán xong
-            vnpParams.put("vnp_ReturnUrl", DEFAULT_FRONTEND_URL);
+            // ✅ FIX: Dùng returnUrl từ config thay vì hardcode
+            vnpParams.put("vnp_ReturnUrl", vnpayProperties.getReturnUrl());
 
             // Hash dữ liệu theo chuẩn VNPay
             String hashData = buildHashData(vnpParams);
@@ -79,6 +77,7 @@ public class VnpayService {
             String paymentUrl = vnpayProperties.getPayUrl() + "?" + queryUrl + "&vnp_SecureHash=" + secureHash;
 
             log.info("✅ Payment URL created for transaction [{}]", transactionId);
+            log.info("Return URL: {}", vnpayProperties.getReturnUrl());
             log.info("CreateDate: {}, ExpireDate: {}", createDate, expireDate);
 
             return VnpayResponse.builder()
@@ -96,7 +95,10 @@ public class VnpayService {
     public boolean verifyPaymentSignature(Map<String, String> params) {
         try {
             String receivedHash = params.get("vnp_SecureHash");
-            if (receivedHash == null || receivedHash.isEmpty()) return false;
+            if (receivedHash == null || receivedHash.isEmpty()) {
+                log.error("❌ vnp_SecureHash is missing");
+                return false;
+            }
 
             Map<String, String> paramsToHash = new TreeMap<>(params);
             paramsToHash.remove("vnp_SecureHash");
@@ -106,8 +108,14 @@ public class VnpayService {
             String calculatedHash = VnpayConfig.hmacSHA512(vnpayProperties.getSecretKey(), hashData);
 
             boolean isValid = receivedHash.equalsIgnoreCase(calculatedHash);
-            if (isValid) log.info("✅ Signature verification SUCCESS");
-            else log.error("❌ Signature verification FAILED, Hash data: {}", hashData);
+            if (isValid) {
+                log.info("✅ Signature verification SUCCESS");
+            } else {
+                log.error("❌ Signature verification FAILED");
+                log.error("Received hash: {}", receivedHash);
+                log.error("Calculated hash: {}", calculatedHash);
+                log.error("Hash data: {}", hashData);
+            }
 
             return isValid;
         } catch (Exception e) {

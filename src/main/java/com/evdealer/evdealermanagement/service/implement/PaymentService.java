@@ -102,6 +102,7 @@ public class PaymentService {
                 .build();
 
         postPaymentRepository.save(payment);
+        log.info("💾 Payment saved with ID: {}", payment.getId());
 
         // update product status
         product.setStatus(totalPayable.signum() == 0
@@ -142,36 +143,64 @@ public class PaymentService {
 
     @Transactional
     public void handlePaymentCallback(String paymentId, boolean success) {
+        log.info("🔄 Processing payment callback - PaymentId: {}, Success: {}", paymentId, success);
+
         PostPayment payment = postPaymentRepository.findById(paymentId)
-                .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
+                .orElseThrow(() -> {
+                    log.error("❌ Payment not found: {}", paymentId);
+                    return new AppException(ErrorCode.PAYMENT_NOT_FOUND);
+                });
+
+        log.info("📦 Payment found: ID={}, Status={}, Amount={}",
+                payment.getId(), payment.getPaymentStatus(), payment.getAmount());
 
         Product product = productRepository.findById(payment.getProductId())
-                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+                .orElseThrow(() -> {
+                    log.error("❌ Product not found: {}", payment.getProductId());
+                    return new AppException(ErrorCode.PRODUCT_NOT_FOUND);
+                });
 
+        log.info("📦 Product found: ID={}, Status={}", product.getId(), product.getStatus());
+
+        // Skip nếu đã xử lý rồi
         if (payment.getPaymentStatus() == PostPayment.PaymentStatus.COMPLETED ||
-                payment.getPaymentStatus() == PostPayment.PaymentStatus.FAILED) return;
+                payment.getPaymentStatus() == PostPayment.PaymentStatus.FAILED) {
+            log.warn("⚠️ Payment already processed with status: {}", payment.getPaymentStatus());
+            return;
+        }
 
         if (product.getStatus() == Product.Status.PENDING_PAYMENT) {
             if (success) {
+                log.info("✅ Payment successful - Updating to COMPLETED");
                 payment.setPaymentStatus(PostPayment.PaymentStatus.COMPLETED);
+
                 if (product.getPostingFee() == null) {
                     product.setPostingFee(payment.getAmount());
                 } else {
                     product.setPostingFee(product.getPostingFee().add(payment.getAmount()));
                 }
                 product.setStatus(Product.Status.PENDING_REVIEW);
+
+                log.info("💰 Posting fee updated: {}", product.getPostingFee());
+                log.info("📊 Product status updated: {}", product.getStatus());
             } else {
+                log.info("❌ Payment failed - Updating to FAILED");
                 payment.setPaymentStatus(PostPayment.PaymentStatus.FAILED);
                 product.setStatus(Product.Status.DRAFT);
             }
+        } else {
+            log.warn("⚠️ Product is not in PENDING_PAYMENT status: {}", product.getStatus());
         }
 
         postPaymentRepository.save(payment);
         productRepository.save(product);
+
+        log.info("💾 Payment and Product saved successfully");
+        log.info("📊 Final - Payment status: {}, Product status: {}",
+                payment.getPaymentStatus(), product.getStatus());
     }
 
     public List<PostPackageResponse> getAllPackages() {
-
         var packages = packageRepo.findByStatusOrderByPriorityLevelDesc(PostPackage.Status.ACTIVE);
 
         return packages.stream().map(p -> {
@@ -199,7 +228,6 @@ public class PaymentService {
                     .billingMode(p.getBillingMode())
                     .category(p.getCategory())
                     .baseDurationDays(p.getBaseDurationDays())
-
                     .price(p.getPrice())
                     .dailyPrice(p.getDailyPrice())
                     .includesPostFee(p.getIncludesPostFee())
