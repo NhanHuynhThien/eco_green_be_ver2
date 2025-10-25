@@ -1,7 +1,13 @@
 package com.evdealer.evdealermanagement.controller.admin;
 
+import com.evdealer.evdealermanagement.dto.account.register.AccountRegisterRequest;
+import com.evdealer.evdealermanagement.dto.account.register.AccountRegisterResponse;
+import com.evdealer.evdealermanagement.dto.account.response.ApiResponse;
 import com.evdealer.evdealermanagement.entity.account.Account;
+import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import com.evdealer.evdealermanagement.service.implement.AdminService;
+import com.evdealer.evdealermanagement.service.implement.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,6 +21,7 @@ import java.util.List;
 public class AdminAccountManagementController {
 
     private final AdminService adminService;
+    private final AuthService authService;
 
     @GetMapping("/manage/account/member")
     @PreAuthorize("hasRole('ADMIN')")
@@ -51,5 +58,13 @@ public class AdminAccountManagementController {
         } else {
             return ResponseEntity.status(404).body("Account not found");
         }
+    }
+
+    @PostMapping("/register/staff")
+    @ResponseBody
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<AccountRegisterResponse> registerStaffAccount(@Valid @RequestBody AccountRegisterRequest request) {
+        AccountRegisterResponse response = authService.registerStaffAccount(request);
+        return new ApiResponse<>(ErrorCode.SUCCESS.getCode(), ErrorCode.SUCCESS.getMessage(), response);
     }
 }

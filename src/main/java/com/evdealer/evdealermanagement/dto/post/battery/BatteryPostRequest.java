@@ -10,57 +10,58 @@ import java.math.BigDecimal;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
 public class BatteryPostRequest {
 
-    @NotNull
-    @Size(max = 255)
-    String title;
+    @NotNull(message = "Title is required")
+    @NotBlank(message = "Title cannot be blank")
+    @Size(max = 255, message = "Title must not exceed 255 characters")
+    private String title;
 
-    @NotNull
-    @Size(max = 10_000)
-    String description;
+    @NotNull(message = "Description is required")
+    @NotBlank(message = "Description cannot be blank")
+    @Size(max = 10_000, message = "Description must not exceed 10,000 characters")
+    private String description;
 
-    @Positive
-    @Digits(integer = 15, fraction = 2)
-    BigDecimal price;
+    @NotNull(message = "Price is required")
+    @Positive(message = "Price must be greater than 0")
+    @Digits(integer = 15, fraction = 2, message = "Price must have at most 15 integer digits and 2 decimal places")
+    private BigDecimal price;
 
-    @Size(max = 255)
-    @NotNull
-    String city;
+    @NotNull(message = "City is required")
+    @NotBlank(message = "City cannot be blank")
+    @Size(max = 255, message = "City must not exceed 255 characters")
+    private String city;
 
-    @Size(max = 255)
-    @NotNull(message = "Please fill your district")
-    String district;
+    @NotNull(message = "District is required")
+    @NotBlank(message = "Please fill your district")
+    @Size(max = 255, message = "District must not exceed 255 characters")
+    private String district;
 
-    @Size(max = 255)
-    String ward;
+    @Size(max = 255, message = "Ward must not exceed 255 characters")
+    private String ward;
 
-    @Size(max = 10_000)
-    String addressDetail;
+    @Size(max = 10_000, message = "Address detail must not exceed 10,000 characters")
+    private String addressDetail;
 
-//    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-//    @Future
-//    LocalDateTime expiresAt;
+    @NotNull(message = "Battery type is required")
+    @NotBlank(message = "Please select a battery type")
+    private String batteryTypeId;
 
-    String batteryTypeId;
-
+    @NotNull(message = "Brand is required")
     @NotBlank(message = "Please choose the brand")
-    String brandId;
+    private String brandId;
 
-    @Positive
-    @Digits(integer = 10, fraction = 2)
-    BigDecimal capacityKwh;
+    @NotNull(message = "Capacity is required")
+    @Positive(message = "Capacity must be greater than 0")
+    @Digits(integer = 10, fraction = 2, message = "Capacity must have at most 10 integer digits and 2 decimal places")
+    private BigDecimal capacityKwh;
 
+    @NotNull(message = "Health percent is required")
     @Min(value = 0, message = "Health percent must be at least 0")
     @Max(value = 100, message = "Health percent cannot exceed 100")
-    @NotNull(message = "Please enter health percent")
     private Integer healthPercent;
 
-//    @Size(max = 50)
-//    String origin;
-
-    @Positive
-    Integer voltageV;
-
+    @NotNull(message = "Voltage is required")
+    @Positive(message = "Voltage must be greater than 0")
+    private Integer voltageV;
 }

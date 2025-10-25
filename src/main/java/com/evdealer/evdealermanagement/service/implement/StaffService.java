@@ -1,7 +1,7 @@
 package com.evdealer.evdealermanagement.service.implement;
 
-import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyRequest;
 import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
+import com.evdealer.evdealermanagement.dto.rate.ApprovalRateResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.catalog.VehicleCatalogDTO;
 import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.entity.post.PostPayment;
@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Locale;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +58,7 @@ public class StaffService {
     @Autowired
     private VehicleDetailsRepository vehicleDetailsRepository;
 
-    private LocalDateTime nowVietNam () {
+    private LocalDateTime nowVietNam() {
         return ZonedDateTime.now(VIETNAM_ZONE).toLocalDateTime();
     }
 
@@ -257,5 +258,23 @@ public class StaffService {
                     .orElse(null);
             return PostVerifyMapper.mapToPostVerifyResponse(product, payment);
         });
+    }
+
+    @Transactional(readOnly = true)
+    public ApprovalRateResponse getApprovalRate() {
+        long approved = productRepository.countByStatus(Product.Status.ACTIVE);
+        long rejected = productRepository.countByStatus(Product.Status.REJECTED);
+
+        long decided = approved + rejected;
+        double rate = decided == 0 ? 0.0 : ((double) approved) / decided;
+        String rateText = String.format(Locale.US, "%.2f%%", rate * 100.0);
+
+        return ApprovalRateResponse.builder()
+                .approved(approved)
+                .rejected(rejected)
+                .total(decided)
+                .rate(rate)
+                .rateText(rateText)
+                .build();
     }
 }

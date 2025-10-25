@@ -82,6 +82,7 @@ public enum ErrorCode {
     PACKAGE_DAILY_PRICE_NOT_SET(1511, "Package daily price is not set", HttpStatus.BAD_REQUEST),
     PACKAGE_OPTION_REQUIRED(1512, "Package option is required", HttpStatus.BAD_REQUEST),
     PACKAGE_BILLING_MODE_INVALID(1513, "Package billing mode is invalid", HttpStatus.BAD_REQUEST),
+    INVALID_STATUS_TRANSITION(1514, "Invalid Status Transition", HttpStatus.BAD_REQUEST),
 
     // --- Wishlist Errors (Codes 1600 - 1699) ---
     WISHLIST_NOT_FOUND(1601, "Wishlist not found", HttpStatus.NOT_FOUND),
@@ -94,7 +95,6 @@ public enum ErrorCode {
     IMAGE_TOO_LARGE(1703, "Image too large", HttpStatus.BAD_REQUEST),
     UNSUPPORTED_IMAGE_TYPE(1704, "Unsupported image type", HttpStatus.UNSUPPORTED_MEDIA_TYPE),
     IMAGE_UPLOAD_FAILED(1705, "Upload image failed", HttpStatus.INTERNAL_SERVER_ERROR),
-
 
     // --- Brand/Battery Errors (Codes 4000 - 4099) ---
     // Separated the conflicting 4004 code into unique codes 4000 and 4001
@@ -115,8 +115,6 @@ public enum ErrorCode {
     UNSUPPORTED_OAUTH2_PROVIDER(1900, "Unsupported OAuth2 provider", HttpStatus.BAD_REQUEST),
     OAUTH2_GOOGLE_PROCESS_FAILED(1901, "Error processing Google login", HttpStatus.BAD_REQUEST),
     OAUTH2_FACEBOOK_PROCESS_FAILED(1902, "Error processing Facebook login", HttpStatus.BAD_REQUEST);
-
-
 
     private final int code;
     private final String message;

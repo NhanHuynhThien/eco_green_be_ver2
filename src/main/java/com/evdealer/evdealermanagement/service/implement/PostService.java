@@ -69,7 +69,6 @@ public class PostService implements IProductPostService {
                 .district(request.getDistrict())
                 .ward(request.getWard())
                 .addressDetail(request.getAddressDetail())
-
                 .build());
 
         BatteryDetails bd = batteryDetailRepository.save(BatteryDetails.builder()

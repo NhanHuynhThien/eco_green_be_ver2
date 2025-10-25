@@ -8,6 +8,7 @@ import com.evdealer.evdealermanagement.dto.post.vehicle.VehiclePostResponse;
 import com.evdealer.evdealermanagement.service.implement.PostService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -28,6 +29,7 @@ public class PostController {
 
     @PostMapping(value = "/battery", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BatteryPostResponse postBattery(
+            @Valid
             @RequestPart("data") String dataJson,
             @RequestPart("images") List<MultipartFile> images,
             @RequestPart(value = "imagesMeta", required = false) String imagesMetaJson,
@@ -41,6 +43,7 @@ public class PostController {
 
     @PostMapping(value = "/vehicle", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public VehiclePostResponse postVehicle(
+            @Valid
             @RequestPart("data") String dataJson,
             @RequestPart("images") List<MultipartFile> images,
             @RequestPart(value = "imagesMeta", required = false) String imagesMetaJson,
