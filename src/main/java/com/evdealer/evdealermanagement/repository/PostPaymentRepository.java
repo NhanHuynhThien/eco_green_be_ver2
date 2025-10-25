@@ -2,6 +2,7 @@ package com.evdealer.evdealermanagement.repository;
 
 import com.evdealer.evdealermanagement.entity.post.PostPayment;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,4 +17,6 @@ public interface PostPaymentRepository extends JpaRepository<PostPayment, String
     Optional<PostPayment> findTopByProductIdAndPaymentStatusOrderByCreatedAtDesc(
             String productId,
             PostPayment.PaymentStatus paymentStatus);
+
+    List<PostPayment> findAllByOrderByCreatedAtDesc();
 }
