@@ -27,23 +27,43 @@ public class ProductSearchController {
     /**
      * Lấy tất cả sản phẩm có trạng thái ACTIVE
      */
-    @GetMapping("/all")
-    public ResponseEntity<List<ProductDetail>> getAllProductsWithActiveStatus() {
+    @GetMapping("/by-status")
+    public ResponseEntity<PageResponse<ProductDetail>> getAllProductsWithStatus(@RequestParam String status
+            ,@PageableDefault(page = 0, size = 12, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable) {
         try {
-            log.info("Request → Get all ACTIVE products");
-            List<ProductDetail> products = productService.getAllProductsWithStatusActive();
+            log.info("Request → Get all products by status: {}", status);
+            PageResponse<ProductDetail> products = productService.getAllProductsWithStatus(status.toUpperCase(), pageable);
 
-            if (products.isEmpty()) {
-                log.info("No ACTIVE products found");
+            if (products.getItems().isEmpty()) {
+                log.info("No  products found");
                 return ResponseEntity.noContent().build();
             }
 
-            log.info("Found {} products", products.size());
+            log.info("Found {} products", products.getItems().size());
             return ResponseEntity.ok(products);
         } catch (Exception e) {
             log.error("Error getting all products", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<PageResponse<ProductDetail>> getAllProductsWithStatusAll(@PageableDefault(page = 0, size = 12, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable) {
+        try {
+            log.info("Request → Get all products");
+            PageResponse<ProductDetail> products = productService.getAllProductsWithStatusAll(pageable);
+
+            if (products.getItems().isEmpty()) {
+                log.info("No  products found");
+                return ResponseEntity.noContent().build();
+            }
+            log.info("Found {} products", products.getItems().size());
+            return ResponseEntity.ok(products);
+        } catch (Exception e) {
+            log.error("Error getting all products", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+
     }
 
     /**

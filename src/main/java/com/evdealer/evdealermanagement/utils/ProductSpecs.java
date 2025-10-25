@@ -74,6 +74,10 @@ public final class ProductSpecs {
         return (r, q, cb) -> to == null ? null : cb.lessThanOrEqualTo(r.get("manufactureYear"), to.shortValue());
     }
 
+    public static Specification<Product> all() {
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.conjunction());
+    }
+
 
 
 
