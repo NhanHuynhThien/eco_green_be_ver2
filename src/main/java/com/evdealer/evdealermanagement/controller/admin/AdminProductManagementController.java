@@ -1,6 +1,7 @@
     package com.evdealer.evdealermanagement.controller.admin;
 
     import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsResponse;
+    import com.evdealer.evdealermanagement.dto.common.PageResponse;
     import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
     import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsRequest;
     import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsRequest;
@@ -9,34 +10,36 @@
     import com.evdealer.evdealermanagement.exceptions.ErrorCode;
     import com.evdealer.evdealermanagement.service.implement.AdminService;
     import com.evdealer.evdealermanagement.service.implement.BatteryService;
+    import com.evdealer.evdealermanagement.service.implement.ProductService;
     import com.evdealer.evdealermanagement.service.implement.VehicleService;
 
     import jakarta.validation.Valid;
 
+    import lombok.RequiredArgsConstructor;
+    import lombok.extern.slf4j.Slf4j;
+    import org.springframework.data.domain.Pageable;
+    import org.springframework.data.domain.Sort;
+    import org.springframework.data.web.PageableDefault;
     import org.springframework.http.HttpStatus;
     import org.springframework.http.MediaType;
     import org.springframework.http.ResponseEntity;
     import org.springframework.security.access.prepost.PreAuthorize;
-    import org.springframework.web.bind.annotation.GetMapping;
-    import org.springframework.web.bind.annotation.PostMapping;
-    import org.springframework.web.bind.annotation.RequestBody;
-    import org.springframework.web.bind.annotation.RequestMapping;
-    import org.springframework.web.bind.annotation.RequestPart;
-    import org.springframework.web.bind.annotation.RestController;
+    import org.springframework.web.bind.annotation.*;
     import org.springframework.web.multipart.MultipartFile;
 
     import java.util.List;
 
     @RestController
     @RequestMapping("/admin/product")
+    @Slf4j
     public class AdminProductManagementController {
 
         private final AdminService adminService;
         private final BatteryService batteryService;
         private final VehicleService vehicleService;
 
-        public AdminProductManagementController(AdminService adminService, BatteryService batteryService,
-                VehicleService vehicleService) {
+
+        public AdminProductManagementController(AdminService adminService, BatteryService batteryService, VehicleService vehicleService) {
             this.adminService = adminService;
             this.batteryService = batteryService;
             this.vehicleService = vehicleService;
