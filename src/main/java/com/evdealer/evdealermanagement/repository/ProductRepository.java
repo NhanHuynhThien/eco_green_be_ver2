@@ -38,4 +38,6 @@ public interface ProductRepository extends JpaRepository<Product, String>, JpaSp
     Optional<Product> findByIdAndSellerId(String id, String sellerId);
 
     long countBySeller_Id(String sellerId);
+
+    long countByStatus(Product.Status status);
 }
