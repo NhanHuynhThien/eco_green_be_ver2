@@ -2,11 +2,15 @@ package com.evdealer.evdealermanagement.service.implement;
 
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
 import com.evdealer.evdealermanagement.entity.account.Account;
+import com.evdealer.evdealermanagement.entity.post.PostPayment;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.mapper.product.ProductMapper;
 import com.evdealer.evdealermanagement.repository.AccountRepository;
+import com.evdealer.evdealermanagement.repository.PostPaymentRepository;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
 import com.evdealer.evdealermanagement.utils.PriceSerializer;
+import com.evdealer.evdealermanagement.utils.VietNamDatetime;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,10 +23,13 @@ import java.util.Objects;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class AdminService {
 
     @Autowired
     public ProductRepository productRepository;
+
+    private final PostPaymentRepository postPaymentRepository;
 
     @Autowired
     public AccountRepository accountRepository;
@@ -114,4 +121,40 @@ public class AdminService {
             return "0";
         }
     }
+
+    public String getTotalFeeDuringMonth(String monthStr) {
+        try {
+            int month = Integer.parseInt(monthStr);
+
+            if (month< 1 || month > 12) {
+                log.warn("Invalid input {}", month);
+                return "0";
+            }
+
+            int currentYear = VietNamDatetime.nowVietNam().getYear();
+
+            List<PostPayment> paymentList = postPaymentRepository.findAll();
+
+            BigDecimal totalFee = paymentList.stream()
+                    .filter(p -> p.getCreatedAt() != null)
+                    .filter(p -> {
+                        var createdAt = p.getCreatedAt();
+                        return  createdAt.getYear() == currentYear && createdAt.getMonthValue() == month;
+                    })
+                    .map(PostPayment::getAmount)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            log.debug("Total posting fee: {}",totalFee);
+            return PriceSerializer.formatPrice(totalFee);
+        } catch (NumberFormatException e) {
+            log.error("Invalid format: {}", monthStr, e);
+            return "0";
+        } catch (Exception e) {
+            log.error("Error calculating total fee for month: {}", monthStr, e);
+            return "0";
+
+        }
+    }
+
 }

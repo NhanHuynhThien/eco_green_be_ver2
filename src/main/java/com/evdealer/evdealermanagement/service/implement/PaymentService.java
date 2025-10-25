@@ -43,7 +43,6 @@ public class PaymentService {
     private final MomoService momoService;
 
     private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
-    private PostPayment build;
 
     private LocalDateTime nowVietNam () {
         return ZonedDateTime.now(VIETNAM_ZONE).toLocalDateTime();
@@ -97,7 +96,20 @@ public class PaymentService {
             totalPayable = BigDecimal.ZERO;
         }
 
-        PostPayment payment = build;
+        PostPayment payment = PostPayment.builder()
+                .accountId(product.getSeller().getId())
+                .productId(product.getId())
+                .postPackage(pkg)
+                .postPackageOption(optionRepo.findById(request.getOptionId()).orElse(null))
+                .amount(totalPayable)
+                .paymentMethod(request.getPaymentMethod() != null
+                        ? PostPayment.PaymentMethod.valueOf(request.getPaymentMethod().toUpperCase())
+                        : null)
+                .paymentStatus(totalPayable.signum() == 0
+                        ? PostPayment.PaymentStatus.COMPLETED
+                        : PostPayment.PaymentStatus.PENDING)
+                .createdAt(nowVietNam())
+               .build();
 
         postPaymentRepository.save(payment);
         log.info("Payment saved with ID: {}", payment.getId());

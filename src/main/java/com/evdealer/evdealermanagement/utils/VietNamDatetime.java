@@ -6,9 +6,9 @@ import java.time.ZonedDateTime;
 
 public class VietNamDatetime {
 
-    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    public static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
-    private LocalDateTime nowVietNam () {
+    public static LocalDateTime nowVietNam () {
         return ZonedDateTime.now(VIETNAM_ZONE).toLocalDateTime();
     }
 }

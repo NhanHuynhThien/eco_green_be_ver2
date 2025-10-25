@@ -21,10 +21,10 @@ public class ProductMapper {
     public static ProductDetail toDetailDto(Product product) {
         if (product == null) return null;
 
-        // ✅ Initialize images để tránh lazy loading exception
+        // Initialize images để tránh lazy loading exception
         Hibernate.initialize(product.getImages());
 
-        // ✅ FIX: Map ProductImages sang ProductImageDto
+        // FIX: Map ProductImages sang ProductImageDto
         List<ProductImageDto> imagesList = Collections.emptyList();
         if (product.getImages() != null && !product.getImages().isEmpty()) {
             imagesList = product.getImages().stream()

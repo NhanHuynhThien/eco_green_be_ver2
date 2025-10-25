@@ -26,13 +26,11 @@ import java.util.Optional;
 public class ReportService {
     private final ReportRepository reportRepository;
     private final ProductRepository productRepository;
-    // Không cần AmountReportRepository nữa
 
     public ReportResponse createReport(ReportRequest request) {
         log.info("[REPORT] Received new report request for product {}", request.getProductId());
         log.debug("[REPORT] Request detail: {}", request);
 
-        // Validation
         validateReportRequest(request);
 
         Product product = productRepository.findById(request.getProductId())
@@ -49,16 +47,10 @@ public class ReportService {
         Report saved = reportRepository.save(report);
         log.info("[REPORT] Report {} saved successfully for product {}", saved.getId(), product.getId());
 
-        return ReportResponse.builder()
-                .id(saved.getId())
-                .productId(product.getId())
-                .phone(saved.getPhone())
-                .email(saved.getEmail())
-                .reportReason(saved.getReportReason())
-                .status(saved.getStatus())
-                .createdAt(saved.getCreatedAt())
-                .build();
+        // Dùng mapper để trả về detail đầy đủ
+        return ReportMapper.toResponse(saved);
     }
+
 
     /**
      * Lấy thống kê số lượng report theo product, sắp xếp giảm dần
