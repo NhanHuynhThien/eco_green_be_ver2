@@ -124,4 +124,46 @@ public class AuthService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         accountRepository.delete(account);
     }
+
+    public AccountRegisterResponse registerStaffAccount(AccountRegisterRequest request) {
+        String phone = request.getPhone().trim();
+        String fullName = request.getFullName().trim();
+
+        if (accountRepository.findByPhone(phone).isPresent()) {
+            throw new AppException(ErrorCode.PHONE_ALREADY_EXISTS);
+        }
+
+        String hashedPassword = passwordEncoder.encode(request.getPassword());
+
+        String username = Utils.generateUsername(phone, fullName);
+
+        Account account = Account.builder()
+                .username(username)
+                .phone(phone)
+                .fullName(fullName)
+                .dateOfBirth(request.getDateOfBirth())
+                .gender(request.getGender())
+                .role(Account.Role.STAFF)
+                .status(Account.Status.ACTIVE)
+                .passwordHash(hashedPassword)
+                .address(request.getAddress())
+                .email(null)
+                .build();
+
+        Account saved = accountRepository.save(account);
+
+        return AccountRegisterResponse.builder()
+                .username(saved.getUsername())
+                .phone(saved.getPhone())
+                .fullName(saved.getFullName())
+                .dateOfBirth(saved.getDateOfBirth())
+                .gender(saved.getGender())
+                .role(saved.getRole())
+                .status(saved.getStatus())
+                .createdAt(saved.getCreatedAt())
+                .updateAt(saved.getUpdatedAt())
+                .address(saved.getAddress())
+                .email(null)
+                .build();
+    }
 }
