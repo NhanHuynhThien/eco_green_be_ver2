@@ -19,10 +19,20 @@ public class GeminiController {
 
     @PostMapping("/suggest-price")
     public ResponseEntity<PriceSuggestion> suggestPrice(@RequestBody Map<String, String> request) {
-        String title = request.get("title");
-        log.info("Received price suggestion request for: {}", title);
+        String title = request.getOrDefault("title", "");
+        String modelName = request.getOrDefault("modelName", "");
+        String versionName = request.getOrDefault("versionName", "");
+        String batteryHealth = request.getOrDefault("batteryHealth", "");
+        String mileageKm = request.getOrDefault("mileageKm", "");
+        String brand = request.getOrDefault("brand", "");
+        String manufactureYear = request.getOrDefault("manufactureYear", "");
 
-        PriceSuggestion suggestion = geminiRestService.suggestPrice(title);
+        log.info("Received price suggestion request for title: {}, brand: {}, model: {}, version: {}, year: {}",
+                title, brand, modelName, versionName, manufactureYear);
+
+        PriceSuggestion suggestion = geminiRestService.suggestPrice(
+                title, modelName, versionName, batteryHealth, mileageKm, brand, manufactureYear
+        );
 
         return ResponseEntity.ok(suggestion);
     }

@@ -66,8 +66,11 @@ public class GeminiRestService {
      * @param title Tiêu đề sản phẩm
      * @return PriceSuggestion chứa giá và mô tả
      */
-    public PriceSuggestion suggestPrice(String title) {
-        String prompt = buildPricePrompt(title);
+    public PriceSuggestion suggestPrice(String title, String modelName, String versionName,
+                                        String batteryHealth, String mileageKm,
+                                        String brand, String manufactureYear) {
+
+        String prompt = buildPricePrompt(title, modelName, versionName, batteryHealth, mileageKm, brand, manufactureYear);
 
         try {
             log.info("=== GEMINI REST API REQUEST ===");
@@ -114,18 +117,30 @@ public class GeminiRestService {
     /**
      * Xây dựng prompt cho Gemini
      */
-    private String buildPricePrompt(String title) {
+    private String buildPricePrompt(String title, String modelName, String versionName,
+                                    String batteryHealth, String mileageKm,
+                                    String brand, String manufactureYear) {
+
         return String.format(
                 "Bạn là chuyên gia thẩm định giá sản phẩm cũ tại Việt Nam. "
-                        + "Hãy dựa trên tiêu đề sản phẩm để đưa ra: "
-                        + "1. Giá gợi ý hợp lý (đơn vị VNĐ) "
-                        + "2. Mô tả ngắn gọn tình trạng (1 câu). "
-                        + "Chỉ trả lời đúng format sau:\n"
+                        + "Hãy dựa trên thông tin chi tiết của sản phẩm dưới đây để đưa ra:\n"
+                        + "1. Giá gợi ý hợp lý trên thị trường hiện nay (đơn vị: VNĐ)\n"
+                        + "2. Mô tả ngắn gọn tình trạng sản phẩm (1–2 câu).\n\n"
+                        + "Yêu cầu: Chỉ trả lời đúng theo định dạng sau, không thêm nội dung khác:\n"
                         + "Giá gợi ý: [giá hoặc khoảng giá] VNĐ\n"
-                        + "Mô tả ngắn gọn trong 1-2 câu: [mô tả]\n\n"
-                        + "Sản phẩm: %s",
-                title);
+                        + "Mô tả ngắn gọn trong 1–2 câu: [mô tả]\n\n"
+                        + "Thông tin sản phẩm:\n"
+                        + "- Tiêu đề: %s\n"
+                        + "- Hãng: %s\n"
+                        + "- Mẫu (Model): %s\n"
+                        + "- Phiên bản: %s\n"
+                        + "- Năm sản xuất: %s\n"
+                        + "- Tình trạng pin / năng lượng: %s\n"
+                        + "- Số km đã đi: %s",
+                title, brand, modelName, versionName, manufactureYear, batteryHealth, mileageKm
+        );
     }
+
 
     /**
      * Xử lý response thành công từ Gemini API
