@@ -3,8 +3,12 @@ package com.evdealer.evdealermanagement.mapper.product;
 import com.evdealer.evdealermanagement.dto.post.common.ProductImageResponse;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductImageDto;
+import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.product.ProductImages;
+import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
+import com.evdealer.evdealermanagement.repository.VehicleDetailsRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 
@@ -32,24 +36,42 @@ public class ProductMapper {
                             ProductImages::getPosition,
                             Comparator.nullsLast(Integer::compareTo)
                     ))
-                    .map(ProductImageDto::fromEntity)  // ✅ Convert sang DTO
+                    .map(ProductImageDto::fromEntity)  //  Convert sang DTO
                     .collect(Collectors.toList());
         }
 
         String brandName = null;
         String modelName = null;
         String version = null;
+        String batteryType = null;
 
-        if (product.getModelVersion() != null) {
-            version = product.getModelVersion().getName();
+        if (product.getType() == Product.ProductType.VEHICLE) {
+            Hibernate.initialize(product.getVehicleDetails());
+            VehicleDetails vehicleDetails = product.getVehicleDetails();
 
-            if (product.getModelVersion().getModel() != null) {
-                modelName = product.getModelVersion().getModel().getName();
+            if (vehicleDetails != null && vehicleDetails.getVersion() != null) {
+                version = vehicleDetails.getVersion().getName();
 
-                if (product.getModelVersion().getModel().getBrand() != null) {
-                    brandName = product.getModelVersion().getModel().getBrand().getName();
+                if (vehicleDetails.getBrand() != null && vehicleDetails.getBrand().getName() != null) {
+                    brandName = vehicleDetails.getBrand().getName();
+                }
+                if(vehicleDetails.getModel() != null && vehicleDetails.getModel().getName() != null) {
+                    modelName = vehicleDetails.getModel().getName();
                 }
             }
+        } else if(product.getType() == Product.ProductType.BATTERY) {
+            Hibernate.initialize(product.getBatteryDetails());
+            BatteryDetails batteryDetails = product.getBatteryDetails();
+
+            if(batteryDetails != null && batteryDetails.getBrand() != null) {
+                brandName = batteryDetails.getBrand().getName();
+
+                if(batteryDetails.getBatteryType() != null) {
+                    batteryType = batteryDetails.getBatteryType().getName();
+                }
+            }
+
+
         }
 
         return ProductDetail.builder()
@@ -62,22 +84,23 @@ public class ProductMapper {
                 .status(product.getStatus() != null ? product.getStatus().name() : null)
                 .createdAt(product.getCreatedAt())
 
-                // ✅ Seller info
+                //  Seller info
                 .sellerId(product.getSeller() != null ? product.getSeller().getId() : null)
                 .sellerName(product.getSeller() != null ? product.getSeller().getFullName() : null)
                 .sellerPhone(product.getSeller() != null ? product.getSeller().getPhone() : null)
 
-                // ✅ Address info
+                //  Address info
                 .addressDetail(product.getAddressDetail())
                 .city(product.getCity())
                 .district(product.getDistrict())
                 .ward(product.getWard())
 
-                // ✅ Product images - Sử dụng biến đã convert
+                //  Product images - Sử dụng biến đã convert
                 .productImagesList(imagesList)
                 .brandName(brandName)
                 .modelName(modelName)
                 .version(version)
+                .batteryType(batteryType)
                 .build();
     }
 

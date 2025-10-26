@@ -46,6 +46,7 @@ public class ProductDetail {
     private String brandName;
     private String modelName;
     private String version;
+    private String batteryType;
 
     private Boolean isWishlisted;
 
