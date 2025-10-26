@@ -1,6 +1,7 @@
 package com.evdealer.evdealermanagement.service.contract;
 
 import com.evdealer.evdealermanagement.dto.common.PageResponse;
+import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
 import org.springframework.data.domain.Pageable;
 
@@ -17,9 +18,9 @@ public interface IProductService {
      * Retrieves all available products
      * @return List of all product details, empty list if no products found or error occurs
      */
-    PageResponse<ProductDetail> getAllProductsWithStatus(String status, Pageable pageable);
+    PageResponse<PostVerifyResponse> getAllProductsWithStatus(String status, Pageable pageable);
 
-    PageResponse<ProductDetail> getAllProductsWithStatusAll(Pageable pageable);
+    PageResponse<PostVerifyResponse> getAllProductsWithStatusAll(Pageable pageable);
     /**
      * Retrieves a product by its unique identifier
      * @param id the product ID to search for
