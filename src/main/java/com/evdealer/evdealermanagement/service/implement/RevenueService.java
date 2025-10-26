@@ -1,11 +1,13 @@
 package com.evdealer.evdealermanagement.service.implement;
 
 import com.evdealer.evdealermanagement.dto.revenue.MonthlyRevenue;
+import com.evdealer.evdealermanagement.dto.revenue.YearlyRevenue;
 import com.evdealer.evdealermanagement.entity.post.PostPayment;
 import com.evdealer.evdealermanagement.repository.PostPaymentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.comparator.Comparators;
 
 import java.math.BigDecimal;
 import java.util.Comparator;
@@ -53,6 +55,29 @@ public class RevenueService {
             return List.of();
         } catch (Exception e) {
             log.error("Error calculating total fee for month: {}", monthStr, e);
+            return List.of();
+        }
+    }
+
+    public List<YearlyRevenue> getTotalRevenueByYear() {
+        try {
+            List<PostPayment> paymentList = postPaymentRepository.findAll();
+
+            Map<Integer, BigDecimal> revenueByYear = paymentList.stream()
+                    .filter(p -> p.getCreatedAt() != null)
+                    .collect(Collectors.groupingBy(
+                            p -> p.getCreatedAt().getYear(),
+                            Collectors.reducing(BigDecimal.ZERO, PostPayment::getAmount, BigDecimal::add)
+                    ));
+
+            List<YearlyRevenue> revenueList = revenueByYear.entrySet().stream()
+                    .map(entry -> new YearlyRevenue(entry.getKey(), entry.getValue()))
+                    .sorted(Comparator.comparing(YearlyRevenue::getYear))
+                    .toList();
+
+            return revenueList;
+        } catch (Exception e) {
+            log.error("Error calculating yearly revenue", e);
             return List.of();
         }
     }

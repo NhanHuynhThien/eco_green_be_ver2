@@ -1,9 +1,9 @@
 package com.evdealer.evdealermanagement.controller.revenue;
 
 import com.evdealer.evdealermanagement.dto.revenue.MonthlyRevenue;
+import com.evdealer.evdealermanagement.dto.revenue.YearlyRevenue;
 import com.evdealer.evdealermanagement.service.implement.RevenueService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -11,20 +11,19 @@ import java.util.List;
 @RestController
 @RequestMapping("/revenue")
 @RequiredArgsConstructor
-@Slf4j
 public class RevenueController {
 
     private final RevenueService revenueService;
 
-    /**
-     * Lấy tổng doanh thu theo tháng (gộp theo năm)
-     * @param month số tháng (1–12)
-     * @return Danh sách doanh thu của từng năm trong tháng đó
-     */
+    // Lấy doanh thu theo tháng trong từng năm
     @GetMapping("/month")
-    public List<MonthlyRevenue> getRevenueByMonth(@RequestParam("month") String month) {
-        log.info("Fetching revenue for month {}", month);
+    public List<MonthlyRevenue> getRevenueByMonth(@RequestParam String month) {
         return revenueService.getTotalFeeDuringMonth(month);
     }
 
+    // Lấy tổng doanh thu theo từng năm
+    @GetMapping("/year")
+    public List<YearlyRevenue> getRevenueByYear() {
+        return revenueService.getTotalRevenueByYear();
+    }
 }
