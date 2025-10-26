@@ -48,6 +48,8 @@ public class ProductDetail {
     private String version;
     private String batteryType;
 
+    private String isHot;
+
     private Boolean isWishlisted;
 
     public static ProductDetail fromEntity(Product product) {
@@ -98,10 +100,11 @@ public class ProductDetail {
                 .city(product.getCity())
                 .district(product.getDistrict())
                 .ward(product.getWard())
-                .productImagesList(imagesList)  // ✅ Dùng biến đã được infer đúng type
+                .productImagesList(imagesList)  // Dùng biến đã được infer đúng type
                 .modelName(modelName)
                 .version(version)
                 .brandName(brandName)
+                .isHot(String.valueOf(product.getIsHot()))
                 .build();
     }
 }

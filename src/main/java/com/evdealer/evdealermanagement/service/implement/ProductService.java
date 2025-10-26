@@ -12,7 +12,6 @@ import com.evdealer.evdealermanagement.utils.ProductSpecs;
 import com.evdealer.evdealermanagement.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -72,7 +71,6 @@ public class ProductService implements IProductService {
         List<ProductDetail> content = toDetailsWithWishlist(products.getContent());
         return PageResponse.of(content, products);
     }
-
 
     @Override
     @Transactional(readOnly = true)

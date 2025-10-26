@@ -26,9 +26,6 @@ public class PostPayment extends BaseEntity {
     @Column(name = "product_id", nullable = false, length = 36)
     private String productId;
 
-    // @Column(name = "package_id", nullable = false, length = 36)
-    // private String packageId;
-
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 

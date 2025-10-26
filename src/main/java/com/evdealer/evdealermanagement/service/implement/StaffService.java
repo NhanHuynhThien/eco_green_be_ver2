@@ -44,7 +44,6 @@ public class StaffService {
     @Autowired
     private ProductRepository productRepository;
 
-
     private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     @Autowired
@@ -80,9 +79,6 @@ public class StaffService {
                     "Only posts in PENDING_REVIEW status can be verified or rejected");
         }
 
-        product.setStatus(Product.Status.ACTIVE);
-        product.setRejectReason(null);
-
         PostPayment payment = postPaymentRepository
                 .findTopByProductIdAndPaymentStatusOrderByCreatedAtDesc(
                         product.getId(), PostPayment.PaymentStatus.COMPLETED)
@@ -91,24 +87,35 @@ public class StaffService {
 
         int elevatedDays = 0;
         if (payment.getPostPackageOption() != null) {
-            Integer d = payment.getPostPackageOption().getDurationDays(); // 1/3/5/7...
+            Integer d = payment.getPostPackageOption().getDurationDays();
             elevatedDays = (d != null ? d : 0);
         }
 
-        // 3) Ghi mốc thời gian theo yêu cầu
+        // Ghi mốc thời gian theo yêu cầu
         LocalDateTime now = nowVietNam();
         product.setFeaturedEndAt(elevatedDays > 0 ? now.plusDays(elevatedDays) : null);
         product.setExpiresAt(now.plusDays(30));
+        product.setUpdatedAt(now);
 
-        // 4) Xử lý thông số kỹ thuật xe sau khi DUYỆT BÀI
+        // Thay đổi status và set approver
+        product.setStatus(Product.Status.ACTIVE);
+        product.setRejectReason(null);
+        product.setApprovedBy(currentUser);
+
+        // Xử lý thông số kỹ thuật xe sau khi DUYỆT BÀI
         if (isVehicleProduct(product)) {
             generateAndSaveVehicleSpecs(product);
         }
 
-        product.setApprovedBy(currentUser);
-        product.setUpdatedAt(nowVietNam());
-        productRepository.save(product);
-        return PostVerifyMapper.mapToPostVerifyResponse(product, payment);
+        // Lưu product
+        Product savedProduct = productRepository.save(product);
+
+        log.info("✅ Product {} approved successfully. FeaturedEndAt: {}, ExpiresAt: {}",
+                savedProduct.getId(),
+                savedProduct.getFeaturedEndAt(),
+                savedProduct.getExpiresAt());
+
+        return PostVerifyMapper.mapToPostVerifyResponse(savedProduct, payment);
     }
 
     private boolean isVehicleProduct(Product product) {
@@ -117,8 +124,20 @@ public class StaffService {
 
     @Transactional
     public PostVerifyResponse verifyPostReject(String productId, String rejectReason) {
+        Account currentUser = userContextService.getCurrentUser()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized user"));
+
+        if (currentUser.getRole() != Account.Role.STAFF && currentUser.getRole() != Account.Role.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only STAFF or ADMIN can reject posts");
+        }
+
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        if (product.getStatus() != Product.Status.PENDING_REVIEW) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Only posts in PENDING_REVIEW status can be rejected");
+        }
 
         PostPayment payment = postPaymentRepository
                 .findTopByProductIdAndPaymentStatusOrderByIdDesc(
@@ -126,56 +145,63 @@ public class StaffService {
                         PostPayment.PaymentStatus.COMPLETED)
                 .orElse(null);
 
+        // Set các trường cần thiết
+        LocalDateTime now = nowVietNam();
         product.setStatus(Product.Status.REJECTED);
         product.setRejectReason(rejectReason);
-        product.setUpdatedAt(LocalDateTime.now());
-        productRepository.save(product);
+        product.setUpdatedAt(now);
+        product.setApprovedBy(currentUser);
 
-        return PostVerifyMapper.mapToPostVerifyResponse(product, payment);
+        Product savedProduct = productRepository.save(product);
+
+        log.info(" Product {} rejected by {}. Reason: {}",
+                savedProduct.getId(),
+                currentUser.getEmail(),
+                rejectReason);
+
+        return PostVerifyMapper.mapToPostVerifyResponse(savedProduct, payment);
     }
 
     // Generate và Lưu thông số kỹ thuật
     private void generateAndSaveVehicleSpecs(Product product) {
-
-        VehicleDetails details = vehicleDetailsRepository.findByProductId(product.getId()).orElse(null);
-        ModelVersion version = details.getVersion();
+        //  Lấy ModelVersion từ Product
+        ModelVersion version = product.getModelVersion();
 
         if (version == null || version.getModel() == null) {
-            log.warn("Product ID {} is missing ModelVersion or Model. Cannot generate specs.", product.getId());
+            log.warn(" Product ID {} is missing ModelVersion or Model. Cannot generate specs.", product.getId());
             return;
         }
+
+        // Lấy VehicleDetails
+        VehicleDetails details = vehicleDetailsRepository.findByProductId(product.getId()).orElse(null);
 
         if (details == null) {
             log.warn("Product ID {} is missing VehicleDetails. Cannot link catalog.", product.getId());
             return;
         }
 
+        // Lấy thông tin Model, Brand, Category
         Model model = version.getModel();
-
-        // Validation: Đảm bảo model trong details khớp với version.model
-        if (details.getModel() == null || !details.getModel().getId().equals(model.getId())) {
-            log.warn("VehicleDetails model mismatch for Product {}. Updating model reference.", product.getId());
-            details.setModel(model);
-        }
-
         VehicleBrands brand = model.getBrand();
         VehicleCategories type = model.getVehicleType();
 
+        // Validation các trường bắt buộc
+        if (type == null) {
+            log.error(" Model ID {} is missing VehicleType. Cannot generate specs.", model.getId());
+            return;
+        }
+
+        if (brand == null) {
+            log.error(" Model ID {} is missing Brand. Cannot generate specs.", model.getId());
+            return;
+        }
+
+        // Chuẩn bị dữ liệu cho Gemini
         String productName = product.getTitle();
         String modelName = model.getName();
-        String brandName = brand != null ? brand.getName() : null;
+        String brandName = brand.getName();
         String versionName = version.getName();
         Short manufactureYear = product.getManufactureYear();
-
-        if (type == null) {
-            log.error("Model ID {} is missing VehicleType. Cannot generate specs.", model.getId());
-            return;
-        }
-
-        if (brandName == null) {
-            log.error("Model ID {} is missing Brand. Cannot generate specs.", model.getId());
-            return;
-        }
 
         if (manufactureYear == null) {
             log.warn("Product {} missing manufacture year. Defaulting to current year.", product.getId());
@@ -183,9 +209,10 @@ public class StaffService {
         }
 
         // Kiểm tra VehicleCatalog đã có thông số cho ModelVersion này chưa
-        Optional<VehicleCatalog> existingCatalog = vehicleCatalogRepository.findByVersion_Id(version.getId());
+        Optional<VehicleCatalog> existingCatalog = vehicleCatalogRepository.findByVersionId(version.getId());
 
         if (existingCatalog.isEmpty()) {
+            // Catalog chưa tồn tại → Generate mới bằng Gemini
             log.info("Vehicle spec not found for ModelVersion {}. Generating new specs using Gemini...",
                     version.getId());
 
@@ -194,7 +221,7 @@ public class StaffService {
                 VehicleCatalogDTO specsDto = geminiRestService.getVehicleSpecs(
                         productName, modelName, brandName, versionName, manufactureYear);
 
-                // Ánh xạ DTO sang Entity và lưu vào DB
+                // Ánh xạ DTO sang Entity
                 VehicleCatalog newCatalog = VehicleCatalogMapper.mapFromDto(specsDto);
 
                 // Gán các foreign key & trường bắt buộc
@@ -204,11 +231,13 @@ public class StaffService {
                 newCatalog.setModel(model);
                 newCatalog.setYear(manufactureYear);
 
-                vehicleCatalogRepository.save(newCatalog);
-                log.info("Successfully generated and saved new VehicleCatalog for ModelVersion {}", version.getId());
+                // Lưu catalog vào DB
+                VehicleCatalog savedCatalog = vehicleCatalogRepository.save(newCatalog);
+                log.info("Successfully generated and saved new VehicleCatalog ID: {} for ModelVersion {}",
+                        savedCatalog.getId(), version.getId());
 
                 // Liên kết catalog vào VehicleDetails
-                details.setVehicleCatalog(newCatalog);
+                details.setVehicleCatalog(savedCatalog);
                 vehicleDetailsRepository.save(details);
                 log.info("Successfully linked new VehicleCatalog to Product {}", product.getId());
 
@@ -217,7 +246,7 @@ public class StaffService {
                         product.getId(), e.getMessage(), e);
             }
         } else {
-            // Nếu catalog đã tồn tại, vẫn cần link nó vào VehicleDetails nếu chưa link
+            // Nếu catalog đã tồn tại, link nó vào VehicleDetails (nếu chưa link)
             VehicleCatalog catalog = existingCatalog.get();
 
             if (details.getVehicleCatalog() == null ||

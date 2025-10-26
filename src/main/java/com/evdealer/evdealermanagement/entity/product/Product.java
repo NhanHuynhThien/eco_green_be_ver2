@@ -116,6 +116,9 @@ public class Product extends BaseEntity {
     @OneToOne(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private BatteryDetails batteryDetails;
 
+    @Column(name = "is_hot")
+    private Boolean isHot = false;
+
     public enum ProductType {
         BATTERY, VEHICLE
     }

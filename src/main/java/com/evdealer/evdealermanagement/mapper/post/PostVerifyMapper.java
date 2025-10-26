@@ -8,7 +8,13 @@ import com.evdealer.evdealermanagement.entity.post.PostPayment;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+
 public class PostVerifyMapper {
+
+    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private PostVerifyMapper() {
     }
@@ -20,7 +26,6 @@ public class PostVerifyMapper {
         // Thumbnail: lấy ảnh đầu tiên nếu có
         String thumbnail = null;
         if (p.getImages() != null && !p.getImages().isEmpty() && p.getImages().get(0) != null) {
-            // Đổi getUrl() theo field thực tế của ProductImages (vd: getImageUrl())
             thumbnail = p.getImages().get(0).getImageUrl();
         }
 
@@ -56,22 +61,44 @@ public class PostVerifyMapper {
             }
         }
 
+        //  Xử lý featuredEndAt và expiresAt
+        LocalDateTime featuredEndAt = p.getFeaturedEndAt();
+        LocalDateTime expiresAt = p.getExpiresAt();
+
+        // Nếu product chưa được duyệt (PENDING_REVIEW), tính toán thời gian dự kiến
+        if (p.getStatus() == Product.Status.PENDING_REVIEW && payment != null) {
+            LocalDateTime now = ZonedDateTime.now(VIETNAM_ZONE).toLocalDateTime();
+
+            // Tính thời gian featured dự kiến
+            if (payment.getPostPackageOption() != null &&
+                    payment.getPostPackageOption().getDurationDays() != null) {
+                int elevatedDays = payment.getPostPackageOption().getDurationDays();
+                if (elevatedDays > 0) {
+                    featuredEndAt = now.plusDays(elevatedDays);
+                }
+            }
+
+            // Thời gian hết hạn dự kiến (30 ngày)
+            expiresAt = now.plusDays(30);
+        }
+
         return PostVerifyResponse.builder()
                 .id(p.getId())
                 .status(p.getStatus())
+                .rejectReason(p.getRejectReason())
                 .title(p.getTitle())
                 .thumbnail(thumbnail)
                 .productType(p.getType())
-                .sellerName(p.getSeller().getFullName())
-                .sellerId(p.getSeller().getId())
+                .sellerName(p.getSeller() != null ? p.getSeller().getFullName() : null)
+                .sellerId(p.getSeller() != null ? p.getSeller().getId() : null)
                 .sellerPhone(p.getSellerPhone())
-                .updateAt(p.getUpdatedAt())
+                .updateAt(p.getUpdatedAt()) // Map từ updatedAt
                 .brandName(brandName)
                 .batteryType(batteryType)
                 .modelName(modelName)
                 .versionName(version)
-                .featuredEndAt(p.getFeaturedEndAt())
-                .expiresAt(p.getExpiresAt())
+                .featuredEndAt(featuredEndAt) //  Sử dụng giá trị đã tính toán
+                .expiresAt(expiresAt) // Sử dụng giá trị đã tính toán
                 .packageName(payment != null && payment.getPostPackage() != null
                         ? payment.getPostPackage().getName()
                         : null)
