@@ -10,7 +10,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class BatteryTypesResponse {
 
-    String typeId;
-    String brandName;
+    String batteryTypeId;
+    String batteryTypeName;
 
 }
