@@ -1,17 +1,22 @@
 package com.evdealer.evdealermanagement.service.implement;
 
 import com.evdealer.evdealermanagement.dto.common.PageResponse;
+import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
 import com.evdealer.evdealermanagement.dto.product.moderation.ProductPendingResponse;
 import com.evdealer.evdealermanagement.entity.account.Account;
+import com.evdealer.evdealermanagement.entity.post.PostPayment;
 import com.evdealer.evdealermanagement.entity.product.Product;
+import com.evdealer.evdealermanagement.mapper.post.PostVerifyMapper;
 import com.evdealer.evdealermanagement.mapper.product.ProductMapper;
+import com.evdealer.evdealermanagement.repository.PostPaymentRepository;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
 import com.evdealer.evdealermanagement.service.contract.IProductService;
 import com.evdealer.evdealermanagement.utils.ProductSpecs;
 import com.evdealer.evdealermanagement.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,11 +38,12 @@ public class ProductService implements IProductService {
     private final VehicleService vehicleService;
     private final BatteryService batteryService;
     private final WishlistService wishlistService;
+    private final PostPaymentRepository postPaymentRepository;
     private static final int MAX_PAGE_SIZE = 100;
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<ProductDetail> getAllProductsWithStatus(String status, Pageable pageable) {
+    public PageResponse<PostVerifyResponse> getAllProductsWithStatus(String status, Pageable pageable) {
         try {
             log.info("=== START getAllProductsWithStatus===");
             pageable = capPageSize(pageable);
@@ -47,7 +53,13 @@ public class ProductService implements IProductService {
 
             Specification<Product> specification = Specification.where(ProductSpecs.hasStatus(statusEnum));
             Page<Product> products = productRepository.findAll(specification, pageable);
-            List<ProductDetail> content = toDetailsWithWishlist(products.getContent());
+
+            List<PostVerifyResponse> content = products.getContent().stream().map(
+                    product -> {
+                        PostPayment payments = postPaymentRepository.findByProductId(product.getId());
+                        return PostVerifyMapper.mapToPostVerifyResponse(product, payments);
+                    })
+                    .toList();
             return PageResponse.of(content, products);
         } catch (IllegalArgumentException e) {
             log.error("Invalid status value: {}", status);
@@ -61,16 +73,22 @@ public class ProductService implements IProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<ProductDetail> getAllProductsWithStatusAll(Pageable pageable) {
+    public PageResponse<PostVerifyResponse> getAllProductsWithStatusAll(Pageable pageable) {
         pageable = capPageSize(pageable);
         Specification<Product> spec = Specification.where(ProductSpecs.all());
         log.info("=== START getAllProductsWithStatusAll==");
         log.info("spec =  {}", spec);
         Page<Product> products = productRepository.findAll(spec, pageable);
         log.info("products =  {}", products);
-        List<ProductDetail> content = toDetailsWithWishlist(products.getContent());
+        List<PostVerifyResponse> content = products.getContent().stream().map(
+                        product -> {
+                            PostPayment payments = postPaymentRepository.findByProductId(product.getId());
+                            return PostVerifyMapper.mapToPostVerifyResponse(product, payments);
+                        })
+                .toList();
         return PageResponse.of(content, products);
     }
+
 
     @Override
     @Transactional(readOnly = true)
