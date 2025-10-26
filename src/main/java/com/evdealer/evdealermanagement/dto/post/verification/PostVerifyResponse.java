@@ -24,8 +24,10 @@ public class PostVerifyResponse {
     private LocalDateTime updateAt;
 
     // ========== Model / Version ==========
+    private String brandName;
     private String modelName;
     private String versionName;
+    private String batteryType;
 
     // ========== Package / Fee ==========
     private String packageName;
