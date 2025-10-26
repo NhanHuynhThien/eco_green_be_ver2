@@ -1,0 +1,60 @@
+package com.evdealer.evdealermanagement.service.implement;
+
+import com.evdealer.evdealermanagement.dto.revenue.MonthlyRevenue;
+import com.evdealer.evdealermanagement.entity.post.PostPayment;
+import com.evdealer.evdealermanagement.repository.PostPaymentRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class RevenueService {
+
+    private final PostPaymentRepository postPaymentRepository;
+
+    public List<MonthlyRevenue> getTotalFeeDuringMonth(String monthStr) {
+        try {
+            int month = Integer.parseInt(monthStr);
+
+            if (month < 1 || month > 12) {
+                log.warn("Invalid input {}", month);
+                return List.of();
+            }
+
+            List<PostPayment> paymentList = postPaymentRepository.findAll();
+
+            Map<Integer, BigDecimal> revenueByYear = paymentList.stream()
+                    .filter(p -> p.getCreatedAt() != null)
+                    .filter(p -> p.getCreatedAt().getMonthValue() == month)
+                    .collect(Collectors.groupingBy(
+                            p-> p.getCreatedAt().getYear(),
+                            Collectors.reducing(BigDecimal.ZERO, PostPayment::getAmount, BigDecimal::add)
+                    ));
+
+            List<MonthlyRevenue> revenueList = revenueByYear.entrySet().stream()
+                    .map(entry -> new MonthlyRevenue(entry.getKey(), month, entry.getValue()))
+                    .sorted(Comparator.comparing(MonthlyRevenue::getYear))
+                    .toList();
+
+            log.debug("Revenue by year for month {}: {}", month, revenueList);
+            return revenueList;
+
+        }
+        catch (NumberFormatException e) {
+            log.error("Invalid format: {}", monthStr, e);
+            return List.of();
+        } catch (Exception e) {
+            log.error("Error calculating total fee for month: {}", monthStr, e);
+            return List.of();
+        }
+    }
+
+}

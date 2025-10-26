@@ -1,6 +1,7 @@
 package com.evdealer.evdealermanagement.service.implement;
 
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
+import com.evdealer.evdealermanagement.dto.revenue.MonthlyRevenue;
 import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.entity.post.PostPayment;
 import com.evdealer.evdealermanagement.entity.product.Product;
@@ -16,10 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -122,39 +121,5 @@ public class AdminService {
         }
     }
 
-    public String getTotalFeeDuringMonth(String monthStr) {
-        try {
-            int month = Integer.parseInt(monthStr);
-
-            if (month< 1 || month > 12) {
-                log.warn("Invalid input {}", month);
-                return "0";
-            }
-
-            int currentYear = VietNamDatetime.nowVietNam().getYear();
-
-            List<PostPayment> paymentList = postPaymentRepository.findAll();
-
-            BigDecimal totalFee = paymentList.stream()
-                    .filter(p -> p.getCreatedAt() != null)
-                    .filter(p -> {
-                        var createdAt = p.getCreatedAt();
-                        return  createdAt.getYear() == currentYear && createdAt.getMonthValue() == month;
-                    })
-                    .map(PostPayment::getAmount)
-                    .filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            log.debug("Total posting fee: {}",totalFee);
-            return PriceSerializer.formatPrice(totalFee);
-        } catch (NumberFormatException e) {
-            log.error("Invalid format: {}", monthStr, e);
-            return "0";
-        } catch (Exception e) {
-            log.error("Error calculating total fee for month: {}", monthStr, e);
-            return "0";
-
-        }
-    }
 
 }
