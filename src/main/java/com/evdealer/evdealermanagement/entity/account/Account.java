@@ -60,6 +60,9 @@ public class Account extends BaseEntity {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    @Column(name = "ban_reason", length = 255)
+    private String banReason;
+
     // === giới tính (MALE, FEMALE, OTHER) ===
     @Enumerated(EnumType.STRING)
     @Column(name = "gender", length = 10)
