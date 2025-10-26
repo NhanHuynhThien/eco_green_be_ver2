@@ -107,7 +107,7 @@ public class StaffService {
         product.setApprovedBy(currentUser);
         product.setUpdatedAt(nowVietNam());
         productRepository.save(product);
-        return PostVerifyMapper.mapToPostVerifyResponse(product);
+        return PostVerifyMapper.mapToPostVerifyResponse(product, payment);
     }
 
     private boolean isVehicleProduct(Product product) {
@@ -119,19 +119,25 @@ public class StaffService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
+        PostPayment payment = postPaymentRepository
+                .findTopByProductIdAndPaymentStatusOrderByIdDesc(
+                        product.getId(),
+                        PostPayment.PaymentStatus.COMPLETED)
+                .orElse(null);
+
         product.setStatus(Product.Status.REJECTED);
         product.setRejectReason(rejectReason);
         product.setUpdatedAt(LocalDateTime.now());
         productRepository.save(product);
 
-        return PostVerifyMapper.mapToPostVerifyResponse(product);
+        return PostVerifyMapper.mapToPostVerifyResponse(product, payment);
     }
 
     // Generate và Lưu thông số kỹ thuật
     private void generateAndSaveVehicleSpecs(Product product) {
 
-        ModelVersion version = product.getModelVersion();
         VehicleDetails details = vehicleDetailsRepository.findByProductId(product.getId()).orElse(null);
+        ModelVersion version = details.getVersion();
 
         if (version == null || version.getModel() == null) {
             log.warn("Product ID {} is missing ModelVersion or Model. Cannot generate specs.", product.getId());
