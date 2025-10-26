@@ -91,23 +91,23 @@ public class StaffService {
             elevatedDays = (d != null ? d : 0);
         }
 
-        // ✅ Ghi mốc thời gian theo yêu cầu
+        // Ghi mốc thời gian theo yêu cầu
         LocalDateTime now = nowVietNam();
         product.setFeaturedEndAt(elevatedDays > 0 ? now.plusDays(elevatedDays) : null);
         product.setExpiresAt(now.plusDays(30));
         product.setUpdatedAt(now);
 
-        // ✅ Thay đổi status và set approver
+        // Thay đổi status và set approver
         product.setStatus(Product.Status.ACTIVE);
         product.setRejectReason(null);
         product.setApprovedBy(currentUser);
 
-        // ✅ Xử lý thông số kỹ thuật xe sau khi DUYỆT BÀI
+        // Xử lý thông số kỹ thuật xe sau khi DUYỆT BÀI
         if (isVehicleProduct(product)) {
             generateAndSaveVehicleSpecs(product);
         }
 
-        // ✅ Lưu product
+        // Lưu product
         Product savedProduct = productRepository.save(product);
 
         log.info("✅ Product {} approved successfully. FeaturedEndAt: {}, ExpiresAt: {}",
@@ -145,7 +145,7 @@ public class StaffService {
                         PostPayment.PaymentStatus.COMPLETED)
                 .orElse(null);
 
-        // ✅ Set các trường cần thiết
+        // Set các trường cần thiết
         LocalDateTime now = nowVietNam();
         product.setStatus(Product.Status.REJECTED);
         product.setRejectReason(rejectReason);
@@ -154,7 +154,7 @@ public class StaffService {
 
         Product savedProduct = productRepository.save(product);
 
-        log.info("❌ Product {} rejected by {}. Reason: {}",
+        log.info(" Product {} rejected by {}. Reason: {}",
                 savedProduct.getId(),
                 currentUser.getEmail(),
                 rejectReason);
@@ -168,7 +168,7 @@ public class StaffService {
         ModelVersion version = product.getModelVersion();
 
         if (version == null || version.getModel() == null) {
-            log.warn("⚠️ Product ID {} is missing ModelVersion or Model. Cannot generate specs.", product.getId());
+            log.warn(" Product ID {} is missing ModelVersion or Model. Cannot generate specs.", product.getId());
             return;
         }
 
@@ -185,18 +185,18 @@ public class StaffService {
         VehicleBrands brand = model.getBrand();
         VehicleCategories type = model.getVehicleType();
 
-        // 4️⃣ Validation các trường bắt buộc
+        // Validation các trường bắt buộc
         if (type == null) {
-            log.error("❌ Model ID {} is missing VehicleType. Cannot generate specs.", model.getId());
+            log.error(" Model ID {} is missing VehicleType. Cannot generate specs.", model.getId());
             return;
         }
 
         if (brand == null) {
-            log.error("❌ Model ID {} is missing Brand. Cannot generate specs.", model.getId());
+            log.error(" Model ID {} is missing Brand. Cannot generate specs.", model.getId());
             return;
         }
 
-        // 5️⃣ Chuẩn bị dữ liệu cho Gemini
+        // Chuẩn bị dữ liệu cho Gemini
         String productName = product.getTitle();
         String modelName = model.getName();
         String brandName = brand.getName();
@@ -204,16 +204,16 @@ public class StaffService {
         Short manufactureYear = product.getManufactureYear();
 
         if (manufactureYear == null) {
-            log.warn("⚠️ Product {} missing manufacture year. Defaulting to current year.", product.getId());
+            log.warn("Product {} missing manufacture year. Defaulting to current year.", product.getId());
             manufactureYear = (short) LocalDateTime.now().getYear();
         }
 
-        // 6️⃣ Kiểm tra VehicleCatalog đã có thông số cho ModelVersion này chưa
+        // Kiểm tra VehicleCatalog đã có thông số cho ModelVersion này chưa
         Optional<VehicleCatalog> existingCatalog = vehicleCatalogRepository.findByVersionId(version.getId());
 
         if (existingCatalog.isEmpty()) {
-            // 7️⃣ Catalog chưa tồn tại → Generate mới bằng Gemini
-            log.info("🔍 Vehicle spec not found for ModelVersion {}. Generating new specs using Gemini...",
+            // Catalog chưa tồn tại → Generate mới bằng Gemini
+            log.info("Vehicle spec not found for ModelVersion {}. Generating new specs using Gemini...",
                     version.getId());
 
             try {
@@ -224,29 +224,29 @@ public class StaffService {
                 // Ánh xạ DTO sang Entity
                 VehicleCatalog newCatalog = VehicleCatalogMapper.mapFromDto(specsDto);
 
-                // ✅ Gán các foreign key & trường bắt buộc
+                // Gán các foreign key & trường bắt buộc
                 newCatalog.setVersion(version);
                 newCatalog.setCategory(type);
                 newCatalog.setBrand(brand);
-                newCatalog.setModel(model); // ✅ FIXED: Gán entity Model, không phải String
+                newCatalog.setModel(model);
                 newCatalog.setYear(manufactureYear);
 
                 // Lưu catalog vào DB
                 VehicleCatalog savedCatalog = vehicleCatalogRepository.save(newCatalog);
-                log.info("✅ Successfully generated and saved new VehicleCatalog ID: {} for ModelVersion {}",
+                log.info("Successfully generated and saved new VehicleCatalog ID: {} for ModelVersion {}",
                         savedCatalog.getId(), version.getId());
 
-                // 8️⃣ Liên kết catalog vào VehicleDetails
+                // Liên kết catalog vào VehicleDetails
                 details.setVehicleCatalog(savedCatalog);
                 vehicleDetailsRepository.save(details);
-                log.info("✅ Successfully linked new VehicleCatalog to Product {}", product.getId());
+                log.info("Successfully linked new VehicleCatalog to Product {}", product.getId());
 
             } catch (Exception e) {
-                log.error("❌ Failed to generate or save vehicle specs for Product ID {}: {}",
+                log.error("Failed to generate or save vehicle specs for Product ID {}: {}",
                         product.getId(), e.getMessage(), e);
             }
         } else {
-            // 9️⃣ Nếu catalog đã tồn tại, link nó vào VehicleDetails (nếu chưa link)
+            // Nếu catalog đã tồn tại, link nó vào VehicleDetails (nếu chưa link)
             VehicleCatalog catalog = existingCatalog.get();
 
             if (details.getVehicleCatalog() == null ||
@@ -254,10 +254,10 @@ public class StaffService {
 
                 details.setVehicleCatalog(catalog);
                 vehicleDetailsRepository.save(details);
-                log.info("🔗 Linked existing VehicleCatalog (ID: {}) to Product {}",
+                log.info("Linked existing VehicleCatalog (ID: {}) to Product {}",
                         catalog.getId(), product.getId());
             } else {
-                log.info("✅ VehicleCatalog already linked to Product {}", product.getId());
+                log.info("VehicleCatalog already linked to Product {}", product.getId());
             }
         }
     }
