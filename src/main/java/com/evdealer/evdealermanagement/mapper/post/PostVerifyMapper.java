@@ -1,8 +1,12 @@
 package com.evdealer.evdealermanagement.mapper.post;
 
+import org.hibernate.Hibernate;
+
 import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
+import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
 import com.evdealer.evdealermanagement.entity.post.PostPayment;
 import com.evdealer.evdealermanagement.entity.product.Product;
+import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
 
 public class PostVerifyMapper {
 
@@ -20,12 +24,35 @@ public class PostVerifyMapper {
             thumbnail = p.getImages().get(0).getImageUrl();
         }
 
-        String versionName = null;
+        String brandName = null;
         String modelName = null;
-        if (p.getModelVersion() != null) {
-            versionName = p.getModelVersion().getName();
-            if (p.getModelVersion().getModel() != null) {
-                modelName = p.getModelVersion().getModel().getName();
+        String version = null;
+        String batteryType = null;
+
+        if (p.getType() == Product.ProductType.VEHICLE) {
+            Hibernate.initialize(p.getVehicleDetails());
+            VehicleDetails vehicleDetails = p.getVehicleDetails();
+
+            if (vehicleDetails != null && vehicleDetails.getVersion() != null) {
+                version = vehicleDetails.getVersion().getName();
+
+                if (vehicleDetails.getBrand() != null && vehicleDetails.getBrand().getName() != null) {
+                    brandName = vehicleDetails.getBrand().getName();
+                }
+                if (vehicleDetails.getModel() != null && vehicleDetails.getModel().getName() != null) {
+                    modelName = vehicleDetails.getModel().getName();
+                }
+            }
+        } else if (p.getType() == Product.ProductType.BATTERY) {
+            Hibernate.initialize(p.getBatteryDetails());
+            BatteryDetails batteryDetails = p.getBatteryDetails();
+
+            if (batteryDetails != null && batteryDetails.getBrand() != null) {
+                brandName = batteryDetails.getBrand().getName();
+
+                if (batteryDetails.getBatteryType() != null) {
+                    batteryType = batteryDetails.getBatteryType().getName();
+                }
             }
         }
 
@@ -39,8 +66,10 @@ public class PostVerifyMapper {
                 .sellerId(p.getSeller().getId())
                 .sellerPhone(p.getSellerPhone())
                 .updateAt(p.getUpdatedAt())
+                .brandName(brandName)
+                .batteryType(batteryType)
                 .modelName(modelName)
-                .versionName(versionName)
+                .versionName(version)
                 .featuredEndAt(p.getFeaturedEndAt())
                 .expiresAt(p.getExpiresAt())
                 .packageName(payment != null && payment.getPostPackage() != null
@@ -50,35 +79,4 @@ public class PostVerifyMapper {
                 .build();
     }
 
-    public static PostVerifyResponse mapToPostVerifyResponse(Product product) {
-
-        if (product == null) {
-            return null;
-        }
-
-        String versionName = null;
-        String modelName = null;
-        if (product.getModelVersion() != null) {
-            versionName = product.getModelVersion().getName();
-            if (product.getModelVersion().getModel() != null) {
-                modelName = product.getModelVersion().getModel().getName();
-            }
-        }
-
-        return PostVerifyResponse.builder()
-                .id(product.getId() != null ? product.getId().toString() : null)
-                .title(product.getTitle())
-                .status(product.getStatus())
-                .productType(product.getType())
-                .rejectReason(product.getRejectReason())
-                .modelName(modelName)
-                .versionName(versionName)
-                .sellerName(product.getSeller().getFullName())
-                .sellerId(product.getSeller().getId())
-                .sellerPhone(product.getSellerPhone())
-                .featuredEndAt(product.getFeaturedEndAt())
-                .expiresAt(product.getExpiresAt())
-                .updateAt(product.getUpdatedAt())
-                .build();
-    }
 }
