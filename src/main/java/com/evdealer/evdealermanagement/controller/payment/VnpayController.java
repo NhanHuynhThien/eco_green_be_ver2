@@ -43,16 +43,16 @@ public class VnpayController {
     @PostMapping
     public ResponseEntity<VnpayResponse> createPayment(@RequestBody VnpayRequest paymentRequest) {
         try {
-            log.info("📝 Creating payment for request: {}", paymentRequest);
+            log.info("Creating payment for request: {}", paymentRequest);
             VnpayResponse response = vnpayService.createPayment(paymentRequest);
-            log.info("✅ Payment URL created: {}", response.getPaymentUrl());
+            log.info("Payment URL created: {}", response.getPaymentUrl());
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            log.error("❌ Invalid payment request: {}", e.getMessage());
+            log.error("Invalid payment request: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new VnpayResponse(null, null, e.getMessage()));
         } catch (Exception e) {
-            log.error("❌ Error creating payment", e);
+            log.error("Error creating payment", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new VnpayResponse(null, null, "Đã xảy ra lỗi khi tạo thanh toán!"));
         }
