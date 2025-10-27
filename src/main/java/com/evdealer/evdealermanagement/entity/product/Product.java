@@ -3,6 +3,7 @@ package com.evdealer.evdealermanagement.entity.product;
 import com.evdealer.evdealermanagement.entity.BaseEntity;
 import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
+import com.evdealer.evdealermanagement.entity.post.PostPayment;
 import com.evdealer.evdealermanagement.entity.vehicle.ModelVersion;
 
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
@@ -12,7 +13,9 @@ import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "products")
@@ -115,6 +118,10 @@ public class Product extends BaseEntity {
 
     @OneToOne(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private BatteryDetails batteryDetails;
+
+    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY,
+            cascade = CascadeType.ALL, orphanRemoval = false)
+    private Set<PostPayment> postPayments = new HashSet<>();
 
     @Column(name = "is_hot")
     private Boolean isHot = false;

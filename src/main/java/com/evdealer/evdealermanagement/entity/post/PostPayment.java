@@ -1,6 +1,7 @@
 package com.evdealer.evdealermanagement.entity.post;
 
 import com.evdealer.evdealermanagement.entity.BaseEntity;
+import com.evdealer.evdealermanagement.entity.product.Product;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,7 +11,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import org.hibernate.annotations.CreationTimestamp;
+
 
 @Entity
 @Table(name = "post_payments")
@@ -23,8 +24,13 @@ public class PostPayment extends BaseEntity {
     @Column(name = "account_id", nullable = false, length = 36)
     private String accountId;
 
-    @Column(name = "product_id", nullable = false, length = 36)
-    private String productId;
+//    @Column(name = "product_id", nullable = false, length = 36)
+//    private String productId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false,
+            foreignKey = @ForeignKey(name = "fk_payment_product"))
+    private Product product;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;

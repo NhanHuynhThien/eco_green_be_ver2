@@ -287,24 +287,17 @@ public class ProductService implements IProductService {
         try {
             log.info("=== START getNewProducts ===");
 
-            String accountId = SecurityUtils.getCurrentAccountId();
+            // Lấy nhiều hơn 12 để có buffer
+            List<Product> products = productRepository.findTop12ByStatusOrderByCreatedAtDesc(
+                    Product.Status.ACTIVE,
+                    PageRequest.of(0, 20) // Lấy 20 để đảm bảo sau khi filter vẫn còn đủ
+            );
 
-            List<Product> products = productRepository.findTop12ByStatusOrderByCreatedAtDesc(Product.Status.ACTIVE);
-
-            log.info("Found {} new products from DB", products.size());
-
-            if (products.isEmpty()) {
-                log.warn("No new products found");
-                return List.of();
-            }
+            log.info("Found {} products from DB", products.size());
 
             List<ProductDetail> result;
             try {
-                result = wishlistService.attachWishlistFlag(
-                        accountId,
-                        products,
-                        ProductMapper::toDetailDto,
-                        ProductDetail::setIsWishlisted);
+                result = toDetailsWithWishlist(products);
             } catch (Exception e) {
                 log.error("Error attaching wishlist flags, using basic mapping", e);
                 result = products.stream()
@@ -312,7 +305,18 @@ public class ProductService implements IProductService {
                         .collect(Collectors.toList());
             }
 
-            log.info("=== END getNewProducts: {} products ===", result.size());
+            // Chỉ lấy 12 cái đầu
+            result = result.stream()
+                    .limit(12)
+                    .collect(Collectors.toList());
+
+            log.info("=== END getNewProducts: {} products (requested 12) ===", result.size());
+
+            // Warning nếu không đủ
+            if (result.size() < 12) {
+                log.warn("Only found {} products, less than requested 12", result.size());
+            }
+
             return result;
 
         } catch (Exception e) {
