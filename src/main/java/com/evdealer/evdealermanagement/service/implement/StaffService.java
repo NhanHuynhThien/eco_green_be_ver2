@@ -110,7 +110,7 @@ public class StaffService {
         // Lưu product
         Product savedProduct = productRepository.save(product);
 
-        log.info("✅ Product {} approved successfully. FeaturedEndAt: {}, ExpiresAt: {}",
+        log.info("Product {} approved successfully. FeaturedEndAt: {}, ExpiresAt: {}",
                 savedProduct.getId(),
                 savedProduct.getFeaturedEndAt(),
                 savedProduct.getExpiresAt());
@@ -164,7 +164,7 @@ public class StaffService {
 
     // Generate và Lưu thông số kỹ thuật
     private void generateAndSaveVehicleSpecs(Product product) {
-        //  Lấy ModelVersion từ Product
+        // Lấy ModelVersion từ Product
         ModelVersion version = product.getModelVersion();
 
         if (version == null || version.getModel() == null) {
