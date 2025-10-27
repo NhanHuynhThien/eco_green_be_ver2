@@ -64,7 +64,7 @@ public class MemberService {
     }
 
     /**
-     * ✅ Lấy chi tiết sản phẩm của seller đang đăng nhập
+     * Lấy chi tiết sản phẩm của seller đang đăng nhập
      */
     @Transactional
     public ProductDetail getProductDetailOfMember(String sellerId, String productId) {
