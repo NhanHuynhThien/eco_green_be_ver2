@@ -39,4 +39,6 @@ public class PostVerifyResponse {
 
     private LocalDateTime featuredEndAt;
     private LocalDateTime expiresAt;
+    private Integer featuredDays;
+    private Integer postDays;
 };

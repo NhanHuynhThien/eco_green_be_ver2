@@ -61,7 +61,7 @@ public class PostVerifyMapper {
             }
         }
 
-        //  Xử lý featuredEndAt và expiresAt
+        // Xử lý featuredEndAt và expiresAt
         LocalDateTime featuredEndAt = p.getFeaturedEndAt();
         LocalDateTime expiresAt = p.getExpiresAt();
 
@@ -97,7 +97,7 @@ public class PostVerifyMapper {
                 .batteryType(batteryType)
                 .modelName(modelName)
                 .versionName(version)
-                .featuredEndAt(featuredEndAt) //  Sử dụng giá trị đã tính toán
+                .featuredEndAt(featuredEndAt) // Sử dụng giá trị đã tính toán
                 .expiresAt(expiresAt) // Sử dụng giá trị đã tính toán
                 .packageName(payment != null && payment.getPostPackage() != null
                         ? payment.getPostPackage().getName()

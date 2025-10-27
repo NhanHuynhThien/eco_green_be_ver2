@@ -83,6 +83,8 @@ public enum ErrorCode {
     PACKAGE_OPTION_REQUIRED(1512, "Package option is required", HttpStatus.BAD_REQUEST),
     PACKAGE_BILLING_MODE_INVALID(1513, "Package billing mode is invalid", HttpStatus.BAD_REQUEST),
     INVALID_STATUS_TRANSITION(1514, "Invalid Status Transition", HttpStatus.BAD_REQUEST),
+    PACKAGE_INVALID_STATUS(1515, "Invalid Package Status", HttpStatus.BAD_REQUEST),
+    INVALID_ID_PACKAGE(1516, "Invalid Id Package", HttpStatus.BAD_REQUEST),
 
     // --- Wishlist Errors (Codes 1600 - 1699) ---
     WISHLIST_NOT_FOUND(1601, "Wishlist not found", HttpStatus.NOT_FOUND),
