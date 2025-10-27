@@ -123,7 +123,7 @@ public class ProductRenewalService {
         // ===== Tạo bản ghi thanh toán =====
         PostPayment payment = PostPayment.builder()
                 .accountId(product.getSeller().getId())
-                .productId(product.getId())
+                .product(product)
                 .postPackage(paymentPkg)
                 .postPackageOption(addonOpt)
                 .amount(totalPayable)
@@ -172,7 +172,7 @@ public class ProductRenewalService {
         PostPayment payment = postPaymentRepository.findById(paymentId)
                 .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
 
-        Product product = productRepository.findById(payment.getProductId())
+        Product product = productRepository.findById(payment.getProduct().getId())
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
         // ===== Kiểm tra trạng thái thanh toán =====

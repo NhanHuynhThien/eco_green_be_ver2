@@ -134,7 +134,7 @@ public class VnpayController {
             PostPayment payment = postPaymentRepository.findById(paymentId)
                     .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
 
-            Product product = productRepository.findById(payment.getProductId())
+            Product product = productRepository.findById(payment.getProduct().getId())
                     .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
             boolean isRenewal = (product.getStatus() == Product.Status.ACTIVE
