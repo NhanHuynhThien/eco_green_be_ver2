@@ -20,8 +20,11 @@ import com.evdealer.evdealermanagement.repository.PostPaymentRepository;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -44,7 +47,7 @@ public class PaymentService {
 
     private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
-    private LocalDateTime nowVietNam () {
+    private LocalDateTime nowVietNam() {
         return ZonedDateTime.now(VIETNAM_ZONE).toLocalDateTime();
     }
 
@@ -89,8 +92,7 @@ public class PaymentService {
 
         boolean isFirstPost = !postPaymentRepository.existsByAccountIdAndPaymentStatus(
                 product.getSeller().getId(),
-                PostPayment.PaymentStatus.COMPLETED
-        );
+                PostPayment.PaymentStatus.COMPLETED);
 
         if ("STANDARD".equalsIgnoreCase(pkg.getCode()) && isFirstPost) {
             totalPayable = BigDecimal.ZERO;
@@ -109,7 +111,7 @@ public class PaymentService {
                         ? PostPayment.PaymentStatus.COMPLETED
                         : PostPayment.PaymentStatus.PENDING)
                 .createdAt(nowVietNam())
-               .build();
+                .build();
 
         postPaymentRepository.save(payment);
         log.info("Payment saved with ID: {}", payment.getId());
@@ -125,16 +127,15 @@ public class PaymentService {
             long amountVND = totalPayable.setScale(0, RoundingMode.HALF_UP).longValue();
             switch (request.getPaymentMethod().toUpperCase()) {
                 case "VNPAY":
-                    if (amountVND < 10000) throw new AppException(ErrorCode.USER_NOT_FOUND);
+                    if (amountVND < 10000)
+                        throw new AppException(ErrorCode.USER_NOT_FOUND);
                     VnpayResponse vnpayResponse = vnpayService.createPayment(
-                            new VnpayRequest(payment.getId(), String.valueOf(amountVND))
-                    );
+                            new VnpayRequest(payment.getId(), String.valueOf(amountVND)));
                     paymentUrl = vnpayResponse.getPaymentUrl();
                     break;
                 case "MOMO":
                     MomoResponse momoResponse = momoService.createPaymentRequest(
-                            new MomoRequest(payment.getId(), String.valueOf(amountVND))
-                    );
+                            new MomoRequest(payment.getId(), String.valueOf(amountVND)));
                     paymentUrl = momoResponse.getPayUrl();
                     break;
                 default:
