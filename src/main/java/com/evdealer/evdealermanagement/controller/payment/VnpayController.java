@@ -108,7 +108,7 @@ public class VnpayController {
             }
 
             // 4) Redirect về frontend - Sửa: Thay /payment/return thành /payment/vnpay-return
-            String redirectUrl = frontendUrl;
+            String redirectUrl = frontendUrl+"/payment/vnpay-return";
 
             log.info("🔄 Redirecting to: {}", redirectUrl);
             response.sendRedirect(redirectUrl);
