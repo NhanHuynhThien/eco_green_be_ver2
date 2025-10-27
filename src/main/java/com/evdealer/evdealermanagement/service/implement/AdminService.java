@@ -1,10 +1,13 @@
 package com.evdealer.evdealermanagement.service.implement;
 
+import com.evdealer.evdealermanagement.dto.account.custom.CustomAccountDetails;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
 import com.evdealer.evdealermanagement.dto.revenue.MonthlyRevenue;
 import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.entity.post.PostPayment;
 import com.evdealer.evdealermanagement.entity.product.Product;
+import com.evdealer.evdealermanagement.exceptions.AppException;
+import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import com.evdealer.evdealermanagement.mapper.product.ProductMapper;
 import com.evdealer.evdealermanagement.repository.AccountRepository;
 import com.evdealer.evdealermanagement.repository.PostPaymentRepository;
@@ -14,9 +17,11 @@ import com.evdealer.evdealermanagement.utils.VietNamDatetime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,6 +37,8 @@ public class AdminService {
 
     @Autowired
     public AccountRepository accountRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public List<ProductDetail> getAllProducts() {
         try {
@@ -121,5 +128,50 @@ public class AdminService {
         }
     }
 
+    public void banAccount(String accountId, String reason) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        account.setStatus(Account.Status.BANNED);
+        account.setBanReason(reason);
+        account.setUpdatedAt(VietNamDatetime.nowVietNam());
+        accountRepository.save(account);
+    }
+
+    public void unBanAccount(String accountId) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        account.setStatus(Account.Status.ACTIVE);
+        account.setBanReason(null);
+        account.setUpdatedAt(VietNamDatetime.nowVietNam());
+        accountRepository.save(account);
+    }
+
+    public void deleteAccountForAdmin(String accountId, String adminPassword, CustomAccountDetails adminDetails) {
+
+        String adminId = adminDetails.getAccountId();
+        String adminUsername = adminDetails.getUsername();
+
+        log.info("Admin {} attempting to delete account {}", adminUsername, accountId);
+
+        Account admin = accountRepository.findById(adminId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if(!passwordEncoder.matches(adminPassword, admin.getPasswordHash())) {
+            log.warn("Admin {} entered wrong password", adminUsername);
+            throw new RuntimeException("Wrong password");
+        }
+
+        if(adminId.equals(accountId)) {
+            throw new RuntimeException("Cannot delete your own account");
+        }
+
+        Account target = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        accountRepository.delete(target);
+        log.info("Account {} deleted successfully by admin {}", target.getUsername(), adminUsername);
+    }
 
 }

@@ -85,6 +85,7 @@ public enum ErrorCode {
     INVALID_STATUS_TRANSITION(1514, "Invalid Status Transition", HttpStatus.BAD_REQUEST),
     PACKAGE_INVALID_STATUS(1515, "Invalid Package Status", HttpStatus.BAD_REQUEST),
     INVALID_ID_PACKAGE(1516, "Invalid Id Package", HttpStatus.BAD_REQUEST),
+    PURCHASE_REQUEST_NOT_FOUND(1550, "Purchase request not found", HttpStatus.NOT_FOUND),
 
     // --- Wishlist Errors (Codes 1600 - 1699) ---
     WISHLIST_NOT_FOUND(1601, "Wishlist not found", HttpStatus.NOT_FOUND),
