@@ -25,7 +25,7 @@ public class TransactionService {
         List<PostPayment> payments = postPaymentRepository.findAllByOrderByCreatedAtDesc();
 
         return payments.stream().map(p -> {
-            Product product = productRepository.findById(p.getProductId()).orElse(null);
+            Product product = productRepository.findById(p.getProduct().getId()).orElse(null);
             PostPackage postPackage = p.getPostPackage();
             PostPackageOption postPackageOption = p.getPostPackageOption();
             return TransactionResponse.builder()
@@ -37,7 +37,7 @@ public class TransactionService {
                     .durationDays(postPackageOption != null && postPackageOption.getDurationDays() != null
                             ? postPackageOption.getDurationDays()
                             : (postPackage != null ? postPackage.getDurationDays() : null))
-                    .productId(p.getProductId())
+                    .productId(p.getProduct().getId())
                     .productName(product != null ? product.getTitle() : null)
                     .build();
         }).toList();
