@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("member/api/eversign")
+@RequestMapping("member/eversign")
 @Slf4j
 @RequiredArgsConstructor
 public class EversignWebhookController {
