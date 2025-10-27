@@ -11,6 +11,7 @@ import org.thymeleaf.context.Context;
 
 import jakarta.mail.internet.MimeMessage;
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Locale;
 
@@ -146,8 +147,21 @@ public class EmailService {
         }
     }
 
-    private String formatCurrency(BigDecimal amount) {
-        NumberFormat formatter = NumberFormat.getInstance(new Locale("vi", "VN"));
-        return formatter.format(amount) + " VNĐ";
+    private String formatCurrency(Object amount) {
+        if (amount == null) return "0 VND";
+
+        BigDecimal numericValue;
+        if (amount instanceof Number) {
+            numericValue = new BigDecimal(((Number) amount).doubleValue());
+        } else if (amount instanceof String) {
+            numericValue = new BigDecimal((String) amount);
+        } else {
+            throw new IllegalArgumentException("Invalid currency value: " + amount);
+        }
+
+        DecimalFormat df = new DecimalFormat("#,###.00");
+        return df.format(numericValue) + " VND";
     }
+
+
 }
