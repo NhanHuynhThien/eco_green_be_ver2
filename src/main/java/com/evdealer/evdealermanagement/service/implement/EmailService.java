@@ -34,6 +34,7 @@ public class EmailService {
             Context context = new Context();
             context.setVariable("buyerName", buyerName);
             context.setVariable("productTitle", productTitle);
+            // Sử dụng formatCurrency đã tối ưu hóa
             context.setVariable("offeredPrice", formatCurrency(offeredPrice));
 
             String htmlContent = templateEngine.process("email/purchase-request-notification", context);
@@ -66,12 +67,13 @@ public class EmailService {
 
             sendEmail(
                     buyerEmail,
-                    "Yêu cầu mua hàng được chấp nhận - Vui lòng ký hợp đồng",
+                    // CHỈNH SỬA: Thay đổi tiêu đề cho phù hợp với logic "không cần ký ngay"
+                    "Yêu cầu mua hàng được chấp nhận - Đã gửi Hợp đồng",
                     htmlContent);
 
-            log.info(" Purchase accepted notification sent to: {}", buyerEmail);
+            log.info("Purchase accepted notification sent to: {}", buyerEmail);
         } catch (Exception e) {
-            log.error(" Failed to send purchase accepted notification: {}", e.getMessage(), e);
+            log.error("Failed to send purchase accepted notification: {}", e.getMessage(), e);
         }
     }
 
@@ -92,12 +94,12 @@ public class EmailService {
 
             sendEmail(
                     buyerEmail,
-                    " Yêu cầu mua hàng bị từ chối",
+                    "Yêu cầu mua hàng bị từ chối",
                     htmlContent);
 
-            log.info(" Purchase rejected notification sent to: {}", buyerEmail);
+            log.info("Purchase rejected notification sent to: {}", buyerEmail);
         } catch (Exception e) {
-            log.error(" Failed to send purchase rejected notification: {}", e.getMessage(), e);
+            log.error("Failed to send purchase rejected notification: {}", e.getMessage(), e);
         }
     }
 
@@ -115,12 +117,12 @@ public class EmailService {
 
             sendEmail(
                     buyerEmail,
-                    " Hợp đồng đã hoàn tất - Cảm ơn bạn đã sử dụng dịch vụ!",
+                    "Hợp đồng đã hoàn tất - Cảm ơn bạn đã sử dụng dịch vụ!",
                     htmlContent);
 
             sendEmail(
                     sellerEmail,
-                    " Hợp đồng đã hoàn tất - Cảm ơn bạn đã sử dụng dịch vụ!",
+                    "Hợp đồng đã hoàn tất - Cảm ơn bạn đã sử dụng dịch vụ!",
                     htmlContent);
 
             log.info("Contract completed notifications sent");
@@ -147,6 +149,9 @@ public class EmailService {
         }
     }
 
+    /**
+     * Định dạng tiền tệ theo chuẩn Việt Nam (VND).
+     */
     private String formatCurrency(Object amount) {
         if (amount == null) return "0 VND";
 
@@ -154,14 +159,23 @@ public class EmailService {
         if (amount instanceof Number) {
             numericValue = new BigDecimal(((Number) amount).doubleValue());
         } else if (amount instanceof String) {
-            numericValue = new BigDecimal((String) amount);
+            try {
+                numericValue = new BigDecimal((String) amount);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid string format for currency: {}", amount);
+                return "0 VND";
+            }
         } else {
-            throw new IllegalArgumentException("Invalid currency value: " + amount);
+            log.warn("Invalid currency type: {}", amount.getClass().getName());
+            return "0 VND";
         }
 
-        DecimalFormat df = new DecimalFormat("#,###.00");
-        return df.format(numericValue) + " VND";
+        // Tối ưu hóa: Sử dụng Locale Việt Nam để có dấu phân cách chuẩn (dấu chấm)
+        NumberFormat currencyFormat = NumberFormat.getInstance(new Locale("vi", "VN"));
+
+        // Loại bỏ phần thập phân không cần thiết cho VND
+        currencyFormat.setMaximumFractionDigits(0);
+
+        return currencyFormat.format(numericValue) + " VND";
     }
-
-
 }

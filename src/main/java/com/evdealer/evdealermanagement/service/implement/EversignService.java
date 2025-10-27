@@ -42,28 +42,30 @@ public class EversignService {
                 "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf");
         this.useSandbox = Boolean.parseBoolean(dotenv.get("EVERSIGN_SANDBOX", "true"));
 
-        log.info("=== EVERSIGN SERVICE INITIALIZED ===");
-        log.info("Business ID: {}", businessId);
-        log.info("Webhook URL: {}", webhookUrl);
-        log.info("Sandbox Mode: {}", useSandbox);
+        log.info("EversignService initialized: businessId={}, sandbox={}", businessId, useSandbox);
 
         if (accessKey == null || accessKey.isEmpty()) {
-            log.error("EVERSIGN_ACCESS_KEY not found!");
             throw new IllegalStateException("EVERSIGN_ACCESS_KEY is required");
         }
     }
 
+    /**
+     * Primary method to create a document on Eversign and send it.
+     * This method builds request body, posts to Eversign API and extracts document_hash.
+     */
     public ContractInfoDTO createAndSendContract(
             Account buyer,
             Account seller,
             Product product,
-            BigDecimal agreedPrice) {
+            BigDecimal agreedPrice,
+            // THAM SỐ MỚI để kiểm soát việc Eversign có gửi email yêu cầu ký hay không
+            boolean sendEmailByEversign) {
 
         try {
-            log.info("📄 Creating contract for Product: {}, Buyer: {}, Seller: {}",
-                    product.getId(), buyer.getId(), seller.getId());
+            log.info("Creating contract for product={}, buyer={}, seller={}, sendEmailByEversign={}",
+                    product.getId(), buyer.getId(), seller.getId(), sendEmailByEversign);
 
-            Map<String, Object> contractData = buildContractData(buyer, seller, product, agreedPrice);
+            Map<String, Object> contractData = buildContractData(buyer, seller, product, agreedPrice, sendEmailByEversign);
 
             String url = String.format(
                     "https://api.eversign.com/api/document?access_key=%s&business_id=%s&sandbox=%d",
@@ -74,78 +76,142 @@ public class EversignService {
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(contractData, headers);
 
-            log.info("📤 Sending contract request to Eversign...");
-            ResponseEntity<Map> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.POST,
-                    request,
-                    Map.class);
+            log.info("Sending request to Eversign API: {}", url);
+            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.POST, request, Map.class);
 
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                Map<String, Object> responseBody = response.getBody();
-
-                String documentHash = (String) responseBody.get("document_hash");
-
-                log.info("✅ Contract created successfully!");
-                log.info("📋 Document Hash: {}", documentHash);
-
-                String contractViewUrl = String.format(
-                        "https://eversign.com/document/%s", documentHash);
-
-                return ContractInfoDTO.builder()
-                        .contractId(documentHash)
-                        .contractUrl(contractViewUrl)
-                        .buyerSignUrl(contractViewUrl)
-                        .sellerSignUrl(contractViewUrl)
-                        .status("SENT")
-                        .build();
-
-            } else {
-                log.error("❌ Failed to create contract. Status: {}", response.getStatusCode());
-                throw new RuntimeException("Failed to create contract: " + response.getStatusCode());
+            if (response.getStatusCode() != HttpStatus.OK || response.getBody() == null) {
+                log.error("Eversign API returned non-OK or empty body: {}", response.getStatusCode());
+                throw new RuntimeException("Eversign API returned invalid response: " + response.getStatusCode());
             }
 
+            Map<String, Object> responseBody = response.getBody();
+            String documentHash = extractDocumentHash(responseBody);
+
+            if (documentHash == null) {
+                log.error("document_hash not found in Eversign response: {}", objectMapper.writeValueAsString(responseBody));
+                throw new RuntimeException("Missing document_hash in Eversign response");
+            }
+
+            String contractViewUrl = String.format("https://eversign.com/document/%s", documentHash);
+            String embeddedSignUrl = String.format("https://eversign.com/api/document/sign?document_hash=%s", documentHash);
+
+            log.info("Eversign document created: document_hash={}", documentHash);
+
+            return ContractInfoDTO.builder()
+                    .contractId(documentHash)
+                    .contractUrl(contractViewUrl)
+                    .buyerSignUrl(embeddedSignUrl)
+                    .sellerSignUrl(embeddedSignUrl)
+                    .status("SENT")
+                    .build();
+
         } catch (Exception e) {
-            log.error("❌ Error creating Eversign contract: {}", e.getMessage(), e);
+            log.error("Error creating Eversign contract: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to create contract: " + e.getMessage(), e);
         }
     }
 
-    private Map<String, Object> buildContractData(
+    /**
+     * Convenience method required by service logic:
+     * create contract on Eversign but do not require further signing steps from application side.
+     */
+    public ContractInfoDTO createContractWithoutSignature(
             Account buyer,
             Account seller,
             Product product,
             BigDecimal agreedPrice) {
+        // Tắt tính năng tự động gửi email yêu cầu ký của Eversign (sendEmailByEversign = false)
+        return createAndSendContract(buyer, seller, product, agreedPrice, false);
+    }
+
+    /**
+     * Extract document_hash from various possible shapes of Eversign response.
+     */
+    private String extractDocumentHash(Map<String, Object> body) {
+        try {
+            if (body.containsKey("document_hash") && body.get("document_hash") instanceof String) {
+                return (String) body.get("document_hash");
+            }
+
+            if (body.containsKey("document") && body.get("document") instanceof Map<?, ?> doc) {
+                Object v = doc.get("document_hash");
+                if (v instanceof String) return (String) v;
+            }
+
+            if (body.containsKey("documents") && body.get("documents") instanceof List<?> docs && !docs.isEmpty()) {
+                Object first = docs.get(0);
+                if (first instanceof Map<?, ?> m) {
+                    Object v = m.get("document_hash");
+                    if (v instanceof String) return (String) v;
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error extracting document_hash from Eversign response: {}", e.getMessage(), e);
+        }
+        return null;
+    }
+
+    // =========================================================================
+    // CẬP NHẬT: buildContractData để thêm Title trang trọng và trường Fields
+    // =========================================================================
+    /**
+     * Build JSON body sent to Eversign API.
+     */
+    private Map<String, Object> buildContractData(
+            Account buyer,
+            Account seller,
+            Product product,
+            BigDecimal agreedPrice,
+            boolean sendEmailByEversign) {
 
         String currentDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
         String formattedPrice = formatCurrency(agreedPrice);
 
+        // 1. Cải tiến Title Hợp đồng cho trang trọng
+        String contractTitle = String.format("HỢP ĐỒNG MUA BÁN Ô TÔ ĐIỆN - %s", product.getTitle());
+
         Map<String, Object> data = new HashMap<>();
-
         data.put("type", "signature_request");
-        data.put("title", String.format("Hợp đồng mua bán - %s", product.getTitle()));
-        data.put("message", String.format(
-                "Hợp đồng mua bán sản phẩm: %s\n" +
-                        "Giá thỏa thuận: %s VNĐ\n" +
-                        "Ngày tạo: %s\n\n" +
-                        "Vui lòng xem xét và ký hợp đồng.",
+        data.put("title", contractTitle); // Dùng tiêu đề mới
+        data.put("message", String.format("Hợp đồng mua bán sản phẩm: %s\nGiá thỏa thuận: %s VNĐ\nNgày tạo: %s",
                 product.getTitle(), formattedPrice, currentDate));
-
         data.put("sandbox", useSandbox ? 1 : 0);
         data.put("use_signer_order", 1);
-        data.put("embedded_signing_enabled", 0);
         data.put("reminders", 1);
         data.put("require_all_signers", 1);
 
-        List<Map<String, Object>> signers = new ArrayList<>();
+        // ĐIỀU CHỈNH QUAN TRỌNG: Ngăn Eversign tự động gửi email yêu cầu ký
+        data.put("client_only", sendEmailByEversign ? 0 : 1);
 
+        // 2. THÊM TRƯỜNG 'fields' ĐỂ CHÈN DỮ LIỆU VÀO HỢP ĐỒNG PDF
+        // LƯU Ý: Đảm bảo template PDF của bạn có các field placeholder với tên tương ứng
+        List<Map<String, Object>> fields = new ArrayList<>();
+
+        // Thông tin Sản phẩm
+        fields.add(createField("text", "product_title", product.getTitle())); // Tên Field trong PDF: product_title
+        fields.add(createField("text", "product_description", product.getDescription())); // Tên Field trong PDF: product_description
+        fields.add(createField("text", "product_year", String.valueOf(product.getManufactureYear()))); // Tên Field trong PDF: product_year
+
+        // Thông tin Giao dịch
+        fields.add(createField("text", "agreed_price", formattedPrice)); // Tên Field trong PDF: agreed_price
+        fields.add(createField("text", "agreed_price_text", "Bằng chữ: " + /* Thêm logic chuyển đổi số sang chữ nếu cần */ formattedPrice));
+        fields.add(createField("text", "contract_date", currentDate)); // Tên Field trong PDF: contract_date
+
+        // Thông tin Bên mua và Bên bán
+        fields.add(createField("text", "buyer_name", buyer.getFullName())); // Tên Field trong PDF: buyer_name
+        fields.add(createField("text", "seller_name", seller.getFullName())); // Tên Field trong PDF: seller_name
+
+        data.put("fields", fields);
+
+
+        List<Map<String, Object>> signers = new ArrayList<>();
         Map<String, Object> sellerSigner = new HashMap<>();
         sellerSigner.put("id", 1);
         sellerSigner.put("name", seller.getFullName());
         sellerSigner.put("email", seller.getEmail());
         sellerSigner.put("order", 1);
         sellerSigner.put("role", "seller");
-        sellerSigner.put("message", "Vui lòng ký để xác nhận bán sản phẩm");
+        sellerSigner.put("message", "Please sign to confirm selling the product.");
         signers.add(sellerSigner);
 
         Map<String, Object> buyerSigner = new HashMap<>();
@@ -154,28 +220,45 @@ public class EversignService {
         buyerSigner.put("email", buyer.getEmail());
         buyerSigner.put("order", 2);
         buyerSigner.put("role", "buyer");
-        buyerSigner.put("message", "Vui lòng ký để xác nhận mua sản phẩm");
+        buyerSigner.put("message", "Please sign to confirm buying the product.");
         signers.add(buyerSigner);
 
         data.put("signers", signers);
 
-        List<Map<String, Object>> files = new ArrayList<>();
         Map<String, Object> file = new HashMap<>();
-        file.put("name", String.format("hop_dong_%s.pdf", product.getId()));
+        file.put("name", "hop_dong_" + product.getId() + ".pdf");
         file.put("file_url", contractTemplateUrl);
-        files.add(file);
+        data.put("files", List.of(file));
 
-        data.put("files", files);
-
-        List<Map<String, String>> meta = new ArrayList<>();
-        meta.add(Map.of("product_id", product.getId()));
-        meta.add(Map.of("buyer_id", buyer.getId()));
-        meta.add(Map.of("seller_id", seller.getId()));
-        meta.add(Map.of("price", agreedPrice.toString()));
+        Map<String, String> meta = new LinkedHashMap<>();
+        meta.put("product_id", product.getId());
+        meta.put("buyer_id", buyer.getId());
+        meta.put("seller_id", seller.getId());
+        meta.put("price", agreedPrice.toString());
         data.put("meta", meta);
 
         return data;
     }
+
+    // =========================================================================
+    // Phương thức tiện ích để tạo Field Map
+    // =========================================================================
+    /**
+     * Helper method to create a field map for Eversign API.
+     * @param type The type of the field (e.g., 'text', 'checkbox').
+     * @param name The name of the field in the PDF template (the placeholder name).
+     * @param value The value to be inserted into the field.
+     */
+    private Map<String, Object> createField(String type, String name, String value) {
+        Map<String, Object> field = new HashMap<>();
+        field.put("type", type);
+        field.put("name", name);
+        field.put("value", value);
+        // Field needs to be associated with the first file in the files array (index 0)
+        field.put("file_index", 0);
+        return field;
+    }
+    // =========================================================================
 
     private String formatCurrency(BigDecimal amount) {
         NumberFormat formatter = NumberFormat.getInstance(new Locale("vi", "VN"));

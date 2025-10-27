@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #4CAF50; color: white; padding: 20px; text-align: center; }
+        .content { background: #f9f9f9; padding: 30px; border-radius: 5px; margin-top: 20px; }
+        .button-group { text-align: center; margin-top: 20px; }
+        .button { display: inline-block; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 0 10px; font-weight: bold; }
+        .button.accept { background: #4CAF50; color: white; }
+        .button.reject { background: #f44336; color: white; }
+        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h2>🔔 Có người muốn mua sản phẩm của bạn!</h2>
+    </div>
+    <div class="content">
+        <p>Xin chào,</p>
+        <p><strong th:text="${buyerName}"></strong> đã gửi yêu cầu mua sản phẩm:</p>
+        <h3 th:text="${productTitle}"></h3>
+        <p>Giá đề nghị: <strong th:text="${offeredPrice}"></strong></p>
+
+        <p>Vui lòng chọn **Đồng ý Bán** để tạo hợp đồng hoặc **Từ chối** yêu cầu mua này.</p>
+
+        <div class="button-group">
+            <a th:href="@{https://ecogreenbe-production.up.railway.app/member/purchase-request/respond/email(requestId=${requestId}, accept=true)}"
+               class="button accept">
+                ✅ Đồng ý Bán
+            </a>
+
+            <a th:href="@{https://ecogreenbe-production.up.railway.app/member/purchase-request/respond/email(requestId=${requestId}, accept=false)}"
+               class="button reject">
+                ❌ Từ chối
+            </a>
+        </div>
+
+        <p style="margin-top: 20px; font-size: 12px; color: #999;">
+            *Các nút trên sẽ điều hướng bạn đến trang xác nhận trên hệ thống của EV Dealer để hoàn tất phản hồi.
+        </p>
+    </div>
+    <div class="footer">
+        <p>© 2025 EV Dealer. All rights reserved.</p>
+    </div>
+</div>
+</body>
+</html>
