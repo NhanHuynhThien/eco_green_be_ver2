@@ -254,4 +254,37 @@ public class PaymentService {
         }).toList();
     }
 
+    @Transactional
+    public VnpayResponse retryVnpayPayment(String paymentId) {
+        log.info("Retrying VNPay payment for ID: {}", paymentId);
+
+        PostPayment payment = postPaymentRepository.findById(paymentId)
+                .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
+
+        if (payment.getPaymentStatus() != PostPayment.PaymentStatus.FAILED) {
+            log.warn("Payment {} is not FAILED, cannot retry", paymentId);
+            throw new AppException(ErrorCode.PAYMENT_NOT_RETRIABLE);
+        }
+
+        Product product = productRepository.findById(payment.getProduct().getId())
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        // Reset trạng thái để cho phép retry
+        payment.setPaymentStatus(PostPayment.PaymentStatus.PENDING);
+        product.setStatus(Product.Status.PENDING_PAYMENT);
+
+        long amountVND = payment.getAmount().setScale(0, RoundingMode.HALF_UP).longValue();
+
+        // Tạo URL thanh toán mới qua VNPay
+        VnpayResponse vnpayResponse = vnpayService.createPayment(
+                new VnpayRequest(payment.getId(), String.valueOf(amountVND)));
+
+        postPaymentRepository.save(payment);
+        productRepository.save(product);
+
+        log.info("Retry payment URL created successfully for {}", paymentId);
+
+        return vnpayResponse;
+    }
+
 }

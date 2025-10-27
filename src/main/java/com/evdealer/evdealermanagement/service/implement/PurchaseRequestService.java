@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -70,11 +71,13 @@ public class PurchaseRequestService {
         log.info("Purchase request created: {}", savedRequest.getId());
 
         try {
+            // CẬP NHẬT: Gửi thêm Request ID để tạo link phản hồi
             emailService.sendPurchaseRequestNotification(
                     product.getSeller().getEmail(),
                     buyer.getFullName(),
                     product.getTitle(),
-                    dto.getOfferedPrice());
+                    dto.getOfferedPrice(),
+                    savedRequest.getId());
         } catch (Exception e) {
             log.error("Failed to send email notification: {}", e.getMessage());
         }
@@ -84,6 +87,7 @@ public class PurchaseRequestService {
 
     @Transactional
     public PurchaseRequestResponse respondToPurchaseRequest(SellerResponseDTO dto) {
+        // Yêu cầu xác thực người dùng (đăng nhập)
         Account seller = userContextService.getCurrentUser()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized"));
 
@@ -114,10 +118,13 @@ public class PurchaseRequestService {
 
         request.setSellerResponseMessage(responseMessage);
         request.setRespondedAt(LocalDateTime.now());
-        request.setStatus(PurchaseRequest.RequestStatus.ACCEPTED);
+        request.setStatus(PurchaseRequest.RequestStatus.ACCEPTED); // Trạng thái tạm thời
+        request.setContractStatus(PurchaseRequest.ContractStatus.PENDING);
+
+        String contractUrlToBuyer = null;
 
         try {
-            // Tạo hợp đồng trên Eversign (không cần ký, có điền Merge Fields)
+            // Tạo hợp đồng trên Eversign
             ContractInfoDTO contractInfo = eversignService.createContractWithoutSignature(
                     request.getBuyer(),
                     request.getSeller(),
@@ -129,29 +136,47 @@ public class PurchaseRequestService {
                 request.setContractId(contractInfo.getContractId());
                 request.setContractUrl(contractInfo.getContractUrl());
                 request.setContractStatus(PurchaseRequest.ContractStatus.SENT);
-                request.setStatus(PurchaseRequest.RequestStatus.CONTRACT_SENT);
+                request.setStatus(PurchaseRequest.RequestStatus.CONTRACT_SENT); // Chuyển trạng thái khi thành công
+                contractUrlToBuyer = contractInfo.getContractUrl(); // Lấy URL để gửi email
             } else {
-                log.warn("Eversign contract returned null or invalid response for request {}", request.getId());
-                request.setContractStatus(PurchaseRequest.ContractStatus.CANCELLED);
+                // Trường hợp API không ném lỗi mà trả về Body thiếu hash
+                log.error("Eversign API returned OK status but missing document_hash for request {}", request.getId());
+                throw new RuntimeException("Eversign API response missing document hash.");
             }
 
         } catch (Exception e) {
-            log.error("Error creating contract for request {}: {}", request.getId(), e.getMessage());
+            log.error("FATAL ERROR creating contract for request {}: {}", request.getId(), e.getMessage(), e);
+
+            // Xử lý thất bại: Đặt trạng thái về ACCEPTED (chỉ đồng ý, chưa gửi HĐ) và FAILED
+            // Đã đổi CANCELLED thành FAILED (hoặc giữ nguyên ACCEPTED)
+            // LƯU Ý: ContractStatus.CANCELLED có vẻ không phù hợp ở đây. Đổi thành FAILED hoặc giữ PENDING/NULL.
+            // Tôi sẽ để là FAILED
             request.setContractStatus(PurchaseRequest.ContractStatus.CANCELLED);
+            request.setContractId(null);
+            request.setContractUrl(null);
+            request.setStatus(PurchaseRequest.RequestStatus.ACCEPTED); // Giữ trạng thái chấp nhận nhưng không gửi HĐ
+
+            purchaseRequestRepository.save(request);
+
+            // **QUAN TRỌNG:** Ném ngoại lệ để Controller biết và xử lý lỗi cho người dùng
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Đã chấp nhận yêu cầu nhưng không thể tạo hợp đồng điện tử. Vui lòng kiểm tra lại dịch vụ Eversign. Chi tiết: " + e.getMessage());
         }
 
         PurchaseRequest savedRequest = purchaseRequestRepository.save(request);
 
-        // Gửi email xác nhận cho buyer
-        try {
-            emailService.sendPurchaseAcceptedNotification(
-                    request.getBuyer().getEmail(),
-                    request.getSeller().getFullName(),
-                    product.getTitle(),
-                    savedRequest.getContractUrl()
-            );
-        } catch (Exception e) {
-            log.error("Failed to send acceptance email: {}", e.getMessage());
+        // Gửi email xác nhận cho buyer (chỉ khi tạo HĐ thành công)
+        if (contractUrlToBuyer != null) {
+            try {
+                emailService.sendPurchaseAcceptedNotification(
+                        request.getBuyer().getEmail(),
+                        request.getSeller().getFullName(),
+                        product.getTitle(),
+                        contractUrlToBuyer
+                );
+            } catch (Exception e) {
+                log.error("Failed to send acceptance email: {}", e.getMessage());
+            }
         }
 
         return mapToResponse(savedRequest);
@@ -177,6 +202,8 @@ public class PurchaseRequestService {
 
         return mapToResponse(savedRequest);
     }
+
+    // ... (Các phương thức truy vấn giữ nguyên)
 
     @Transactional(readOnly = true)
     public Page<PurchaseRequestResponse> getBuyerRequests(Pageable pageable) {
@@ -238,5 +265,15 @@ public class PurchaseRequestService {
                 .createdAt(request.getCreatedAt())
                 .respondedAt(request.getRespondedAt())
                 .build();
+    }
+
+    public void acceptRequest(Long requestId, Long sellerId) {
+//        Optional<PurchaseRequest> request = purchaseRequestRepository.findById(String.valueOf(requestId))
+//                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ""));
+
+
+    }
+
+    public void rejectRequest(Long requestId, Long sellerId) {
     }
 }

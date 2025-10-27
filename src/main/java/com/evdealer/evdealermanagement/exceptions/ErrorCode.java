@@ -2,6 +2,7 @@ package com.evdealer.evdealermanagement.exceptions;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.apache.http.protocol.HTTP;
 import org.springframework.http.HttpStatus;
 
 @Getter
@@ -86,6 +87,8 @@ public enum ErrorCode {
     PACKAGE_INVALID_STATUS(1515, "Invalid Package Status", HttpStatus.BAD_REQUEST),
     INVALID_ID_PACKAGE(1516, "Invalid Id Package", HttpStatus.BAD_REQUEST),
     PURCHASE_REQUEST_NOT_FOUND(1550, "Purchase request not found", HttpStatus.NOT_FOUND),
+    PAYMENT_NOT_RETRIABLE(1010, "Payment cannot be retried", HttpStatus.BAD_REQUEST),
+
 
     // --- Wishlist Errors (Codes 1600 - 1699) ---
     WISHLIST_NOT_FOUND(1601, "Wishlist not found", HttpStatus.NOT_FOUND),

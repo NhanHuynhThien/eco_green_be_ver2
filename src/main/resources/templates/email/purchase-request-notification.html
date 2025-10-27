@@ -1,3 +1,9 @@
+<!--
+====================================
+FILE: src/main/resources/templates/email/purchase-request-notification.html
+Gửi cho Seller khi có người muốn mua
+====================================
+-->
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
@@ -7,10 +13,8 @@
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
         .header { background: #4CAF50; color: white; padding: 20px; text-align: center; }
         .content { background: #f9f9f9; padding: 30px; border-radius: 5px; margin-top: 20px; }
-        .button-group { text-align: center; margin-top: 20px; }
-        .button { display: inline-block; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 0 10px; font-weight: bold; }
-        .button.accept { background: #4CAF50; color: white; }
-        .button.reject { background: #f44336; color: white; }
+        .button { display: inline-block; padding: 12px 30px; background: #4CAF50; color: white;
+                  text-decoration: none; border-radius: 5px; margin-top: 20px; }
         .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
     </style>
 </head>
@@ -24,28 +28,14 @@
         <p><strong th:text="${buyerName}"></strong> đã gửi yêu cầu mua sản phẩm:</p>
         <h3 th:text="${productTitle}"></h3>
         <p>Giá đề nghị: <strong th:text="${offeredPrice}"></strong></p>
-
-        <p>Vui lòng chọn **Đồng ý Bán** để tạo hợp đồng hoặc **Từ chối** yêu cầu mua này.</p>
-
-        <div class="button-group">
-            <a th:href="@{https://ecogreenbe-production.up.railway.app/member/purchase-request/respond/email(requestId=${requestId}, accept=true)}"
-               class="button accept">
-                ✅ Đồng ý Bán
-            </a>
-
-            <a th:href="@{https://ecogreenbe-production.up.railway.app/member/purchase-request/respond/email(requestId=${requestId}, accept=false)}"
-               class="button reject">
-                ❌ Từ chối
-            </a>
-        </div>
-
-        <p style="margin-top: 20px; font-size: 12px; color: #999;">
-            *Các nút trên sẽ điều hướng bạn đến trang xác nhận trên hệ thống của EV Dealer để hoàn tất phản hồi.
-        </p>
+        <p>Vui lòng đăng nhập vào hệ thống để xem chi tiết và phản hồi yêu cầu này.</p>
+        <a href="https://evdealer.com/seller/requests" class="button">Xem yêu cầu</a>
     </div>
+
+
     <div class="footer">
         <p>© 2025 EV Dealer. All rights reserved.</p>
     </div>
 </div>
 </body>
-</html>
+</html>a

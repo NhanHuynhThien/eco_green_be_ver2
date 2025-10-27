@@ -60,7 +60,7 @@ public class WebSecurityConfigs {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**", "/oauth2/**", "/vehicle/**", "/battery/**",
                                 "/product/**",
-                                "/gemini/**","/member/purchase-request/respond")
+                                "/gemini/**")
                         .permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/staff/**", "/revenue/**").hasAnyRole("STAFF", "ADMIN")

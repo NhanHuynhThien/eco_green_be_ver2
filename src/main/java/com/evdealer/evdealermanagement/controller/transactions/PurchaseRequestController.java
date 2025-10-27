@@ -12,10 +12,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.validation.Valid;
 import java.net.URI;
-import java.util.UUID; // Không thực sự cần UUID ở đây, nhưng giữ nếu bạn cần cho logic khác
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/member/purchase-request")
@@ -24,6 +25,9 @@ import java.util.UUID; // Không thực sự cần UUID ở đây, nhưng giữ 
 public class PurchaseRequestController {
 
     private final PurchaseRequestService purchaseRequestService;
+
+    // ĐẶT URL BASE CỦA FRONTEND CỦA BẠN TẠI ĐÂY
+    private static final String FRONTEND_BASE_URL = "https://evdealer.com";
 
     // =======================================================
     // 1. API Gửi Yêu Cầu Mua Hàng
@@ -48,12 +52,12 @@ public class PurchaseRequestController {
     }
 
     // =======================================================
-    // 3. API Phản Hồi Yêu Cầu (Dành cho Liên kết Email)
+    // 3. API Phản Hồi Yêu Cầu (Dành cho Liên kết Email - Cần Đăng nhập)
     // =======================================================
 
     /**
-     * Endpoint xử lý phản hồi từ liên kết Email (sử dụng GET và Query Parameters).
-     * Nó chuyển hướng người dùng đến trang kết quả trên Frontend.
+     * Endpoint xử lý phản hồi từ liên kết Email.
+     * LƯU Ý: Vẫn yêu cầu người dùng phải ĐÃ ĐĂNG NHẬP do gọi Service sử dụng UserContextService.
      *
      * @param requestId ID của yêu cầu mua hàng.
      * @param accept Quyết định của người bán (true/false).
@@ -74,16 +78,18 @@ public class PurchaseRequestController {
         // Thiết lập message mặc định
         String defaultMessage = accept
                 ? "Đồng ý bán sản phẩm. Vui lòng xem và ký hợp đồng."
-                : "Xin lỗi, hiện tại tôi chưa thể bán sản phẩm này theo giá bạn đề xuất.";
+                : "Xin lỗi, hiện tại tôi chưa thể bán sản phẩm này.";
         dto.setResponseMessage(defaultMessage);
+        dto.setRejectReason(defaultMessage);
+
 
         try {
             // 2. Gọi Service xử lý logic phản hồi
             PurchaseRequestResponse response = purchaseRequestService.respondToPurchaseRequest(dto);
 
             // 3. Xây dựng URL chuyển hướng đến Frontend
-            // Thay thế 'https://evdealer.com/...' bằng URL thực tế của frontend
-            String redirectUrl = String.format("https://evdealer.com/seller/request-result?id=%s&status=%s",
+            // Chuyển hướng đến trang chi tiết hoặc trang kết quả
+            String redirectUrl = String.format(FRONTEND_BASE_URL + "/seller/requests/%s?status=%s",
                     requestId, response.getStatus());
 
             log.info("Request processed successfully. Redirecting to: {}", redirectUrl);
@@ -93,11 +99,23 @@ public class PurchaseRequestController {
                     .location(URI.create(redirectUrl))
                     .build();
 
-        } catch (Exception e) {
-            log.error("Error responding to purchase request {} from email: {}", requestId, e.getMessage(), e);
+        } catch (ResponseStatusException e) {
+            // Bắt lỗi Service (ví dụ: UNAUTHORIZED, BAD_REQUEST, INTERNAL_SERVER_ERROR do Eversign)
+            log.error("Error responding to purchase request {} from email: {}", requestId, e.getReason(), e);
 
             // Chuyển hướng đến trang lỗi nếu có vấn đề
-            String errorRedirectUrl = "https://evdealer.com/error?message=purchase_request_error&id=" + requestId;
+            String errorRedirectUrl = String.format(FRONTEND_BASE_URL + "/error?message=purchase_request_error&reason=%s",
+                    e.getReason().replace(' ', '+')); // Thay thế khoảng trắng để truyền qua URL
+
+            return ResponseEntity.status(302)
+                    .location(URI.create(errorRedirectUrl))
+                    .build();
+        } catch (Exception e) {
+            // Bắt lỗi không xác định
+            log.error("Unexpected error processing email response for request {}: {}", requestId, e.getMessage(), e);
+
+            String errorRedirectUrl = String.format(FRONTEND_BASE_URL + "/error?message=purchase_request_internal_error");
+
             return ResponseEntity.status(302)
                     .location(URI.create(errorRedirectUrl))
                     .build();
@@ -105,7 +123,7 @@ public class PurchaseRequestController {
     }
 
     // =======================================================
-    // 4. API Truy Vấn Thông Tin
+    // 4. API Truy Vấn Thông Tin (Giữ nguyên)
     // =======================================================
 
     @GetMapping("/buyer")

@@ -219,4 +219,26 @@ public class VnpayController {
                     "Message", "System error"));
         }
     }
+
+    /**
+     * Retry payment nếu lần thanh toán trước thất bại (FAILED)
+     */
+    @PostMapping("/retry/{paymentId}")
+    public ResponseEntity<VnpayResponse> retryPayment(@PathVariable String paymentId) {
+        try {
+            log.info("🔁 Retry payment for ID: {}", paymentId);
+            VnpayResponse response = paymentService.retryVnpayPayment(paymentId);
+            log.info("✅ New VNPay payment URL created: {}", response.getPaymentUrl());
+            return ResponseEntity.ok(response);
+        } catch (AppException e) {
+            log.error("❌ Retry payment failed: {}", e.getErrorCode().getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new VnpayResponse(null, null, e.getErrorCode().getMessage()));
+        } catch (Exception e) {
+            log.error("❌ Unexpected error during retry", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new VnpayResponse(null, null, "Đã xảy ra lỗi khi tạo lại thanh toán!"));
+        }
+    }
+
 }

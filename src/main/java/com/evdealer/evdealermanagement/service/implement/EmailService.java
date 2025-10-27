@@ -11,7 +11,6 @@ import org.thymeleaf.context.Context;
 
 import jakarta.mail.internet.MimeMessage;
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Locale;
 
@@ -23,25 +22,40 @@ public class EmailService {
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
 
+    // ĐẶT URL NÀY TRONG application.properties hoặc môi trường
+    private static final String APP_BASE_URL = "https://evdealer.com";
+
     @Async
     public void sendPurchaseRequestNotification(
             String sellerEmail,
             String buyerName,
             String productTitle,
-            BigDecimal offeredPrice) {
+            BigDecimal offeredPrice,
+            // THAM SỐ MỚI
+            String requestId) {
 
         try {
+            // Sử dụng endpoint trong PurchaseRequestController
+            String respondEndpoint = APP_BASE_URL + "/member/purchase-request/respond/email?";
+
+            // Accept URL: /member/purchase-request/respond/email?requestId={id}&accept=true
+            String acceptUrl = respondEndpoint + "requestId=" + requestId + "&accept=true";
+
+            // Reject URL: /member/purchase-request/respond/email?requestId={id}&accept=false
+            String rejectUrl = respondEndpoint + "requestId=" + requestId + "&accept=false";
+
             Context context = new Context();
             context.setVariable("buyerName", buyerName);
             context.setVariable("productTitle", productTitle);
-            // Sử dụng formatCurrency đã tối ưu hóa
             context.setVariable("offeredPrice", formatCurrency(offeredPrice));
+            context.setVariable("acceptUrl", acceptUrl);
+            context.setVariable("rejectUrl", rejectUrl);
 
             String htmlContent = templateEngine.process("email/purchase-request-notification", context);
 
             sendEmail(
                     sellerEmail,
-                    "Có người muốn mua sản phẩm của bạn!",
+                    "🔔 Có người muốn mua sản phẩm của bạn!",
                     htmlContent);
 
             log.info("Purchase request notification sent to: {}", sellerEmail);
@@ -67,7 +81,6 @@ public class EmailService {
 
             sendEmail(
                     buyerEmail,
-                    // CHỈNH SỬA: Thay đổi tiêu đề cho phù hợp với logic "không cần ký ngay"
                     "Yêu cầu mua hàng được chấp nhận - Đã gửi Hợp đồng",
                     htmlContent);
 
@@ -149,9 +162,6 @@ public class EmailService {
         }
     }
 
-    /**
-     * Định dạng tiền tệ theo chuẩn Việt Nam (VND).
-     */
     private String formatCurrency(Object amount) {
         if (amount == null) return "0 VND";
 
@@ -170,10 +180,7 @@ public class EmailService {
             return "0 VND";
         }
 
-        // Tối ưu hóa: Sử dụng Locale Việt Nam để có dấu phân cách chuẩn (dấu chấm)
         NumberFormat currencyFormat = NumberFormat.getInstance(new Locale("vi", "VN"));
-
-        // Loại bỏ phần thập phân không cần thiết cho VND
         currencyFormat.setMaximumFractionDigits(0);
 
         return currencyFormat.format(numericValue) + " VND";
