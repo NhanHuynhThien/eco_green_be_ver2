@@ -1,0 +1,45 @@
+<!--
+====================================
+FILE: src/main/resources/templates/email/purchase-rejected.html
+Gửi cho Buyer khi Seller từ chối
+====================================
+-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #f44336; color: white; padding: 20px; text-align: center; }
+    .content { background: #f9f9f9; padding: 30px; border-radius: 5px; margin-top: 20px; }
+    .button { display: inline-block; padding: 12px 30px; background: #4CAF50; color: white;
+              text-decoration: none; border-radius: 5px; margin-top: 20px; }
+    .reason-box { background: #ffebee; border-left: 4px solid #f44336; padding: 15px; margin: 20px 0; }
+    .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h2>❌ Yêu cầu mua hàng bị từ chối</h2>
+  </div>
+  <div class="content">
+    <p>Rất tiếc,</p>
+    <p><strong th:text="${sellerName}"></strong> đã từ chối bán sản phẩm:</p>
+    <h3 th:text="${productTitle}"></h3>
+
+    <div class="reason-box" th:if="${rejectReason}">
+      <strong>Lý do từ chối:</strong><br>
+      <span th:text="${rejectReason}"></span>
+    </div>
+
+    <p>Bạn có thể tìm kiếm các sản phẩm tương tự khác trên hệ thống của chúng tôi.</p>
+    <a href="https://evdealer.com/products" class="button">Xem sản phẩm khác</a>
+  </div>
+  <div class="footer">
+    <p>© 2025 EV Dealer. All rights reserved.</p>
+  </div>
+</div>
+</body>
+</html>

@@ -43,4 +43,15 @@ public class MemberProductController {
         return ResponseEntity.ok(memberService.markSold(sellerId, req.getProductId()));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<ProductDetail> getProductDetailOfMember(Authentication authentication,
+                                                                  @PathVariable("id") String productId) {
+        CustomAccountDetails customAccountDetails = (CustomAccountDetails) authentication.getPrincipal();
+
+        String sellerId = customAccountDetails.getAccountId();
+
+        ProductDetail productDetail = memberService.getProductDetailOfMember(sellerId, productId);
+        return ResponseEntity.ok(productDetail);
+    }
+
 }

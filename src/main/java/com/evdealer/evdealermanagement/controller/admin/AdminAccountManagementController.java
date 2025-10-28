@@ -1,5 +1,8 @@
 package com.evdealer.evdealermanagement.controller.admin;
 
+import com.evdealer.evdealermanagement.dto.account.ban.BanRequest;
+import com.evdealer.evdealermanagement.dto.account.custom.CustomAccountDetails;
+import com.evdealer.evdealermanagement.dto.account.delete.DeleteRequest;
 import com.evdealer.evdealermanagement.dto.account.register.AccountRegisterRequest;
 import com.evdealer.evdealermanagement.dto.account.register.AccountRegisterResponse;
 import com.evdealer.evdealermanagement.dto.account.response.ApiResponse;
@@ -11,9 +14,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/admin")
@@ -66,5 +72,30 @@ public class AdminAccountManagementController {
     public ApiResponse<AccountRegisterResponse> registerStaffAccount(@Valid @RequestBody AccountRegisterRequest request) {
         AccountRegisterResponse response = authService.registerStaffAccount(request);
         return new ApiResponse<>(ErrorCode.SUCCESS.getCode(), ErrorCode.SUCCESS.getMessage(), response);
+    }
+
+    @PutMapping("/ban/{accountId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> banAccount(@PathVariable String accountId, @RequestBody BanRequest request) {
+        adminService.banAccount(accountId, request.getReason());
+        return ResponseEntity.ok("Account banned with reason: " + request.getReason());
+    }
+
+    @PutMapping("/unban/{accountId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> unbanAccount(@PathVariable String accountId) {
+        adminService.unBanAccount(accountId);
+        return ResponseEntity.ok("Account has been unbanned");
+    }
+
+    @DeleteMapping("/delete/{accountId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> deleteAccount(@PathVariable String accountId,
+                                                @RequestBody DeleteRequest request,
+                                                @AuthenticationPrincipal CustomAccountDetails adminDetails) {
+        String adminPassword = request.getAdminPassword();
+        adminService.deleteAccountForAdmin(accountId, adminPassword, adminDetails);
+
+        return ResponseEntity.ok("Account deleted successfully.");
     }
 }

@@ -100,7 +100,7 @@ public class PaymentService {
 
         PostPayment payment = PostPayment.builder()
                 .accountId(product.getSeller().getId())
-                .productId(product.getId())
+                .product(product)
                 .postPackage(pkg)
                 .postPackageOption(optionRepo.findById(request.getOptionId()).orElse(null))
                 .amount(totalPayable)
@@ -154,7 +154,7 @@ public class PaymentService {
 
     @Transactional
     public void handlePaymentCallback(String paymentId, boolean success) {
-        log.info("🔄 Processing payment callback - PaymentId: {}, Success: {}", paymentId, success);
+        log.info("Processing payment callback - PaymentId: {}, Success: {}", paymentId, success);
 
         PostPayment payment = postPaymentRepository.findById(paymentId)
                 .orElseThrow(() -> {
@@ -165,9 +165,9 @@ public class PaymentService {
         log.info("Payment found: ID={}, Status={}, Amount={}",
                 payment.getId(), payment.getPaymentStatus(), payment.getAmount());
 
-        Product product = productRepository.findById(payment.getProductId())
+        Product product = productRepository.findById(payment.getProduct().getId())
                 .orElseThrow(() -> {
-                    log.error("❌ Product not found: {}", payment.getProductId());
+                    log.error("Product not found: {}", payment.getProduct().getId());
                     return new AppException(ErrorCode.PRODUCT_NOT_FOUND);
                 });
 
@@ -176,7 +176,7 @@ public class PaymentService {
         // Skip nếu đã xử lý rồi
         if (payment.getPaymentStatus() == PostPayment.PaymentStatus.COMPLETED ||
                 payment.getPaymentStatus() == PostPayment.PaymentStatus.FAILED) {
-            log.warn("⚠️ Payment already processed with status: {}", payment.getPaymentStatus());
+            log.warn("Payment already processed with status: {}", payment.getPaymentStatus());
             return;
         }
 
@@ -192,22 +192,22 @@ public class PaymentService {
                 }
                 product.setStatus(Product.Status.PENDING_REVIEW);
 
-                log.info("💰 Posting fee updated: {}", product.getPostingFee());
-                log.info("📊 Product status updated: {}", product.getStatus());
+                log.info("Posting fee updated: {}", product.getPostingFee());
+                log.info("Product status updated: {}", product.getStatus());
             } else {
-                log.info("❌ Payment failed - Updating to FAILED");
+                log.info("Payment failed - Updating to FAILED");
                 payment.setPaymentStatus(PostPayment.PaymentStatus.FAILED);
                 product.setStatus(Product.Status.DRAFT);
             }
         } else {
-            log.warn("⚠️ Product is not in PENDING_PAYMENT status: {}", product.getStatus());
+            log.warn(" Product is not in PENDING_PAYMENT status: {}", product.getStatus());
         }
 
         postPaymentRepository.save(payment);
         productRepository.save(product);
 
-        log.info("💾 Payment and Product saved successfully");
-        log.info("📊 Final - Payment status: {}, Product status: {}",
+        log.info(" Payment and Product saved successfully");
+        log.info(" Final - Payment status: {}, Product status: {}",
                 payment.getPaymentStatus(), product.getStatus());
     }
 
@@ -254,4 +254,36 @@ public class PaymentService {
         }).toList();
     }
 
+    @Transactional
+    public VnpayResponse retryVnpayPayment(String paymentId) {
+        log.info("Retrying VNPay payment for ID: {}", paymentId);
+
+        PostPayment payment = postPaymentRepository.findById(paymentId)
+                .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
+
+        if (payment.getPaymentStatus() != PostPayment.PaymentStatus.FAILED) {
+            log.warn("Payment {} is not FAILED, cannot retry", paymentId);
+            throw new AppException(ErrorCode.PAYMENT_NOT_RETRIABLE);
+        }
+
+        Product product = productRepository.findById(payment.getProduct().getId())
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        // Reset trạng thái để cho phép retry
+        payment.setPaymentStatus(PostPayment.PaymentStatus.PENDING);
+        product.setStatus(Product.Status.PENDING_PAYMENT);
+
+        long amountVND = payment.getAmount().setScale(0, RoundingMode.HALF_UP).longValue();
+
+        // Tạo URL thanh toán mới qua VNPay
+        VnpayResponse vnpayResponse = vnpayService.createPayment(
+                new VnpayRequest(payment.getId(), String.valueOf(amountVND)));
+
+        postPaymentRepository.save(payment);
+        productRepository.save(product);
+
+        log.info("Retry payment URL created successfully for {}", paymentId);
+
+        return vnpayResponse;
+    }
 }

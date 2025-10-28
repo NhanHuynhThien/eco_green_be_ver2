@@ -1,17 +1,22 @@
 package com.evdealer.evdealermanagement.service.implement;
 
 import com.evdealer.evdealermanagement.dto.common.PageResponse;
+import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
 import com.evdealer.evdealermanagement.dto.product.moderation.ProductPendingResponse;
 import com.evdealer.evdealermanagement.entity.account.Account;
+import com.evdealer.evdealermanagement.entity.post.PostPayment;
 import com.evdealer.evdealermanagement.entity.product.Product;
+import com.evdealer.evdealermanagement.mapper.post.PostVerifyMapper;
 import com.evdealer.evdealermanagement.mapper.product.ProductMapper;
+import com.evdealer.evdealermanagement.repository.PostPaymentRepository;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
 import com.evdealer.evdealermanagement.service.contract.IProductService;
 import com.evdealer.evdealermanagement.utils.ProductSpecs;
 import com.evdealer.evdealermanagement.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,11 +38,12 @@ public class ProductService implements IProductService {
     private final VehicleService vehicleService;
     private final BatteryService batteryService;
     private final WishlistService wishlistService;
+    private final PostPaymentRepository postPaymentRepository;
     private static final int MAX_PAGE_SIZE = 100;
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<ProductDetail> getAllProductsWithStatus(String status, Pageable pageable) {
+    public PageResponse<PostVerifyResponse> getAllProductsWithStatus(String status, Pageable pageable) {
         try {
             log.info("=== START getAllProductsWithStatus===");
             pageable = capPageSize(pageable);
@@ -47,7 +53,13 @@ public class ProductService implements IProductService {
 
             Specification<Product> specification = Specification.where(ProductSpecs.hasStatus(statusEnum));
             Page<Product> products = productRepository.findAll(specification, pageable);
-            List<ProductDetail> content = toDetailsWithWishlist(products.getContent());
+
+            List<PostVerifyResponse> content = products.getContent().stream().map(
+                    product -> {
+                        PostPayment payments = postPaymentRepository.findByProductId(product.getId());
+                        return PostVerifyMapper.mapToPostVerifyResponse(product, payments);
+                    })
+                    .toList();
             return PageResponse.of(content, products);
         } catch (IllegalArgumentException e) {
             log.error("Invalid status value: {}", status);
@@ -61,16 +73,22 @@ public class ProductService implements IProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<ProductDetail> getAllProductsWithStatusAll(Pageable pageable) {
+    public PageResponse<PostVerifyResponse> getAllProductsWithStatusAll(Pageable pageable) {
         pageable = capPageSize(pageable);
         Specification<Product> spec = Specification.where(ProductSpecs.all());
         log.info("=== START getAllProductsWithStatusAll==");
         log.info("spec =  {}", spec);
         Page<Product> products = productRepository.findAll(spec, pageable);
         log.info("products =  {}", products);
-        List<ProductDetail> content = toDetailsWithWishlist(products.getContent());
+        List<PostVerifyResponse> content = products.getContent().stream().map(
+                        product -> {
+                            PostPayment payments = postPaymentRepository.findByProductId(product.getId());
+                            return PostVerifyMapper.mapToPostVerifyResponse(product, payments);
+                        })
+                .toList();
         return PageResponse.of(content, products);
     }
+
 
     @Override
     @Transactional(readOnly = true)
@@ -269,24 +287,17 @@ public class ProductService implements IProductService {
         try {
             log.info("=== START getNewProducts ===");
 
-            String accountId = SecurityUtils.getCurrentAccountId();
+            // Lấy nhiều hơn 12 để có buffer
+            List<Product> products = productRepository.findTop12ByStatusOrderByCreatedAtDesc(
+                    Product.Status.ACTIVE,
+                    PageRequest.of(0, 20) // Lấy 20 để đảm bảo sau khi filter vẫn còn đủ
+            );
 
-            List<Product> products = productRepository.findTop12ByStatusOrderByCreatedAtDesc(Product.Status.ACTIVE);
-
-            log.info("Found {} new products from DB", products.size());
-
-            if (products.isEmpty()) {
-                log.warn("No new products found");
-                return List.of();
-            }
+            log.info("Found {} products from DB", products.size());
 
             List<ProductDetail> result;
             try {
-                result = wishlistService.attachWishlistFlag(
-                        accountId,
-                        products,
-                        ProductMapper::toDetailDto,
-                        ProductDetail::setIsWishlisted);
+                result = toDetailsWithWishlist(products);
             } catch (Exception e) {
                 log.error("Error attaching wishlist flags, using basic mapping", e);
                 result = products.stream()
@@ -294,7 +305,18 @@ public class ProductService implements IProductService {
                         .collect(Collectors.toList());
             }
 
-            log.info("=== END getNewProducts: {} products ===", result.size());
+            // Chỉ lấy 12 cái đầu
+            result = result.stream()
+                    .limit(12)
+                    .collect(Collectors.toList());
+
+            log.info("=== END getNewProducts: {} products (requested 12) ===", result.size());
+
+            // Warning nếu không đủ
+            if (result.size() < 12) {
+                log.warn("Only found {} products, less than requested 12", result.size());
+            }
+
             return result;
 
         } catch (Exception e) {
