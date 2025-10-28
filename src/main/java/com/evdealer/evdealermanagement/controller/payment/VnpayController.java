@@ -79,7 +79,8 @@ public class VnpayController {
         try {
             if (paymentId == null || paymentId.isBlank()) {
                 log.error("❌ Missing vnp_TxnRef (paymentId) in return");
-                response.sendRedirect(frontendUrl + "/payment/vnpay-return");  // Sửa: Redirect về /payment/vnpay-return ngay cả khi lỗi
+                response.sendRedirect(frontendUrl + "/payment/vnpay-return"); // Sửa: Redirect về /payment/vnpay-return
+                                                                              // ngay cả khi lỗi
                 return;
             }
 
@@ -125,7 +126,7 @@ public class VnpayController {
 
         } catch (Exception e) {
             log.error("❌ Error processing VNPay return", e);
-            response.sendRedirect(frontendUrl + "/payment/vnpay-return");  // Sửa: Redirect về /payment/vnpay-return
+            response.sendRedirect(frontendUrl + "/payment/vnpay-return"); // Sửa: Redirect về /payment/vnpay-return
         }
     }
 

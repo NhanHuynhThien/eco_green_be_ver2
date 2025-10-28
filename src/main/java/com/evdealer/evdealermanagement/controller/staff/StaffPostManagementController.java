@@ -12,9 +12,9 @@ import com.evdealer.evdealermanagement.service.implement.StaffService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/staff")
+@RequestMapping("/staff/post")
 @RequiredArgsConstructor
-public class StaffController {
+public class StaffPostManagementController {
 
     private final StaffService staffService;
 
