@@ -23,7 +23,14 @@
 		<jjwt.version>0.11.5</jjwt.version>
 		<httpclient.version>5.2.1</httpclient.version>
 		<maven-dependency-plugin.version>3.6.0</maven-dependency-plugin.version>
+
+		<!-- Encoding setup (gộp chung tại đây) -->
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<resource.encoding>UTF-8</resource.encoding>
 	</properties>
+
+
 
 	<dependencies>
 		<!-- Spring Boot Web -->

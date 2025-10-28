@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.redis.core.RedisKeyValueAdapter;
 import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication
 @EnableJpaRepositories(basePackages = "com.evdealer.evdealermanagement.repository")
@@ -14,6 +15,7 @@ import org.springframework.data.redis.repository.configuration.EnableRedisReposi
 		enableKeyspaceEvents = RedisKeyValueAdapter.EnableKeyspaceEvents.OFF,
 		considerNestedRepositories = false
 )
+@EnableAsync
 public class EvDealerManagementSystemApplication {
 
 	public static void main(String[] args) {

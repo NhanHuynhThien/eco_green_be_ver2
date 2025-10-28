@@ -16,7 +16,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.validation.Valid;
 import java.net.URI;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/member/purchase-request")
@@ -26,13 +25,11 @@ public class PurchaseRequestController {
 
     private final PurchaseRequestService purchaseRequestService;
 
-    // ĐẶT URL BASE CỦA FRONTEND CỦA BẠN TẠI ĐÂY
     private static final String FRONTEND_BASE_URL = "https://evdealer.com";
 
-    // =======================================================
-    // 1. API Gửi Yêu Cầu Mua Hàng
-    // =======================================================
-
+    // -----------------------------
+    // 1. Tạo yêu cầu mua
+    // -----------------------------
     @PostMapping("/create")
     public ResponseEntity<PurchaseRequestResponse> create(@Valid @RequestBody CreatePurchaseRequestDTO dto) {
         log.info("Creating purchase request for product: {}", dto.getProductId());
@@ -40,10 +37,9 @@ public class PurchaseRequestController {
         return ResponseEntity.ok(response);
     }
 
-    // =======================================================
-    // 2. API Phản Hồi Yêu Cầu (Dành cho Frontend/Nội bộ)
-    // =======================================================
-
+    // -----------------------------
+    // 2. Seller phản hồi (POST)
+    // -----------------------------
     @PostMapping("/respond")
     public ResponseEntity<PurchaseRequestResponse> respond(@Valid @RequestBody SellerResponseDTO dto) {
         log.info("Seller responding to purchase request via POST: {}", dto.getRequestId());
@@ -51,18 +47,9 @@ public class PurchaseRequestController {
         return ResponseEntity.ok(response);
     }
 
-    // =======================================================
-    // 3. API Phản Hồi Yêu Cầu (Dành cho Liên kết Email - Cần Đăng nhập)
-    // =======================================================
-
-    /**
-     * Endpoint xử lý phản hồi từ liên kết Email.
-     * LƯU Ý: Vẫn yêu cầu người dùng phải ĐÃ ĐĂNG NHẬP do gọi Service sử dụng UserContextService.
-     *
-     * @param requestId ID của yêu cầu mua hàng.
-     * @param accept Quyết định của người bán (true/false).
-     * @return Chuyển hướng (HTTP 302) đến trang xác nhận trên frontend.
-     */
+    // -----------------------------
+    // 3. Seller phản hồi qua Email (GET)
+    // -----------------------------
     @GetMapping("/respond/email")
     public ResponseEntity<?> respondFromEmail(
             @RequestParam String requestId,
@@ -70,50 +57,37 @@ public class PurchaseRequestController {
 
         log.info("Seller responding from email link. Request ID: {}, Accept: {}", requestId, accept);
 
-        // 1. Chuẩn bị DTO từ Query Parameters
+        // Tạo DTO từ query param
         SellerResponseDTO dto = new SellerResponseDTO();
         dto.setRequestId(requestId);
         dto.setAccept(accept);
 
-        // Thiết lập message mặc định
         String defaultMessage = accept
                 ? "Đồng ý bán sản phẩm. Vui lòng xem và ký hợp đồng."
                 : "Xin lỗi, hiện tại tôi chưa thể bán sản phẩm này.";
         dto.setResponseMessage(defaultMessage);
         dto.setRejectReason(defaultMessage);
 
-
         try {
-            // 2. Gọi Service xử lý logic phản hồi
             PurchaseRequestResponse response = purchaseRequestService.respondToPurchaseRequest(dto);
 
-            // 3. Xây dựng URL chuyển hướng đến Frontend
-            // Chuyển hướng đến trang chi tiết hoặc trang kết quả
             String redirectUrl = String.format(FRONTEND_BASE_URL + "/seller/requests/%s?status=%s",
                     requestId, response.getStatus());
 
-            log.info("Request processed successfully. Redirecting to: {}", redirectUrl);
-
-            // 4. Trả về phản hồi chuyển hướng (HTTP 302 Found)
             return ResponseEntity.status(302)
                     .location(URI.create(redirectUrl))
                     .build();
 
         } catch (ResponseStatusException e) {
-            // Bắt lỗi Service (ví dụ: UNAUTHORIZED, BAD_REQUEST, INTERNAL_SERVER_ERROR do Eversign)
             log.error("Error responding to purchase request {} from email: {}", requestId, e.getReason(), e);
-
-            // Chuyển hướng đến trang lỗi nếu có vấn đề
             String errorRedirectUrl = String.format(FRONTEND_BASE_URL + "/error?message=purchase_request_error&reason=%s",
-                    e.getReason().replace(' ', '+')); // Thay thế khoảng trắng để truyền qua URL
+                    e.getReason().replace(' ', '+'));
 
             return ResponseEntity.status(302)
                     .location(URI.create(errorRedirectUrl))
                     .build();
         } catch (Exception e) {
-            // Bắt lỗi không xác định
             log.error("Unexpected error processing email response for request {}: {}", requestId, e.getMessage(), e);
-
             String errorRedirectUrl = String.format(FRONTEND_BASE_URL + "/error?message=purchase_request_internal_error");
 
             return ResponseEntity.status(302)
@@ -122,10 +96,9 @@ public class PurchaseRequestController {
         }
     }
 
-    // =======================================================
-    // 4. API Truy Vấn Thông Tin (Giữ nguyên)
-    // =======================================================
-
+    // -----------------------------
+    // 4. Lấy request của Buyer
+    // -----------------------------
     @GetMapping("/buyer")
     public ResponseEntity<Page<PurchaseRequestResponse>> getBuyerRequests(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
@@ -135,6 +108,9 @@ public class PurchaseRequestController {
         return ResponseEntity.ok(requests);
     }
 
+    // -----------------------------
+    // 5. Lấy request của Seller
+    // -----------------------------
     @GetMapping("/seller")
     public ResponseEntity<Page<PurchaseRequestResponse>> getSellerRequests(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
@@ -144,6 +120,9 @@ public class PurchaseRequestController {
         return ResponseEntity.ok(requests);
     }
 
+    // -----------------------------
+    // 6. Count request Pending Seller
+    // -----------------------------
     @GetMapping("/seller/pending-count")
     public ResponseEntity<Long> getPendingCount() {
         log.info("Fetching pending seller requests count");
@@ -151,10 +130,32 @@ public class PurchaseRequestController {
         return ResponseEntity.ok(count);
     }
 
+    // -----------------------------
+    // 7. Chi tiết request
+    // -----------------------------
     @GetMapping("/{id}")
     public ResponseEntity<PurchaseRequestResponse> getDetail(@PathVariable String id) {
         log.info("Fetching purchase request detail: {}", id);
         PurchaseRequestResponse response = purchaseRequestService.getRequestDetail(id);
+        return ResponseEntity.ok(response);
+    }
+
+    // -----------------------------
+    // 8. Test endpoint nhanh accept/reject POST
+    // -----------------------------
+    @PostMapping("/test/respond")
+    public ResponseEntity<PurchaseRequestResponse> testRespond(
+            @RequestParam String requestId,
+            @RequestParam boolean accept) {
+
+        SellerResponseDTO dto = new SellerResponseDTO();
+        dto.setRequestId(requestId);
+        dto.setAccept(accept);
+        dto.setResponseMessage(accept ? "Test accept" : "Test reject");
+        dto.setRejectReason(!accept ? "Test reject" : null);
+
+        log.info("Testing respond for requestId={} accept={}", requestId, accept);
+        PurchaseRequestResponse response = purchaseRequestService.respondToPurchaseRequest(dto);
         return ResponseEntity.ok(response);
     }
 }

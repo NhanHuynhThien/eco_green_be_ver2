@@ -1,131 +1,147 @@
-// File: EversignService.java (không thay đổi gì, vì không có bug rõ ràng)
 package com.evdealer.evdealermanagement.service.implement;
 
 import com.evdealer.evdealermanagement.dto.transactions.ContractInfoDTO;
 import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.entity.product.Product;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.evdealer.evdealermanagement.exceptions.AppException;
+import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-/**
- * Service xử lý hợp đồng Eversign
- */
 @Service
 @Slf4j
 public class EversignService {
 
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    @Value("${EVERSIGN_API_KEY}")
+    private String apiKey;
+
+    @Value("${EVERSIGN_BUSINESS_ID}")
+    private String businessId;
+
     @Value("${EVERSIGN_TEMPLATE_ID}")
     private String templateId;
 
-    @Value("${EVERSIGN_SANDBOX:true}")
-    private boolean eversignSandbox;
+    @Value("${EVERSIGN_SANDBOX:true}") // ✅ mặc định sandbox
+    private boolean sandboxMode;
 
-    // TODO: Inject client Eversign nếu dùng SDK / HTTP client
-    // private final EversignClient eversignClient;
+    @Value("${APP_BASE_URL:http://localhost:3000}")
+    private String appBaseUrl;
+
+    private static final String EVERSIGN_API_BASE = "https://api.eversign.com/api";
 
     /**
-     * Tạo hợp đồng từ template Eversign mà không yêu cầu chữ ký trực tiếp
-     *
-     * @param buyer        Người mua
-     * @param seller       Người bán
-     * @param product      Sản phẩm
-     * @param offeredPrice Giá đề nghị
-     * @return ContractInfoDTO chứa documentHash và embeddedSigningUrl
+     * Tạo hợp đồng để hai bên tự điền và ký (sandbox mode)
      */
-    public ContractInfoDTO createContractWithoutSignature(Account buyer, Account seller, Product product, BigDecimal offeredPrice) {
+    public ContractInfoDTO createBlankContractForManualInput(
+            Account buyer,
+            Account seller,
+            Product product
+    ) {
         try {
-            log.info("Creating Eversign contract using template: {}", templateId);
+            log.info("🚀 [Eversign] Tạo hợp đồng trống (sandboxMode={})", sandboxMode);
 
-            // Khởi tạo document từ template
-            Document templateDoc = new Document();
-            templateDoc.setTemplateId(templateId);
-            templateDoc.setSandbox(eversignSandbox);
-            templateDoc.setTitle("Hợp đồng mua bán sản phẩm - " + product.getTitle());
+            Map<String, Object> requestBody = buildContractRequest(buyer, seller, product);
 
-            // Thêm signers
-            List<Signer> signers = new ArrayList<>();
+            String url = String.format("%s/document?business_id=%s&access_key=%s",
+                    EVERSIGN_API_BASE, businessId, apiKey);
 
-            Signer sellerSigner = new Signer();
-            sellerSigner.setRole("Seller"); // Phải trùng với role trên template
-            sellerSigner.setName(seller.getFullName());
-            sellerSigner.setEmail(seller.getEmail());
-            signers.add(sellerSigner);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
 
-            Signer buyerSigner = new Signer();
-            buyerSigner.setRole("Buyer"); // Phải trùng với role trên template
-            buyerSigner.setName(buyer.getFullName());
-            buyerSigner.setEmail(buyer.getEmail());
-            signers.add(buyerSigner);
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.POST, entity, Map.class);
 
-            templateDoc.setSigners(signers);
+            log.info("📬 [Eversign] Response status: {}", response.getStatusCode());
+            log.debug("📥 [Eversign] Full response: {}", response.getBody());
 
-            // Merge fields nếu template có placeholders
-            Map<String, String> fields = Map.of(
-                    "product_name", product.getTitle(),
-                    "product_price", offeredPrice.toPlainString(),
-                    "seller_name", seller.getFullName(),
-                    "buyer_name", buyer.getFullName()
-            );
-            templateDoc.setCustomFields(fields);
+            if (response.getStatusCode() != HttpStatus.OK || response.getBody() == null) {
+                throw new AppException(ErrorCode.CONTRACT_BUILD_FAILED);
+            }
 
-            // Gọi API Eversign tạo document
-            // Lưu ý: eversignClient.createDocumentFromTemplate() là giả lập. Bạn thay bằng client thật
-            Document created = eversignClient.createDocumentFromTemplate(templateDoc);
+            Map<String, Object> body = response.getBody();
+            String documentHash = (String) body.get("document_hash");
+            if (documentHash == null) {
+                throw new AppException(ErrorCode.CONTRACT_BUILD_FAILED);
+            }
 
-            log.info("Eversign contract created successfully. Document hash: {}", created.getDocumentHash());
+            // Tạo link ký
+            String buyerSignUrl = null;
+            String sellerSignUrl = null;
 
-            return new ContractInfoDTO(created.getDocumentHash(), created.getEmbeddedSigningUrl());
+            Object signersObj = body.get("signers");
+            if (signersObj instanceof List<?> signersList) {
+                for (Object obj : signersList) {
+                    if (obj instanceof Map<?, ?> signer) {
+                        String email = (String) signer.get("email");
+                        String embeddedUrl = (String) signer.get("embedded_signing_url");
+                        if (email != null && email.equalsIgnoreCase(buyer.getEmail())) {
+                            buyerSignUrl = embeddedUrl;
+                        } else if (email != null && email.equalsIgnoreCase(seller.getEmail())) {
+                            sellerSignUrl = embeddedUrl;
+                        }
+                    }
+                }
+            }
+
+            return ContractInfoDTO.builder()
+                    .contractId(documentHash)
+                    .contractUrl(buildContractViewUrl(documentHash))
+                    .buyerSignUrl(buyerSignUrl)
+                    .sellerSignUrl(sellerSignUrl)
+                    .status("PENDING")
+                    .build();
 
         } catch (Exception e) {
-            log.error("Error creating Eversign contract from template: {}", e.getMessage(), e);
-            throw new RuntimeException("Eversign contract creation failed", e);
+            log.error("🔥 [Eversign] Lỗi khi tạo hợp đồng trống: {}", e.getMessage(), e);
+            throw new RuntimeException("Lỗi khi tạo hợp đồng với Eversign: " + e.getMessage());
         }
     }
 
-    // =======================
-    // DTO & Helper Classes
-    // =======================
+    private Map<String, Object> buildContractRequest(
+            Account buyer,
+            Account seller,
+            Product product
+    ) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("sandbox", sandboxMode ? 1 : 0); // ✅ bật sandbox
+        body.put("business_id", businessId);
+        body.put("template_id", templateId);
+        body.put("title", "Hợp đồng mua bán xe điện (sandbox)");
+        body.put("message", "Vui lòng điền thông tin và ký hợp đồng (sandbox).");
+//        body.put("embedded_signing_enabled", 1);
+//        body.put("use_signer_order", 1);
+//        body.put("redirect", appBaseUrl + "/contract/completed");
+//        body.put("redirect_decline", appBaseUrl + "/contract/declined");
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class Signer {
-        private String role;                // Seller hoặc Buyer (phải trùng template)
-        private String name;
-        private String email;
+        // 👥 Người ký
+        List<Map<String, Object>> signers = new ArrayList<>();
+        signers.add(Map.of(
+                "role", "seller",
+                "name", seller.getFullName(),
+                "email", seller.getEmail(),
+                "signing_order", 1
+        ));
+        signers.add(Map.of(
+                "role", "buyer",
+                "name", buyer.getFullName(),
+                "email", buyer.getEmail(),
+                "signing_order", 2
+        ));
+        body.put("signers", signers);
+
+        log.debug("🧰 [Eversign] Request body (sandbox={}): {}", sandboxMode, body);
+        return body;
     }
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class Document {
-        private String templateId;                  // Template ID
-        private String title;
-        private boolean sandbox;
-        private List<Signer> signers;
-        private Map<String, String> customFields;
-        private String documentHash;                // Kết quả từ Eversign
-        private String embeddedSigningUrl;         // URL embedded signing
-    }
-
-    // TODO: Đây là placeholder client. Thay bằng SDK hoặc HTTP client thật
-    private final FakeEversignClient eversignClient = new FakeEversignClient();
-
-    private static class FakeEversignClient {
-        public Document createDocumentFromTemplate(Document doc) {
-            // Giả lập tạo contract trả về hash và embedded url
-            doc.setDocumentHash("DOC-" + System.currentTimeMillis());
-            doc.setEmbeddedSigningUrl("https://eversign.com/sign/" + doc.getDocumentHash());
-            return doc;
-        }
+    private String buildContractViewUrl(String documentHash) {
+        return String.format("https://eversign.com/documents/%s", documentHash);
     }
 }

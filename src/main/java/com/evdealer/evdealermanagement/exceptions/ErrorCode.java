@@ -42,6 +42,7 @@ public enum ErrorCode {
     DUPLICATE_TAX_CODE(1107, "Tax code is already registered", HttpStatus.BAD_REQUEST),
     PHONE_ALREADY_EXISTS(1108, "Phone number is already registered", HttpStatus.BAD_REQUEST),
     INVALID_PHONE_FORMAT(1109, "Invalid phone number format", HttpStatus.BAD_REQUEST),
+    CONTRACT_BUILD_FAILED(1110, "Failed to build or create contract", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // --- Validation Errors (Codes 1200 - 1299) ---
     INVALID_INPUT(1201, "Invalid input data", HttpStatus.BAD_REQUEST),
@@ -114,6 +115,9 @@ public enum ErrorCode {
     VEHICLE_NOT_FOUND(4007, "Vehicle not found", HttpStatus.NOT_FOUND),
     CATEGORY_NOT_FOUND(4008, "Category not found", HttpStatus.NOT_FOUND),
     BATTERY_NOT_FOUND(4009, "Battery Not Found", HttpStatus.NOT_FOUND),
+    INVALID_COMPARE(4010, "Cannot compare different products type", HttpStatus.NOT_FOUND),
+    INVALID_REQUEST(4011, "Unsupported product type", HttpStatus.BAD_REQUEST),
+    NO_SUGGESTIONS_FOUND(4012, "No suggestions found", HttpStatus.NOT_FOUND),
 
     REPORT_NOT_FOUND(4000, "Report not found", HttpStatus.NOT_FOUND),
 

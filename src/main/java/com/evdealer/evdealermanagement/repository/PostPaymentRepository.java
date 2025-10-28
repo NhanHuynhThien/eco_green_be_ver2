@@ -14,6 +14,9 @@ public interface PostPaymentRepository extends JpaRepository<PostPayment, String
             String productId,
             PostPayment.PaymentStatus status);
 
+    Optional<PostPayment> findFirstByProductIdAndPaymentStatusOrderByCreatedAtDesc(
+            String productId, PostPayment.PaymentStatus status);
+
     boolean existsByAccountIdAndPaymentStatus(String accountId, PostPayment.PaymentStatus status);
 
     Optional<PostPayment> findTopByProductIdAndPaymentStatusOrderByCreatedAtDesc(

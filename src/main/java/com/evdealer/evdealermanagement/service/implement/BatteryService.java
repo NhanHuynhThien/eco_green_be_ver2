@@ -3,6 +3,7 @@ package com.evdealer.evdealermanagement.service.implement;
 import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsResponse;
 import com.evdealer.evdealermanagement.dto.battery.brand.BatteryTypesResponse;
 import com.evdealer.evdealermanagement.dto.battery.brand.BatteryBrandsRequest;
+import com.evdealer.evdealermanagement.dto.battery.detail.BatteryDetailResponse;
 import com.evdealer.evdealermanagement.dto.post.battery.BatteryPostRequest;
 import com.evdealer.evdealermanagement.dto.post.battery.BatteryPostResponse;
 import com.evdealer.evdealermanagement.dto.post.common.ProductImageResponse;
@@ -364,4 +365,33 @@ public class BatteryService {
                 })
                 .collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
+    public BatteryDetailResponse getBatteryDetail(String productId) {
+        BatteryDetails b = batteryDetailRepository.findByProductId(productId);
+        if (b == null)
+            throw new AppException(ErrorCode.BATTERY_NOT_FOUND);
+
+        BatteryBrandsResponse brandDto = null;
+        if (b.getBrand() != null) {
+            brandDto = BatteryMapper.mapToBatteryBrandsResponse(b.getBrand());
+        }
+
+        return BatteryDetailResponse.builder()
+                .productTitle(b.getProduct() != null ? b.getProduct().getTitle() : null)
+                .productPrice(b.getProduct() != null ? b.getProduct().getPrice() : null)
+                .productStatus(b.getProduct() != null && b.getProduct().getStatus() != null
+                        ? b.getProduct().getStatus().name() : null)
+
+                .brandName(brandDto != null ? brandDto.getBrandName() : null)
+                .brandLogoUrl(brandDto != null ? brandDto.getLogoUrl() : null)
+
+                .batteryTypeName(b.getBatteryType() != null ? b.getBatteryType().getName() : null)
+                .capacityKwh(b.getCapacityKwh())
+                .voltageV(b.getVoltageV())
+                .healthPercent(b.getHealthPercent())
+                .origin(b.getOrigin())
+                .build();
+    }
+
 }
