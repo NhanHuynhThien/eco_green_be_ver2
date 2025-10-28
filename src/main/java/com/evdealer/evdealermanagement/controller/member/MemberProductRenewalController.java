@@ -1,4 +1,4 @@
-package com.evdealer.evdealermanagement.controller.product;
+package com.evdealer.evdealermanagement.controller.member;
 
 import org.springframework.web.bind.annotation.RestController;
 
@@ -18,7 +18,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 @RestController
 @RequestMapping("/member/products")
 @RequiredArgsConstructor
-public class ProductRenewalController {
+public class MemberProductRenewalController {
     private final ProductRenewalService productRenewalService;
 
     @PutMapping("/renewal/{productId}")

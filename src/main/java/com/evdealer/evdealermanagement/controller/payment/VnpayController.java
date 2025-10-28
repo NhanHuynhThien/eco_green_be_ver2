@@ -157,11 +157,16 @@ public class VnpayController {
                 success = false;
             }
 
+            String message = success ? "Payment successful" : "Payment failed";
+            String route = isRenewal ? "renewal" : "posting";
+
             // 4) Redirect về frontend
             String redirectUrl = frontendUrl
                     + "/payment/return?status=" + (success ? "success" : "fail")
                     + "&paymentId=" + paymentId
-                    + "&responseCode=" + (responseCode != null ? responseCode : "NA");
+                    + "&responseCode=" + (responseCode != null ? responseCode : "NA")
+                    + "&route=" + route
+                    + "&message=" + message;
 
             log.info("🔄 Redirecting to: {}", redirectUrl);
             response.sendRedirect(redirectUrl);
