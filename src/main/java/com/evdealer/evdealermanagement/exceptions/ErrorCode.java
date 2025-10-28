@@ -114,6 +114,9 @@ public enum ErrorCode {
     VEHICLE_NOT_FOUND(4007, "Vehicle not found", HttpStatus.NOT_FOUND),
     CATEGORY_NOT_FOUND(4008, "Category not found", HttpStatus.NOT_FOUND),
     BATTERY_NOT_FOUND(4009, "Battery Not Found", HttpStatus.NOT_FOUND),
+    INVALID_COMPARE(4010, "Cannot compare different products type", HttpStatus.NOT_FOUND),
+    INVALID_REQUEST(4011, "Unsupported product type", HttpStatus.BAD_REQUEST),
+    NO_SUGGESTIONS_FOUND(4012, "No suggestions found", HttpStatus.NOT_FOUND),
 
     REPORT_NOT_FOUND(4000, "Report not found", HttpStatus.NOT_FOUND),
 

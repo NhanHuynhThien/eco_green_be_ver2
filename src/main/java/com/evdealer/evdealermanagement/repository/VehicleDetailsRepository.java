@@ -1,12 +1,14 @@
 package com.evdealer.evdealermanagement.repository;
 
 import com.evdealer.evdealermanagement.entity.product.Product;
+import com.evdealer.evdealermanagement.entity.vehicle.VehicleBrands;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -105,4 +107,18 @@ public interface VehicleDetailsRepository extends JpaRepository<VehicleDetails, 
         List<Product> findSimilarVehiclesByBrand(@Param("brandId") String brandId,
                                                  @Param("modelId") String modelId,
                                                  @Param("productId") String productId);
+
+        @Query("""
+            SELECT vd FROM VehicleDetails vd
+            JOIN vd.product p
+            WHERE vd.brand = :brand
+            AND p.price BETWEEN :minPrice AND :maxPrice
+            AND p.status = 'ACTIVE'
+            ORDER BY p.price ASC
+        """)
+        List<VehicleDetails> findByBrandAndPriceBetween(
+                @Param("brand") VehicleBrands brand,
+                @Param("minPrice") BigDecimal minPrice,
+                @Param("maxPrice") BigDecimal maxPrice
+        );
 }

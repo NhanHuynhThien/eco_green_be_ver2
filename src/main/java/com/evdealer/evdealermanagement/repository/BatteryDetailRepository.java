@@ -1,6 +1,7 @@
 package com.evdealer.evdealermanagement.repository;
 
 import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
+import com.evdealer.evdealermanagement.entity.battery.BatteryTypes;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -79,5 +80,19 @@ public interface BatteryDetailRepository extends JpaRepository<BatteryDetails, S
 
     @Query("SELECT bd FROM BatteryDetails bd WHERE bd.product.id = :productId")
     Optional<BatteryDetails> findByProductsId(@Param("productId") String productId);
+
+    @Query("""
+        SELECT b FROM BatteryDetails b
+        JOIN b.product p
+        WHERE b.batteryType = :batteryType
+        AND p.price BETWEEN :minPrice AND :maxPrice
+        AND p.status = 'ACTIVE'
+        ORDER BY p.price ASC
+    """)
+    List<BatteryDetails> findByBatteryTypeAndPriceBetween(
+            @Param("batteryType") BatteryTypes batteryType,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice
+    );
 
 }
