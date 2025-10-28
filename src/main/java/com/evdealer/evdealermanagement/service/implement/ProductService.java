@@ -1,16 +1,26 @@
 package com.evdealer.evdealermanagement.service.implement;
 
+import com.evdealer.evdealermanagement.dto.battery.detail.BatteryDetailResponse;
 import com.evdealer.evdealermanagement.dto.common.PageResponse;
 import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
+import com.evdealer.evdealermanagement.dto.product.compare.ProductCompareResponse;
+import com.evdealer.evdealermanagement.dto.product.compare.ProductSuggestionResponse;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
 import com.evdealer.evdealermanagement.dto.product.moderation.ProductPendingResponse;
+import com.evdealer.evdealermanagement.dto.vehicle.detail.VehicleDetailResponse;
 import com.evdealer.evdealermanagement.entity.account.Account;
+import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
 import com.evdealer.evdealermanagement.entity.post.PostPayment;
 import com.evdealer.evdealermanagement.entity.product.Product;
+import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
+import com.evdealer.evdealermanagement.exceptions.AppException;
+import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import com.evdealer.evdealermanagement.mapper.post.PostVerifyMapper;
 import com.evdealer.evdealermanagement.mapper.product.ProductMapper;
+import com.evdealer.evdealermanagement.repository.BatteryDetailRepository;
 import com.evdealer.evdealermanagement.repository.PostPaymentRepository;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
+import com.evdealer.evdealermanagement.repository.VehicleDetailsRepository;
 import com.evdealer.evdealermanagement.service.contract.IProductService;
 import com.evdealer.evdealermanagement.utils.ProductSpecs;
 import com.evdealer.evdealermanagement.utils.SecurityUtils;
@@ -39,6 +49,8 @@ public class ProductService implements IProductService {
     private final BatteryService batteryService;
     private final WishlistService wishlistService;
     private final PostPaymentRepository postPaymentRepository;
+    private final VehicleDetailsRepository vehicleDetailsRepository;
+    private final BatteryDetailRepository batteryDetailRepository;
     private static final int MAX_PAGE_SIZE = 100;
 
     @Override
@@ -501,6 +513,87 @@ public class ProductService implements IProductService {
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid product status: " + status);
         }
+    }
+
+    @Transactional
+    public List<ProductSuggestionResponse> suggestProducts(String productId) {
+        Product current = productRepository.findById(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        BigDecimal price = current.getPrice();
+        BigDecimal difference = price.multiply(BigDecimal.valueOf(0.15));
+
+        if(current.getType() == Product.ProductType.VEHICLE) {
+            VehicleDetails v = vehicleDetailsRepository.findByProductId(productId)
+                    .orElseThrow(() -> new AppException(ErrorCode.VEHICLE_NOT_FOUND));
+
+            return vehicleDetailsRepository.findByBrandAndPriceBetween(
+                    v.getBrand(), price.subtract(difference), price.add(difference))
+                    .stream()
+                    .filter(x -> !x.getProduct().getId().equals(productId))
+                    .distinct()
+                    .map(x -> ProductSuggestionResponse.builder()
+                            .id(x.getProduct().getId())
+                            .title(x.getProduct().getTitle())
+                            .price(x.getProduct().getPrice())
+                            .brand(x.getBrand() != null ? x.getBrand().getName() : null)
+                            .model(x.getModel() != null ? x.getModel().getName() : null)
+                            .version(x.getVersion() != null ? x.getVersion().getName() : null)
+                            .build())
+                    .toList();
+        } else if(current.getType() == Product.ProductType.BATTERY) {
+            BatteryDetails b = batteryDetailRepository.findByProductsId(productId)
+                    .orElseThrow(() -> new AppException(ErrorCode.BATTERY_NOT_FOUND));
+
+            return batteryDetailRepository.findByBatteryTypeAndPriceBetween(
+                            b.getBatteryType(), price.subtract(difference), price.add(difference))
+                    .stream()
+                    .filter(x -> !x.getProduct().getId().equals(productId))
+                    .distinct()
+                    .map(x -> ProductSuggestionResponse.builder()
+                            .id(x.getProduct().getId())
+                            .title(x.getProduct().getTitle())
+                            .price(x.getProduct().getPrice())
+                            .brand(x.getBrand() != null ? x.getBrand().getName() : null)
+                            .batteryType(x.getBatteryType() != null ? x.getBatteryType().getName() : null)
+                            .build())
+                    .toList();
+        }
+        return Collections.emptyList();
+    }
+
+    @Transactional
+    public ProductCompareResponse compareProducts(String currentProductId, String targetProductId) {
+        Product current = productRepository.findById(currentProductId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        Product target = productRepository.findById(targetProductId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        if(current.getType() != target.getType()) {
+            throw new AppException(ErrorCode.INVALID_COMPARE);
+        }
+
+        if(current.getType() == Product.ProductType.VEHICLE) {
+            VehicleDetailResponse currentDetail = vehicleService.getVehicleDetailsInfo(currentProductId);
+            VehicleDetailResponse targetDetail = vehicleService.getVehicleDetailsInfo(targetProductId);
+            return ProductCompareResponse.builder()
+                    .currentVehicle(currentDetail)
+                    .targetVehicle(targetDetail)
+                    .currentBattery(null)
+                    .targetBattery(null)
+                    .build();
+        } else if(current.getType() == Product.ProductType.BATTERY) {
+            BatteryDetailResponse currentDetail = batteryService.getBatteryDetail(currentProductId);
+            BatteryDetailResponse targetDetail = batteryService.getBatteryDetail(targetProductId);
+            return ProductCompareResponse.builder()
+                    .currentVehicle(null)
+                    .targetVehicle(null)
+                    .currentBattery(currentDetail)
+                    .targetBattery(targetDetail)
+                    .build();
+        }
+        throw new AppException(ErrorCode.INVALID_REQUEST);
     }
 
 }
