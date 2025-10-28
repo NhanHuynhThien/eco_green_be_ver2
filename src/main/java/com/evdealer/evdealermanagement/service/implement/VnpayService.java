@@ -4,15 +4,24 @@ import com.evdealer.evdealermanagement.configurations.VnpayConfig;
 import com.evdealer.evdealermanagement.configurations.vnpay.VnpayProperties;
 import com.evdealer.evdealermanagement.dto.payment.VnpayRequest;
 import com.evdealer.evdealermanagement.dto.payment.VnpayResponse;
+import com.evdealer.evdealermanagement.dto.payment.VnpayVerifyResponse;
+import com.evdealer.evdealermanagement.entity.post.PostPayment;
+import com.evdealer.evdealermanagement.repository.PostPaymentRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
@@ -21,6 +30,7 @@ import java.util.*;
 public class VnpayService {
 
     private final VnpayProperties vnpayProperties;
+    private final PostPaymentRepository paymentRepository;
 
     @PostConstruct
     public void checkConfig() {
@@ -122,6 +132,101 @@ public class VnpayService {
             return false;
         }
     }
+
+    public VnpayVerifyResponse verifyReturn(String productId, String rawQuery, String clientIp) {
+        try {
+            Map<String, String> params = parseRawQuery(rawQuery);
+            //Kiểm tra chữ kí
+            if(!verifyPaymentSignature(params)) {
+                return VnpayVerifyResponse.builder()
+                        .success(false).status("FAILED").message("Invalid signature")
+                        .vnpTxnRef(params.get("vnp_TxnRef"))
+                        .vnpTransactionNo(params.get("vnp_TransactionNo"))
+                        .vnpResponseCode(params.get("vnp_ResponseCode"))
+                        .build();
+
+            }
+            //kiểm tra TMN code
+            if(!Objects.equals(params.get("vnp_TmnCode"), vnpayProperties.getTmnCode())) {
+                return VnpayVerifyResponse.builder()
+                        .success(false).status("FAILED").message("Mismatched TMN code")
+                        .vnpTxnRef(params.get("vnp_TxnRef"))
+                        .vnpTransactionNo(params.get("vnp_TransactionNo"))
+                        .vnpResponseCode(params.get("vnp_ResponseCode"))
+                        .build();
+            }
+            // chuẩn hóa amount
+            BigDecimal vnpAmount = new BigDecimal(params.getOrDefault("vnp_Amount", "0")).divide(BigDecimal.valueOf(100));
+            BigDecimal expectedAmount = resolveExpectedAmountFor(productId);
+            if(expectedAmount != null && expectedAmount.compareTo(vnpAmount) != 0) {
+                return VnpayVerifyResponse.builder()
+                        .success(false).status("FAILED").message("Mismatched amount")
+                        .vnpTxnRef(params.get("vnp_TxnRef"))
+                        .vnpTransactionNo(params.get("vnp_TransactionNo"))
+                        .vnpResponseCode(params.get("vnp_ResponseCode"))
+                        .amount(vnpAmount)
+                        .build();
+            }
+            //kết quả trả về từ vnpay
+            String response = params.get("vnp_ResponseCode");
+            boolean ok = "00".equals(response);
+
+            return VnpayVerifyResponse.builder()
+                    .success(ok)
+                    .status(ok ? "PAID" : "FAILED")
+                    .message(ok ? "Payment verified" : "Payment failed")
+                    .vnpTxnRef(params.get("vnp_TxnRef"))
+                    .vnpTransactionNo(params.get("vnp_TransactionNo"))
+                    .vnpResponseCode(response)
+                    .amount(vnpAmount)
+                    .bankCode(params.get("vnp_BankCode"))
+                    .payDate(parseVnpPayDate(params.get("vnp_PayDate")))
+                    .build();
+
+
+        } catch (Exception e) {
+            log.error("VNPay verify error", e);
+            throw new RuntimeException("VNPay verify error: " + e.getMessage(), e);
+        }
+    }
+
+    private OffsetDateTime parseVnpPayDate(String vnpPayDate) {
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+            return OffsetDateTime.of(LocalDateTime.parse(vnpPayDate, formatter),ZoneOffset.ofHours(7));
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private Map<String, String> parseRawQuery(String rawQuery) {
+        Map<String, String> result = new TreeMap<>();
+        if(rawQuery == null) return result;
+        String q = rawQuery.startsWith("?") ? rawQuery.substring(1) : rawQuery;
+        for (String pair : q.trim().split("&")) {
+            if(pair.isBlank()) continue;
+            int i = pair.indexOf("=");
+            String k = (i>=0) ? pair.substring(0, i) : pair;
+            String v = (i>=0 && i + 1 < pair.length()) ? pair.substring(i + 1) : "";
+            result.put(urlDecode(k), urlDecode(v));
+        }
+        return result;
+    }
+
+    private BigDecimal resolveExpectedAmountFor(String productId) {
+        return paymentRepository.findFirstByProductIdAndPaymentStatusOrderByCreatedAtDesc(productId, PostPayment.PaymentStatus.PENDING).map(PostPayment::getAmount).orElse(null);
+    }
+
+
+    private String urlDecode(String s) {
+        try {
+            return URLDecoder.decode(s, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return s;
+        }
+    }
+
+
 
     private String buildHashData(Map<String, String> params) throws UnsupportedEncodingException {
         List<String> keys = new ArrayList<>(params.keySet());
