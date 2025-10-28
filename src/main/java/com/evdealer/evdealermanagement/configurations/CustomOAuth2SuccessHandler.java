@@ -62,5 +62,6 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
                 "{ \"token\": \"" + loginResponse.getToken() + "\", " +
                         "\"email\": \"" + loginResponse.getEmail() + "\" }"
         );
+        response.getWriter().flush();
     }
 }
