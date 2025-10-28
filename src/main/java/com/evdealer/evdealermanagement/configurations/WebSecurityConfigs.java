@@ -50,48 +50,51 @@
                 return source;
             }
 
-            @Bean
-            public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-                http
-                        .csrf(AbstractHttpConfigurer::disable)
-                        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                        .sessionManagement(session -> session
-                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                        .authorizeHttpRequests(auth -> auth
-                                .requestMatchers("/auth/**", "/oauth2/**","/login/oauth2/**", "/vehicle/**", "/battery/**",
-                                        "/product/**",
-                                        "/gemini/**")
-                                .permitAll()
-                                .requestMatchers("/admin/**").hasRole("ADMIN")
-                                .requestMatchers("/staff/**", "/revenue/**").hasAnyRole("STAFF", "ADMIN")
-                                .requestMatchers("/member/**", "/profile/**", "/password/**")
-                                .hasAnyRole("MEMBER", "ADMIN", "STAFF")
-                                .requestMatchers(
-                                        "/api/vnpayment", "/api/vnpayment/return",
-                                        "/api/vnpayment/vnpay_ipn",
-                                        "/api/momo", "/api/momo/return", "/api/momo/ipn")
-                                .permitAll()
-                                .requestMatchers("battery/brands/all", "battery/types/all",
-                                        "vehicle/brands/all", "vehicle/categories/all",
-                                        "vehicle/models/all", "vehicle/model/versions")
-                                .permitAll()
-                                .anyRequest().authenticated())
-                        .exceptionHandling(exception -> exception
-                                .authenticationEntryPoint((request, response, authException) -> {
-                                    response.setContentType("application/json");
-                                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                                    response.getWriter().write("{\"error\": \"Unauthorized\"}");
-                                }))
-                        .oauth2Login(oauth -> oauth
-                                .successHandler(successHandler)
-                                .failureHandler((req, res, ex) -> {
-                                    res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                                    res.setContentType("application/json");
-                                    res.getWriter().write("{\"error\":\"" + ex.getMessage() + "\"}");
-                                })
-                        )
-                        .authenticationProvider(authenticationProvider())
-                        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/auth/**", "/oauth2/**","/login/oauth2/**", "/vehicle/**", "/battery/**",
+                                "/product/**",
+                                "/gemini/**")
+                        .permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/staff/**", "/revenue/**").hasAnyRole("STAFF", "ADMIN")
+                        .requestMatchers("/member/**", "/profile/**", "/password/**")
+                        .hasAnyRole("MEMBER", "ADMIN", "STAFF")
+                        .requestMatchers(
+                                "/api/vnpayment", "/api/vnpayment/return",
+                                "/api/vnpayment/vnpay_ipn",
+                                "/api/momo", "/api/momo/return", "/api/momo/ipn")
+                        .permitAll()
+                        .requestMatchers("battery/brands/all", "battery/types/all",
+                                "vehicle/brands/all", "vehicle/categories/all",
+                                "vehicle/models/all", "vehicle/model/versions")
+                        .permitAll()
+                        .requestMatchers("/api/vnpayment/verify").permitAll()
+                        .anyRequest().authenticated())
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setContentType("application/json");
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.getWriter().write("{\"error\": \"Unauthorized\"}");
+                        }))
+                .oauth2Login(oauth -> oauth
+                        .successHandler(successHandler)
+                        .failureHandler((req, res, ex) -> {
+                            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            res.setContentType("application/json");
+                            res.getWriter().write("{\"error\":\"" + ex.getMessage() + "\"}");
+                        })
+                )
+                .authenticationProvider(authenticationProvider())
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
 
                 return http.build();
             }

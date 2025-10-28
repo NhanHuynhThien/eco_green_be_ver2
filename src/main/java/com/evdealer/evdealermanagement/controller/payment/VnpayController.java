@@ -2,6 +2,8 @@ package com.evdealer.evdealermanagement.controller.payment;
 
 import com.evdealer.evdealermanagement.dto.payment.VnpayRequest;
 import com.evdealer.evdealermanagement.dto.payment.VnpayResponse;
+import com.evdealer.evdealermanagement.dto.payment.VnpayVerifyRequest;
+import com.evdealer.evdealermanagement.dto.payment.VnpayVerifyResponse;
 import com.evdealer.evdealermanagement.entity.post.PostPayment;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.exceptions.AppException;
@@ -11,7 +13,9 @@ import com.evdealer.evdealermanagement.repository.ProductRepository;
 import com.evdealer.evdealermanagement.service.implement.PaymentService;
 import com.evdealer.evdealermanagement.service.implement.ProductRenewalService;
 import com.evdealer.evdealermanagement.service.implement.VnpayService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +24,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Map;
 
 @RestController
@@ -59,12 +64,17 @@ public class VnpayController {
     }
 
     @GetMapping("/return")
-    public void vnpayReturn(@RequestParam Map<String, String> params, HttpServletResponse response) throws IOException {
+    public void vnpayReturn(@RequestParam Map<String, String> params, HttpServletResponse response, HttpServletRequest request) throws IOException {
         log.info("🔔 VNPay return callback received");
         log.info("📦 Params: {}", params);
 
+
+        String rawQuery = request.getQueryString();
         String paymentId = params.get("vnp_TxnRef");
         String responseCode = params.get("vnp_ResponseCode");
+//        BigDecimal amount = BigDecimal.valueOf(Long.parseLong(params.get("vnp_Amount")));
+//        String vnpTmnCode = params.get("vnp_TmnCode");
+//        String vnpCreateDate = params.get("vnp_CreateDate");
 
         try {
             if (paymentId == null || paymentId.isBlank()) {
@@ -108,7 +118,7 @@ public class VnpayController {
             }
 
             // 4) Redirect về frontend - Sửa: Thay /payment/return thành /payment/vnpay-return
-            String redirectUrl = frontendUrl+"/payment/vnpay-return";
+            String redirectUrl = frontendUrl+"/payment/vnpay-return" +(rawQuery != null ? ("?" + rawQuery) : "");
 
             log.info("🔄 Redirecting to: {}", redirectUrl);
             response.sendRedirect(redirectUrl);
@@ -186,6 +196,12 @@ public class VnpayController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new VnpayResponse(null, null, "Đã xảy ra lỗi khi tạo lại thanh toán!"));
         }
+    }
+
+    @PostMapping("/verify")
+    public ResponseEntity<VnpayVerifyResponse> verify(@RequestBody VnpayVerifyRequest request, HttpServletRequest httpReq) {
+        String clientIp = httpReq.getRemoteAddr();
+        return ResponseEntity.ok(vnpayService.verifyReturn(request.getProductId(), request.getRawQuery(), clientIp));
     }
 
 }
