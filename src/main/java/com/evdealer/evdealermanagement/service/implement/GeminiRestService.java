@@ -18,10 +18,13 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -84,7 +87,7 @@ public class GeminiRestService {
 
             String url = String.format(
                     "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s",
-                    this.modelName, apiKey); // ✅ Fixed: use this.modelName instead of parameter modelName
+                    this.modelName, apiKey); // Fixed: use this.modelName instead of parameter modelName
 
             Map<String, Object> requestBody = Map.of(
                     "contents", List.of(
@@ -131,10 +134,15 @@ public class GeminiRestService {
                 "Bạn là chuyên gia thẩm định giá sản phẩm cũ tại Việt Nam. "
                         + "Hãy dựa trên thông tin chi tiết của sản phẩm dưới đây để đưa ra:\n"
                         + "1. Giá gợi ý hợp lý trên thị trường hiện nay (đơn vị: VNĐ)\n"
-                        + "2. Mô tả ngắn gọn tình trạng sản phẩm (1–2 câu).\n\n"
+                        + "2. Mô tả ngắn gọn tình trạng sản phẩm (1–2 câu)\n"
+                        + "3. Danh sách 2-3 nguồn website tham khảo (chỉ URL, mỗi URL một dòng)\n\n"
                         + "Yêu cầu: Chỉ trả lời đúng theo định dạng sau, không thêm nội dung khác:\n"
                         + "Giá gợi ý: [giá hoặc khoảng giá] VNĐ\n"
-                        + "Mô tả ngắn gọn trong 1–2 câu: [mô tả]\n\n"
+                        + "Mô tả ngắn gọn trong 1–2 câu: [mô tả]\n"
+                        + "Nguồn tham khảo:\n"
+                        + "[URL 1]\n"
+                        + "[URL 2]\n"
+                        + "[URL 3]\n\n"
                         + "Thông tin sản phẩm:\n"
                         + "- Tiêu đề: %s\n"
                         + "- Hãng: %s\n"
@@ -235,11 +243,17 @@ public class GeminiRestService {
 
         // Pattern để match "Mô tả ngắn gọn: ..."
         Pattern reasonPattern = Pattern.compile(
-                "Mô tả ngắn gọn.*?:\\s*(.+?)(?=\\n|$)",
+                "Mô tả ngắn gọn.*?:\\s*(.+?)(?=Nguồn tham khảo|$)",
                 Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+
+        // Pattern để match URLs trong phần "Nguồn tham khảo"
+        Pattern sourcesPattern = Pattern.compile(
+                "Nguồn tham khảo:\\s*([\\s\\S]+?)(?=\\n\\n|$)",
+                Pattern.CASE_INSENSITIVE);
 
         Matcher priceMatcher = pricePattern.matcher(rawText);
         Matcher reasonMatcher = reasonPattern.matcher(rawText);
+        Matcher sourcesMatcher = sourcesPattern.matcher(rawText);
 
         String priceStr = priceMatcher.find()
                 ? priceMatcher.group(1).trim()
@@ -249,12 +263,23 @@ public class GeminiRestService {
                 ? reasonMatcher.group(1).trim()
                 : "Chưa có mô tả chi tiết.";
 
+        // Parse sources
+        List<String> sources = new ArrayList<>();
+        if (sourcesMatcher.find()) {
+            String sourcesText = sourcesMatcher.group(1).trim();
+            // Split by newline và lọc URL hợp lệ
+            sources = Arrays.stream(sourcesText.split("\\n"))
+                    .map(String::trim)
+                    .filter(s -> s.startsWith("http://") || s.startsWith("https://"))
+                    .collect(Collectors.toList());
+        }
+
         // Clean up markdown và ký tự không mong muốn
         priceStr = cleanText(priceStr);
         reason = cleanText(reason);
 
-        log.info("✅ Parsed → Price: {}, Reason: {}", priceStr, reason);
-        return new PriceSuggestion(priceStr, reason);
+        log.info("Parsed → Price: {}, Reason: {}, Sources: {}", priceStr, reason, sources);
+        return new PriceSuggestion(priceStr, reason, sources);
     }
 
     /**

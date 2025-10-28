@@ -36,7 +36,7 @@ public class EmailActionController {
         Long sellerId = Long.parseLong(data.get("sellerId"));
 
         // Xử lý accept request
-        purchaseRequestService.acceptRequest(requestId, sellerId);
+        purchaseRequestService.acceptRequest(String.valueOf(requestId));
 
         // Redirect về trang thành công
         response.sendRedirect("https://evdealer.com/seller/requests?status=accepted");
@@ -56,7 +56,7 @@ public class EmailActionController {
         Long sellerId = Long.parseLong(data.get("sellerId"));
 
         // Xử lý reject request
-        purchaseRequestService.rejectRequest(requestId, sellerId);
+        purchaseRequestService.rejectRequest(String.valueOf(requestId), String.valueOf(sellerId));
 
         // Redirect về trang thành công
         response.sendRedirect("https://evdealer.com/seller/requests?status=rejected");

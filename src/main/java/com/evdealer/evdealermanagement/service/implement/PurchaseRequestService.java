@@ -4,8 +4,6 @@ import com.evdealer.evdealermanagement.dto.transactions.*;
 import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.transactions.PurchaseRequest;
-import com.evdealer.evdealermanagement.exceptions.AppException;
-import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
 import com.evdealer.evdealermanagement.repository.PurchaseRequestRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,11 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
+import java.util.UUID;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
+@Slf4j
 public class PurchaseRequestService {
 
     private final PurchaseRequestRepository purchaseRequestRepository;
@@ -36,58 +34,62 @@ public class PurchaseRequestService {
         Account buyer = userContextService.getCurrentUser()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized"));
 
-        if (dto.getOfferedPrice() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Offered price is required");
-        }
-
         Product product = productRepository.findById(dto.getProductId())
-                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
 
         if (product.getStatus() != Product.Status.ACTIVE) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product is not available for purchase");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product not available for purchase");
         }
 
-        if (product.getSeller().getId().equals(buyer.getId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot purchase your own product");
-        }
+        PurchaseRequest request = new PurchaseRequest();
+        request.setId(UUID.randomUUID().toString());
+        request.setProduct(product);
+        request.setBuyer(buyer);
+        request.setSeller(product.getSeller());
+        request.setOfferedPrice(dto.getOfferedPrice() != null ? dto.getOfferedPrice() : product.getPrice());
+        request.setBuyerMessage(dto.getBuyerMessage());
+        request.setStatus(PurchaseRequest.RequestStatus.PENDING);
+        request.setCreatedAt(LocalDateTime.now());
 
-        purchaseRequestRepository.findActivePurchaseRequest(product.getId(), buyer.getId())
-                .ifPresent(pr -> {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                            "You already have an active purchase request for this product");
-                });
+        PurchaseRequest saved = purchaseRequestRepository.save(request);
+        return mapToResponse(saved);
+    }
 
-        PurchaseRequest request = PurchaseRequest.builder()
-                .product(product)
-                .buyer(buyer)
-                .seller(product.getSeller())
-                .offeredPrice(dto.getOfferedPrice())
-                .buyerMessage(dto.getBuyerMessage())
-                .status(PurchaseRequest.RequestStatus.PENDING)
-                .createdAt(LocalDateTime.now())
-                .build();
+    @Transactional(readOnly = true)
+    public Page<PurchaseRequestResponse> getBuyerRequests(Pageable pageable) {
+        Account buyer = userContextService.getCurrentUser()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized"));
 
-        PurchaseRequest savedRequest = purchaseRequestRepository.save(request);
-        log.info("Purchase request created: {}", savedRequest.getId());
+        return purchaseRequestRepository.findByBuyerId(buyer.getId(), pageable)
+                .map(this::mapToResponse);
+    }
 
-        try {
-            // CẬP NHẬT: Gửi thêm Request ID để tạo link phản hồi
-            emailService.sendPurchaseRequestNotification(
-                    product.getSeller().getEmail(),
-                    buyer.getFullName(),
-                    product.getTitle(),
-                    dto.getOfferedPrice(),
-                    savedRequest.getId());
-        } catch (Exception e) {
-            log.error("Failed to send email notification: {}", e.getMessage());
-        }
+    @Transactional(readOnly = true)
+    public Page<PurchaseRequestResponse> getSellerRequests(Pageable pageable) {
+        Account seller = userContextService.getCurrentUser()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized"));
 
-        return mapToResponse(savedRequest);
+        return purchaseRequestRepository.findBySellerId(seller.getId(), pageable)
+                .map(this::mapToResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public long countPendingSellerRequests() {
+        Account seller = userContextService.getCurrentUser()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized"));
+
+        return purchaseRequestRepository.countBySellerIdAndStatus(seller.getId(), PurchaseRequest.RequestStatus.PENDING);
+    }
+
+    @Transactional(readOnly = true)
+    public PurchaseRequestResponse getRequestDetail(String requestId) {
+        PurchaseRequest request = purchaseRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found"));
+        return mapToResponse(request);
     }
 
     @Transactional
     public PurchaseRequestResponse respondToPurchaseRequest(SellerResponseDTO dto) {
-        // Yêu cầu xác thực người dùng (đăng nhập)
         Account seller = userContextService.getCurrentUser()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized"));
 
@@ -111,21 +113,16 @@ public class PurchaseRequestService {
 
     private PurchaseRequestResponse handleAcceptRequest(PurchaseRequest request, String responseMessage) {
         Product product = request.getProduct();
-
-        // Ẩn sản phẩm khi đồng ý bán
         product.setStatus(Product.Status.HIDDEN);
         productRepository.save(product);
 
         request.setSellerResponseMessage(responseMessage);
         request.setRespondedAt(LocalDateTime.now());
-        request.setStatus(PurchaseRequest.RequestStatus.ACCEPTED); // Trạng thái tạm thời
+        request.setStatus(PurchaseRequest.RequestStatus.ACCEPTED);
         request.setContractStatus(PurchaseRequest.ContractStatus.PENDING);
 
-        String contractUrlToBuyer = null;
-
         try {
-            // Tạo hợp đồng trên Eversign
-            ContractInfoDTO contractInfo = eversignService.createContractWithoutSignature(
+            ContractInfoDTO contractInfo = eversignService.createContractWithEmbeddedSigning(
                     request.getBuyer(),
                     request.getSeller(),
                     product,
@@ -135,58 +132,65 @@ public class PurchaseRequestService {
             if (contractInfo != null && contractInfo.getContractId() != null) {
                 request.setContractId(contractInfo.getContractId());
                 request.setContractUrl(contractInfo.getContractUrl());
+                request.setBuyerSignUrl(contractInfo.getBuyerSignUrl());
+                request.setSellerSignUrl(contractInfo.getSellerSignUrl());
                 request.setContractStatus(PurchaseRequest.ContractStatus.SENT);
-                request.setStatus(PurchaseRequest.RequestStatus.CONTRACT_SENT); // Chuyển trạng thái khi thành công
-                contractUrlToBuyer = contractInfo.getContractUrl(); // Lấy URL để gửi email
+                request.setStatus(PurchaseRequest.RequestStatus.CONTRACT_SENT);
+
+                PurchaseRequest savedRequest = purchaseRequestRepository.save(request);
+
+                if (contractInfo.getBuyerSignUrl() != null) {
+                    try {
+                        emailService.sendContractToBuyer(
+                                request.getBuyer().getEmail(),
+                                request.getBuyer().getFullName(),
+                                request.getSeller().getFullName(),
+                                product.getTitle(),
+                                contractInfo.getBuyerSignUrl()
+                        );
+                    } catch (Exception e) {
+                        log.error("Failed to send email to buyer: {}", e.getMessage());
+                    }
+                }
+
+                if (contractInfo.getSellerSignUrl() != null) {
+                    try {
+                        emailService.sendContractToSeller(
+                                request.getSeller().getEmail(),
+                                request.getSeller().getFullName(),
+                                request.getBuyer().getFullName(),
+                                product.getTitle(),
+                                contractInfo.getSellerSignUrl()
+                        );
+                    } catch (Exception e) {
+                        log.error("Failed to send email to seller: {}", e.getMessage());
+                    }
+                }
+
+                return mapToResponse(savedRequest);
+
             } else {
-                // Trường hợp API không ném lỗi mà trả về Body thiếu hash
-                log.error("Eversign API returned OK status but missing document_hash for request {}", request.getId());
-                throw new RuntimeException("Eversign API response missing document hash.");
+                log.error("Eversign API returned OK but missing document_hash");
+                throw new RuntimeException("Eversign API response missing document hash");
             }
 
         } catch (Exception e) {
-            log.error("FATAL ERROR creating contract for request {}: {}", request.getId(), e.getMessage(), e);
-
-            // Xử lý thất bại: Đặt trạng thái về ACCEPTED (chỉ đồng ý, chưa gửi HĐ) và FAILED
-            // Đã đổi CANCELLED thành FAILED (hoặc giữ nguyên ACCEPTED)
-            // LƯU Ý: ContractStatus.CANCELLED có vẻ không phù hợp ở đây. Đổi thành FAILED hoặc giữ PENDING/NULL.
-            // Tôi sẽ để là FAILED
-            request.setContractStatus(PurchaseRequest.ContractStatus.CANCELLED);
+            log.error("Error creating contract for request {}: {}", request.getId(), e.getMessage(), e);
+            request.setContractStatus(PurchaseRequest.ContractStatus.FAILED);
             request.setContractId(null);
             request.setContractUrl(null);
-            request.setStatus(PurchaseRequest.RequestStatus.ACCEPTED); // Giữ trạng thái chấp nhận nhưng không gửi HĐ
-
+            request.setStatus(PurchaseRequest.RequestStatus.CONTRACT_FAILED);
             purchaseRequestRepository.save(request);
 
-            // **QUAN TRỌNG:** Ném ngoại lệ để Controller biết và xử lý lỗi cho người dùng
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Đã chấp nhận yêu cầu nhưng không thể tạo hợp đồng điện tử. Vui lòng kiểm tra lại dịch vụ Eversign. Chi tiết: " + e.getMessage());
+                    "Đã chấp nhận yêu cầu nhưng không thể tạo hợp đồng điện tử. Vui lòng liên hệ support.");
         }
-
-        PurchaseRequest savedRequest = purchaseRequestRepository.save(request);
-
-        // Gửi email xác nhận cho buyer (chỉ khi tạo HĐ thành công)
-        if (contractUrlToBuyer != null) {
-            try {
-                emailService.sendPurchaseAcceptedNotification(
-                        request.getBuyer().getEmail(),
-                        request.getSeller().getFullName(),
-                        product.getTitle(),
-                        contractUrlToBuyer
-                );
-            } catch (Exception e) {
-                log.error("Failed to send acceptance email: {}", e.getMessage());
-            }
-        }
-
-        return mapToResponse(savedRequest);
     }
 
     private PurchaseRequestResponse handleRejectRequest(PurchaseRequest request, String rejectReason) {
         request.setStatus(PurchaseRequest.RequestStatus.REJECTED);
         request.setRejectReason(rejectReason);
         request.setRespondedAt(LocalDateTime.now());
-
         PurchaseRequest savedRequest = purchaseRequestRepository.save(request);
 
         try {
@@ -203,47 +207,8 @@ public class PurchaseRequestService {
         return mapToResponse(savedRequest);
     }
 
-    // ... (Các phương thức truy vấn giữ nguyên)
-
-    @Transactional(readOnly = true)
-    public Page<PurchaseRequestResponse> getBuyerRequests(Pageable pageable) {
-        Account buyer = userContextService.getCurrentUser()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized"));
-
-        Page<PurchaseRequest> requests = purchaseRequestRepository.findByBuyerId(buyer.getId(), pageable);
-        return requests.map(this::mapToResponse);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<PurchaseRequestResponse> getSellerRequests(Pageable pageable) {
-        Account seller = userContextService.getCurrentUser()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized"));
-
-        Page<PurchaseRequest> requests = purchaseRequestRepository.findBySellerId(seller.getId(), pageable);
-        return requests.map(this::mapToResponse);
-    }
-
-    @Transactional(readOnly = true)
-    public PurchaseRequestResponse getRequestDetail(String id) {
-        PurchaseRequest request = purchaseRequestRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Purchase request not found"));
-        return mapToResponse(request);
-    }
-
-    @Transactional(readOnly = true)
-    public long countPendingSellerRequests() {
-        Account seller = userContextService.getCurrentUser()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized"));
-        return purchaseRequestRepository.countBySellerIdAndStatus(
-                seller.getId(), PurchaseRequest.RequestStatus.PENDING);
-    }
-
     private PurchaseRequestResponse mapToResponse(PurchaseRequest request) {
         Product product = request.getProduct();
-        String thumbnail = (product.getImages() != null && !product.getImages().isEmpty())
-                ? product.getImages().get(0).getImageUrl()
-                : null;
-
         return PurchaseRequestResponse.builder()
                 .id(request.getId())
                 .productId(product.getId())
@@ -252,28 +217,64 @@ public class PurchaseRequestService {
                 .buyerId(request.getBuyer().getId())
                 .buyerName(request.getBuyer().getFullName())
                 .buyerEmail(request.getBuyer().getEmail())
+                .buyerPhone(request.getBuyer().getPhone())
                 .sellerId(request.getSeller().getId())
                 .sellerName(request.getSeller().getFullName())
                 .sellerEmail(request.getSeller().getEmail())
+                .sellerPhone(request.getSeller().getPhone())
                 .offeredPrice(request.getOfferedPrice())
                 .buyerMessage(request.getBuyerMessage())
                 .sellerResponseMessage(request.getSellerResponseMessage())
                 .status(request.getStatus().name())
+                .contractStatus(request.getContractStatus() != null ? request.getContractStatus().name() : null)
                 .contractId(request.getContractId())
                 .contractUrl(request.getContractUrl())
                 .rejectReason(request.getRejectReason())
                 .createdAt(request.getCreatedAt())
                 .respondedAt(request.getRespondedAt())
+                .buyerSignedAt(request.getBuyerSignedAt())
+                .sellerSignedAt(request.getSellerSignedAt())
                 .build();
     }
 
-    public void acceptRequest(Long requestId, Long sellerId) {
-//        Optional<PurchaseRequest> request = purchaseRequestRepository.findById(String.valueOf(requestId))
-//                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ""));
+    @Transactional
+    public PurchaseRequestResponse acceptRequest(String requestId) {
+        Account seller = userContextService.getCurrentUser()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized"));
 
+        PurchaseRequest request = purchaseRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found"));
 
+        if (!request.getSeller().getId().equals(seller.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not the seller of this product");
+        }
+
+        if (request.getStatus() != PurchaseRequest.RequestStatus.PENDING) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request has already been processed");
+        }
+
+        // Gọi hàm handleAcceptRequest
+        return handleAcceptRequest(request, "Seller accepted the request");
     }
 
-    public void rejectRequest(Long requestId, Long sellerId) {
+    @Transactional
+    public PurchaseRequestResponse rejectRequest(String requestId, String reason) {
+        Account seller = userContextService.getCurrentUser()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized"));
+
+        PurchaseRequest request = purchaseRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found"));
+
+        if (!request.getSeller().getId().equals(seller.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not the seller of this product");
+        }
+
+        if (request.getStatus() != PurchaseRequest.RequestStatus.PENDING) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request has already been processed");
+        }
+
+        // Gọi hàm handleRejectRequest
+        return handleRejectRequest(request, reason != null ? reason : "Seller rejected the request");
     }
+
 }
