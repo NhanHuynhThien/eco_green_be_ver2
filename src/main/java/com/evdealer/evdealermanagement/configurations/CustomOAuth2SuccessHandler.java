@@ -16,6 +16,8 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @Component
 @RequiredArgsConstructor
@@ -33,7 +35,7 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
         //xác định provider hiện tại
         String registrationId = ((OAuth2AuthenticationToken) authentication).getAuthorizedClientRegistrationId();
         // Process login
-        AccountLoginResponse loginResponse;// = facebookLoginService.processFacebookLogin(oAuth2User);
+        AccountLoginResponse loginResponse;
 
         if("google".equalsIgnoreCase(registrationId)){
             try {
@@ -60,6 +62,5 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
                 "{ \"token\": \"" + loginResponse.getToken() + "\", " +
                         "\"email\": \"" + loginResponse.getEmail() + "\" }"
         );
-        response.getWriter().flush();
     }
 }
