@@ -58,7 +58,7 @@ public class WebSecurityConfigs {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/oauth2/**", "/vehicle/**", "/battery/**",
+                        .requestMatchers("/auth/**", "/oauth2/**","/login/oauth2/**", "/vehicle/**", "/battery/**",
                                 "/product/**",
                                 "/gemini/**")
                         .permitAll()
@@ -82,7 +82,14 @@ public class WebSecurityConfigs {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.getWriter().write("{\"error\": \"Unauthorized\"}");
                         }))
-                .oauth2Login(oauth -> oauth.successHandler(successHandler))
+                .oauth2Login(oauth -> oauth
+                        .successHandler(successHandler)
+                        .failureHandler((req, res, ex) -> {
+                            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            res.setContentType("application/json");
+                            res.getWriter().write("{\"error\":\"" + ex.getMessage() + "\"}");
+                        })
+                )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
