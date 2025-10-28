@@ -24,6 +24,9 @@ public class EmailService {
 
     private static final String APP_BASE_URL = "https://evdealer.com";
 
+    /**
+     * 📨 Gửi email thông báo cho Seller khi có Buyer gửi yêu cầu mua
+     */
     @Async
     public void sendPurchaseRequestNotification(
             String sellerEmail,
@@ -46,19 +49,74 @@ public class EmailService {
 
             String htmlContent = templateEngine.process("email/purchase-request-notification", context);
 
-            sendEmail(
-                    sellerEmail,
+            sendEmail(sellerEmail,
                     "🔔 Có người muốn mua sản phẩm của bạn!",
                     htmlContent);
 
-            log.info("Purchase request notification sent to: {}", sellerEmail);
+            log.info("✅ Purchase request notification sent to: {}", sellerEmail);
         } catch (Exception e) {
-            log.error("Failed to send purchase request notification: {}", e.getMessage(), e);
+            log.error("❌ Failed to send purchase request notification: {}", e.getMessage(), e);
         }
     }
 
     /**
-     * GỬI EMAIL CHO BUYER với link ký hợp đồng
+     * ✅ Khi Seller chấp nhận yêu cầu -> gửi cho Buyer thông báo & link ký hợp đồng
+     */
+    @Async
+    public void sendPurchaseAcceptedNotification(
+            String buyerEmail,
+            String sellerName,
+            String productTitle,
+            String contractUrl) {
+
+        try {
+            Context context = new Context();
+            context.setVariable("sellerName", sellerName);
+            context.setVariable("productTitle", productTitle);
+            context.setVariable("contractUrl", contractUrl);
+
+            String htmlContent = templateEngine.process("email/purchase-accepted", context);
+
+            sendEmail(buyerEmail,
+                    "✅ Yêu cầu mua hàng được chấp nhận",
+                    htmlContent);
+
+            log.info("✅ Purchase accepted notification sent to buyer: {}", buyerEmail);
+        } catch (Exception e) {
+            log.error("❌ Failed to send purchase accepted notification: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * ❌ Khi Seller từ chối yêu cầu -> gửi thông báo cho Buyer
+     */
+    @Async
+    public void sendPurchaseRejectedNotification(
+            String buyerEmail,
+            String sellerName,
+            String productTitle,
+            String rejectReason) {
+
+        try {
+            Context context = new Context();
+            context.setVariable("sellerName", sellerName);
+            context.setVariable("productTitle", productTitle);
+            context.setVariable("rejectReason", rejectReason);
+
+            String htmlContent = templateEngine.process("email/purchase-rejected", context);
+
+            sendEmail(buyerEmail,
+                    "❌ Yêu cầu mua hàng bị từ chối",
+                    htmlContent);
+
+            log.info("✅ Purchase rejected notification sent to: {}", buyerEmail);
+        } catch (Exception e) {
+            log.error("❌ Failed to send purchase rejected notification: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 📄 Gửi hợp đồng đến Buyer để ký
      */
     @Async
     public void sendContractToBuyer(
@@ -75,21 +133,21 @@ public class EmailService {
             context.setVariable("productTitle", productTitle);
             context.setVariable("signUrl", buyerSignUrl);
 
-            String htmlContent = templateEngine.process("email/contract-signing-buyer", context);
+            String htmlContent = templateEngine.process("email/contract-signing", context);
 
-            sendEmail(
-                    buyerEmail,
+            sendEmail(buyerEmail,
                     "📄 Hợp đồng mua bán đã sẵn sàng - Vui lòng ký điện tử",
                     htmlContent);
 
-            log.info("Contract signing email sent to buyer: {}", buyerEmail);
+            log.info("✅ Contract signing email sent to buyer: {}", buyerEmail);
         } catch (Exception e) {
-            log.error("Failed to send contract to buyer: {}", e.getMessage(), e);
+            log.error("❌ Failed to send contract to buyer: {}", e.getMessage(), e);
         }
     }
 
     /**
-     * GỬI EMAIL CHO SELLER với link ký hợp đồng
+     * 📄 Gửi hợp đồng đến Seller để ký
+     * (Dùng chung template contract-signing.html)
      */
     @Async
     public void sendContractToSeller(
@@ -106,71 +164,21 @@ public class EmailService {
             context.setVariable("productTitle", productTitle);
             context.setVariable("signUrl", sellerSignUrl);
 
-            String htmlContent = templateEngine.process("email/contract-signing-seller", context);
+            String htmlContent = templateEngine.process("email/contract-signing", context);
 
-            sendEmail(
-                    sellerEmail,
+            sendEmail(sellerEmail,
                     "📄 Hợp đồng bán hàng đã sẵn sàng - Vui lòng ký điện tử",
                     htmlContent);
 
-            log.info("Contract signing email sent to seller: {}", sellerEmail);
+            log.info("✅ Contract signing email sent to seller: {}", sellerEmail);
         } catch (Exception e) {
-            log.error("Failed to send contract to seller: {}", e.getMessage(), e);
+            log.error("❌ Failed to send contract to seller: {}", e.getMessage(), e);
         }
     }
 
-    @Async
-    public void sendPurchaseAcceptedNotification(
-            String buyerEmail,
-            String sellerName,
-            String productTitle,
-            String contractUrl) {
-
-        try {
-            Context context = new Context();
-            context.setVariable("sellerName", sellerName);
-            context.setVariable("productTitle", productTitle);
-            context.setVariable("contractUrl", contractUrl);
-
-            String htmlContent = templateEngine.process("email/purchase-accepted", context);
-
-            sendEmail(
-                    buyerEmail,
-                    "✅ Yêu cầu mua hàng được chấp nhận",
-                    htmlContent);
-
-            log.info("Purchase accepted notification sent to: {}", buyerEmail);
-        } catch (Exception e) {
-            log.error("Failed to send purchase accepted notification: {}", e.getMessage(), e);
-        }
-    }
-
-    @Async
-    public void sendPurchaseRejectedNotification(
-            String buyerEmail,
-            String sellerName,
-            String productTitle,
-            String rejectReason) {
-
-        try {
-            Context context = new Context();
-            context.setVariable("sellerName", sellerName);
-            context.setVariable("productTitle", productTitle);
-            context.setVariable("rejectReason", rejectReason);
-
-            String htmlContent = templateEngine.process("email/purchase-rejected", context);
-
-            sendEmail(
-                    buyerEmail,
-                    "❌ Yêu cầu mua hàng bị từ chối",
-                    htmlContent);
-
-            log.info("Purchase rejected notification sent to: {}", buyerEmail);
-        } catch (Exception e) {
-            log.error("Failed to send purchase rejected notification: {}", e.getMessage(), e);
-        }
-    }
-
+    /**
+     * 🎉 Gửi thông báo hoàn tất hợp đồng đến cả Buyer & Seller
+     */
     @Async
     public void sendContractCompletedNotification(
             String buyerEmail,
@@ -186,14 +194,19 @@ public class EmailService {
             sendEmail(buyerEmail, "🎉 Hợp đồng đã hoàn tất!", htmlContent);
             sendEmail(sellerEmail, "🎉 Hợp đồng đã hoàn tất!", htmlContent);
 
-            log.info("Contract completed notifications sent");
+            log.info("✅ Contract completed notifications sent");
         } catch (Exception e) {
-            log.error("Failed to send contract completed notifications: {}", e.getMessage(), e);
+            log.error("❌ Failed to send contract completed notifications: {}", e.getMessage(), e);
         }
     }
 
+    /**
+     * ✉️ Hàm gửi email thực tế
+     */
     private void sendEmail(String to, String subject, String htmlContent) {
         try {
+            log.info("Attempting to send email to: {}", to);
+
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
@@ -203,13 +216,16 @@ public class EmailService {
             helper.setFrom("noreply@evdealer.com");
 
             mailSender.send(message);
-            log.info("Email sent successfully to: {}", to);
+            log.info("✅ Email sent successfully to: {}", to);
         } catch (Exception e) {
-            log.error("Failed to send email to {}: {}", to, e.getMessage(), e);
+            log.error("❌ Failed to send email to {}: {}", to, e.getMessage(), e);
             throw new RuntimeException("Failed to send email", e);
         }
     }
 
+    /**
+     * 💰 Format số tiền sang định dạng VND
+     */
     private String formatCurrency(Object amount) {
         if (amount == null) return "0 VND";
 
@@ -230,7 +246,6 @@ public class EmailService {
 
         NumberFormat currencyFormat = NumberFormat.getInstance(new Locale("vi", "VN"));
         currencyFormat.setMaximumFractionDigits(0);
-
         return currencyFormat.format(numericValue) + " VND";
     }
 }

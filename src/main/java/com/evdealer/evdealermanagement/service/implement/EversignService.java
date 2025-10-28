@@ -3,6 +3,8 @@ package com.evdealer.evdealermanagement.service.implement;
 import com.evdealer.evdealermanagement.dto.transactions.ContractInfoDTO;
 import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.entity.product.Product;
+import com.evdealer.evdealermanagement.exceptions.AppException;
+import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -16,6 +18,8 @@ import java.util.*;
 @Slf4j
 public class EversignService {
 
+    private final RestTemplate restTemplate = new RestTemplate();
+
     @Value("${EVERSIGN_API_KEY}")
     private String apiKey;
 
@@ -25,54 +29,59 @@ public class EversignService {
     @Value("${EVERSIGN_TEMPLATE_ID}")
     private String templateId;
 
+    @Value("${EVERSIGN_SANDBOX:true}") // ✅ mặc định sandbox
+    private boolean sandboxMode;
+
     @Value("${APP_BASE_URL:http://localhost:3000}")
     private String appBaseUrl;
 
-    private final RestTemplate restTemplate = new RestTemplate();
     private static final String EVERSIGN_API_BASE = "https://api.eversign.com/api";
 
-    public ContractInfoDTO createContractWithEmbeddedSigning(
+    /**
+     * Tạo hợp đồng để hai bên tự điền và ký (sandbox mode)
+     */
+    public ContractInfoDTO createBlankContractForManualInput(
             Account buyer,
             Account seller,
-            Product product,
-            BigDecimal offeredPrice) {
-
+            Product product
+    ) {
         try {
-            log.info("Creating Eversign contract from template: {}", templateId);
+            log.info("🚀 [Eversign] Tạo hợp đồng trống (sandboxMode={})", sandboxMode);
 
-            Map<String, Object> requestBody = buildContractRequest(buyer, seller, product, offeredPrice);
+            Map<String, Object> requestBody = buildContractRequest(buyer, seller, product);
 
             String url = String.format("%s/document?business_id=%s&access_key=%s",
                     EVERSIGN_API_BASE, businessId, apiKey);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.POST, entity, Map.class);
 
-            ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
+            log.info("📬 [Eversign] Response status: {}", response.getStatusCode());
+            log.debug("📥 [Eversign] Full response: {}", response.getBody());
 
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                Map<String, Object> responseBody = response.getBody();
+            if (response.getStatusCode() != HttpStatus.OK || response.getBody() == null) {
+                throw new AppException(ErrorCode.CONTRACT_BUILD_FAILED);
+            }
 
-                String documentHash = (String) responseBody.get("document_hash");
-                if (documentHash == null || documentHash.isEmpty()) {
-                    throw new RuntimeException("Eversign API không trả về document_hash");
-                }
+            Map<String, Object> body = response.getBody();
+            String documentHash = (String) body.get("document_hash");
+            if (documentHash == null) {
+                throw new AppException(ErrorCode.CONTRACT_BUILD_FAILED);
+            }
 
-                List<Map<String, Object>> signers = new ArrayList<>();
-                Object signersObj = responseBody.get("signers");
-                if (signersObj instanceof List) {
-                    signers = (List<Map<String, Object>>) signersObj;
-                }
+            // Tạo link ký
+            String buyerSignUrl = null;
+            String sellerSignUrl = null;
 
-                String buyerSignUrl = null;
-                String sellerSignUrl = null;
-
-                if (signers != null) {
-                    for (Map<String, Object> signer : signers) {
+            Object signersObj = body.get("signers");
+            if (signersObj instanceof List<?> signersList) {
+                for (Object obj : signersList) {
+                    if (obj instanceof Map<?, ?> signer) {
                         String email = (String) signer.get("email");
                         String embeddedUrl = (String) signer.get("embedded_signing_url");
-
                         if (email != null && email.equalsIgnoreCase(buyer.getEmail())) {
                             buyerSignUrl = embeddedUrl;
                         } else if (email != null && email.equalsIgnoreCase(seller.getEmail())) {
@@ -80,90 +89,59 @@ public class EversignService {
                         }
                     }
                 }
-
-                return ContractInfoDTO.builder()
-                        .contractId(documentHash)
-                        .contractUrl(buildContractViewUrl(documentHash))
-                        .buyerSignUrl(buyerSignUrl)
-                        .sellerSignUrl(sellerSignUrl)
-                        .status("PENDING")
-                        .build();
-
-            } else {
-                throw new RuntimeException("Eversign API error: " + response.getStatusCode());
             }
 
+            return ContractInfoDTO.builder()
+                    .contractId(documentHash)
+                    .contractUrl(buildContractViewUrl(documentHash))
+                    .buyerSignUrl(buyerSignUrl)
+                    .sellerSignUrl(sellerSignUrl)
+                    .status("PENDING")
+                    .build();
+
         } catch (Exception e) {
-            log.error("Error creating Eversign contract: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to create contract: " + e.getMessage(), e);
+            log.error("🔥 [Eversign] Lỗi khi tạo hợp đồng trống: {}", e.getMessage(), e);
+            throw new RuntimeException("Lỗi khi tạo hợp đồng với Eversign: " + e.getMessage());
         }
     }
 
     private Map<String, Object> buildContractRequest(
             Account buyer,
             Account seller,
-            Product product,
-            BigDecimal offeredPrice) {
+            Product product
+    ) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("sandbox", sandboxMode ? 1 : 0); // ✅ bật sandbox
+        body.put("business_id", businessId);
+        body.put("template_id", templateId);
+        body.put("title", "Hợp đồng mua bán xe điện (sandbox)");
+        body.put("message", "Vui lòng điền thông tin và ký hợp đồng (sandbox).");
+//        body.put("embedded_signing_enabled", 1);
+//        body.put("use_signer_order", 1);
+//        body.put("redirect", appBaseUrl + "/contract/completed");
+//        body.put("redirect_decline", appBaseUrl + "/contract/declined");
 
-        Map<String, Object> request = new HashMap<>();
-        request.put("sandbox", 1);
-        request.put("template_id", templateId);
-        request.put("title", "Hợp đồng mua bán - " + product.getTitle());
-        request.put("embedded_signing_enabled", 1);
-        request.put("client", appBaseUrl);
-        request.put("redirect", appBaseUrl + "/contract/completed");
-        request.put("redirect_decline", appBaseUrl + "/contract/declined");
-
+        // 👥 Người ký
         List<Map<String, Object>> signers = new ArrayList<>();
+        signers.add(Map.of(
+                "role", "seller",
+                "name", seller.getFullName(),
+                "email", seller.getEmail(),
+                "signing_order", 1
+        ));
+        signers.add(Map.of(
+                "role", "buyer",
+                "name", buyer.getFullName(),
+                "email", buyer.getEmail(),
+                "signing_order", 2
+        ));
+        body.put("signers", signers);
 
-        Map<String, Object> sellerSigner = new HashMap<>();
-        sellerSigner.put("role", "seller");
-        sellerSigner.put("name", seller.getFullName());
-        sellerSigner.put("email", seller.getEmail());
-        sellerSigner.put("order", 1);
-        sellerSigner.put("deliver_email", 0);
-        signers.add(sellerSigner);
-
-        Map<String, Object> buyerSigner = new HashMap<>();
-        buyerSigner.put("role", "buyer");
-        buyerSigner.put("name", buyer.getFullName());
-        buyerSigner.put("email", buyer.getEmail());
-        buyerSigner.put("order", 2);
-        buyerSigner.put("deliver_email", 0);
-        signers.add(buyerSigner);
-
-        request.put("signers", signers);
-
-        List<Map<String, String>> fields = new ArrayList<>();
-        fields.add(createField("product_name", product.getTitle()));
-        fields.add(createField("product_price", formatCurrency(offeredPrice)));
-        fields.add(createField("product_total", formatCurrency(offeredPrice)));
-        fields.add(createField("seller_name", seller.getFullName()));
-        fields.add(createField("seller_email", seller.getEmail()));
-        fields.add(createField("seller_phone", seller.getPhone() != null ? seller.getPhone() : "N/A"));
-        fields.add(createField("buyer_name", buyer.getFullName()));
-        fields.add(createField("buyer_email", buyer.getEmail()));
-        fields.add(createField("buyer_phone", buyer.getPhone() != null ? buyer.getPhone() : "N/A"));
-        request.put("fields", fields);
-
-        return request;
-    }
-
-    private Map<String, String> createField(String identifier, String value) {
-        Map<String, String> field = new HashMap<>();
-        field.put("identifier", identifier);
-        field.put("value", value);
-        return field;
+        log.debug("🧰 [Eversign] Request body (sandbox={}): {}", sandboxMode, body);
+        return body;
     }
 
     private String buildContractViewUrl(String documentHash) {
         return String.format("https://eversign.com/documents/%s", documentHash);
-    }
-
-    private String formatCurrency(BigDecimal amount) {
-        if (amount == null) {
-            return "0 VND";
-        }
-        return String.format("%,.0f VND", amount);
     }
 }

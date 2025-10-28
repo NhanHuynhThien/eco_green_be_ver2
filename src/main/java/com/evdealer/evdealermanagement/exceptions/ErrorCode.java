@@ -42,6 +42,7 @@ public enum ErrorCode {
     DUPLICATE_TAX_CODE(1107, "Tax code is already registered", HttpStatus.BAD_REQUEST),
     PHONE_ALREADY_EXISTS(1108, "Phone number is already registered", HttpStatus.BAD_REQUEST),
     INVALID_PHONE_FORMAT(1109, "Invalid phone number format", HttpStatus.BAD_REQUEST),
+    CONTRACT_BUILD_FAILED(1110, "Failed to build or create contract", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // --- Validation Errors (Codes 1200 - 1299) ---
     INVALID_INPUT(1201, "Invalid input data", HttpStatus.BAD_REQUEST),

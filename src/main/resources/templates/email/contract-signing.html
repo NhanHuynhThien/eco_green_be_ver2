@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Yêu cầu ký hợp đồng mua bán</title>
+    <style>
+        body {
+            font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            background: #ffffff;
+            margin: 40px auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+        .header {
+            background-color: #111827;
+            color: #ffffff;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 20px;
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+        .content {
+            padding: 30px;
+            line-height: 1.6;
+            color: #333;
+        }
+        .content p {
+            margin-bottom: 16px;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #111827;
+        }
+        .button {
+            display: inline-block;
+            background-color: #2563eb;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+        .button:hover {
+            background-color: #1d4ed8;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 13px;
+            color: #666;
+            background-color: #f9fafb;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Yêu cầu ký hợp đồng mua bán</h1>
+    </div>
+
+    <div class="content">
+        <p>Xin chào <span class="highlight" th:text="${buyerName}">Nguyễn Văn A</span>,</p>
+
+        <p>
+            Người bán <span class="highlight" th:text="${sellerName}">Trần Văn B</span>
+            đã chấp nhận yêu cầu mua của bạn đối với sản phẩm:
+        </p>
+
+        <p>
+            <span class="highlight" th:text="${productTitle}">Xe điện VinFast VF5</span><br>
+            Giá giao dịch: <span class="highlight" th:text="${transactionPrice}">550,000,000₫</span>
+        </p>
+
+        <p>Vui lòng ký hợp đồng điện tử để hoàn tất giao dịch:</p>
+
+        <div style="text-align:center;">
+            <a th:href="${contractUrl}" class="button">Xem & Ký Hợp Đồng</a>
+        </div>
+
+        <p style="margin-top: 24px;">
+            Nếu bạn không thực hiện giao dịch này, vui lòng bỏ qua email này hoặc liên hệ đội ngũ hỗ trợ của chúng tôi.
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>© 2025 EV Dealer Management. Mọi quyền được bảo lưu.</p>
+        <p>Đây là email tự động – vui lòng không trả lời lại.</p>
+    </div>
+</div>
+</body>
+</html>
