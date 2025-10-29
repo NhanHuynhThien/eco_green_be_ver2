@@ -75,7 +75,10 @@ public class MemberProductController {
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @RequestPart(value = "imagesMeta", required = false) String imagesMetaJson,
             @AuthenticationPrincipal CustomAccountDetails user) throws JsonProcessingException {
-        BatteryPostRequest request = new ObjectMapper().readValue(dataJson, BatteryPostRequest.class);
+        BatteryPostRequest request = null;
+        if (dataJson != null && !dataJson.isBlank()) {
+            request = new ObjectMapper().readValue(dataJson, BatteryPostRequest.class);
+        }
         return batteryService.updateBatteryPost(productId, request, images, imagesMetaJson);
     }
 
@@ -87,7 +90,10 @@ public class MemberProductController {
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @RequestPart(value = "imagesMeta", required = false) String imagesMetaJson,
             @AuthenticationPrincipal CustomAccountDetails user) throws JsonProcessingException {
-        VehiclePostRequest request = new ObjectMapper().readValue(dataJson, VehiclePostRequest.class);
+        VehiclePostRequest request = null;
+        if (dataJson != null && !dataJson.isBlank()) {
+            request = new ObjectMapper().readValue(dataJson, VehiclePostRequest.class);
+        }
         return vehicleService.updateVehiclePost(productId, request, images, imagesMetaJson);
     }
 

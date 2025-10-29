@@ -242,23 +242,32 @@ public class BatteryService {
             throw new AppException(ErrorCode.PRODUCT_NOT_DRAFT);
         }
 
-        product.setTitle(request.getTitle());
-        product.setDescription(request.getDescription());
-        product.setPrice(request.getPrice());
-        product.setCity(request.getCity());
-        product.setDistrict(request.getDistrict());
-        product.setWard(request.getWard());
-        product.setAddressDetail(request.getAddressDetail());
-        product.setUpdatedAt(LocalDateTime.now());
-
         BatteryDetails details = batteryDetailRepository.findByProductId(product.getId());
-        details.setProduct(product);
-        details.setBrand(batteryBrandsRepository.findById(request.getBrandId())
-                .orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND)));
-        details.setBatteryType(batteryTypesRepository.findById(request.getBatteryTypeId())
-                .orElseThrow(() -> new AppException(ErrorCode.TYPE_NOT_FOUND)));
-        details.setCapacityKwh(request.getCapacityKwh());
-        details.setVoltageV(request.getVoltageV());
+        if (details == null) {
+            throw new AppException(ErrorCode.BATTERY_NOT_FOUND);
+        }
+
+        if (request != null) {
+            product.setTitle(request.getTitle());
+            product.setDescription(request.getDescription());
+            product.setPrice(request.getPrice());
+            product.setCity(request.getCity());
+            product.setDistrict(request.getDistrict());
+            product.setWard(request.getWard());
+            product.setAddressDetail(request.getAddressDetail());
+            product.setUpdatedAt(LocalDateTime.now());
+
+            details.setProduct(product);
+            details.setBrand(batteryBrandsRepository.findById(request.getBrandId())
+                    .orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND)));
+            details.setBatteryType(batteryTypesRepository.findById(request.getBatteryTypeId())
+                    .orElseThrow(() -> new AppException(ErrorCode.TYPE_NOT_FOUND)));
+            details.setCapacityKwh(request.getCapacityKwh());
+            details.setVoltageV(request.getVoltageV());
+            details.setHealthPercent(request.getHealthPercent());
+
+            batteryDetailRepository.save(details);
+        }
 
         if (images != null) {
             images = images.stream()
@@ -297,15 +306,15 @@ public class BatteryService {
                 .brandName(details.getBrand().getName())
                 .batteryTypeName(details.getBatteryType().getName())
                 .capacityKwh(details.getCapacityKwh())
-                .title(product.getTitle())
-                .description(product.getDescription())
-                .price(product.getPrice())
-                .city(product.getCity())
-                .district(product.getDistrict())
-                .ward(product.getWard())
-                .addressDetail(product.getAddressDetail())
+                .title(request != null ? request.getTitle() : product.getTitle())
+                .description(request != null ? request.getDescription() : product.getDescription())
+                .price(request != null ? request.getPrice() : product.getPrice())
+                .city(request != null ? request.getCity() : product.getCity())
+                .district(request != null ? request.getDistrict() : product.getDistrict())
+                .ward(request != null ? request.getWard() : product.getWard())
+                .addressDetail(request != null ? request.getAddressDetail() : product.getAddressDetail())
                 .createdAt(product.getCreatedAt())
-                .brandId(request.getBrandId())
+                .brandId(request != null ? request.getBrandId() : details.getBrand().getId())
                 .brandName(details.getBrand() != null ? details.getBrand().getName() : null)
                 .batteryTypeName(details.getBatteryType() != null ? details.getBatteryType().getName() : null)
                 .capacityKwh(details.getCapacityKwh())
