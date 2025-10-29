@@ -4,6 +4,7 @@ import com.evdealer.evdealermanagement.dto.price.PriceSuggestion;
 import com.evdealer.evdealermanagement.dto.vehicle.catalog.VehicleCatalogDTO;
 import com.evdealer.evdealermanagement.entity.vehicle.Model;
 import com.evdealer.evdealermanagement.repository.VehicleModelRepository;
+import com.evdealer.evdealermanagement.utils.PriceSerializer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,13 +16,12 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -43,8 +43,8 @@ public class GeminiRestService {
     @PostConstruct
     public void init() {
         this.apiKey = dotenv.get("GEMINI_API_KEY");
-        this.modelName = dotenv.get("GEMINI_MODEL", "gemini-1.5-flash-latest");
-        this.maxTokens = Integer.parseInt(dotenv.get("GEMINI_MAX_TOKENS", "8192"));
+        this.modelName = dotenv.get("GEMINI_MODEL", "gemini-2.0-flash-exp");
+        this.maxTokens = Integer.parseInt(dotenv.get("GEMINI_MAX_TOKENS", "4096"));
         this.temperature = Float.parseFloat(dotenv.get("GEMINI_TEMPERATURE", "0.5"));
 
         log.info("=== GEMINI REST SERVICE INITIALIZED ===");
@@ -58,26 +58,34 @@ public class GeminiRestService {
         }
     }
 
-    // ========== Suggest Price, Title & Description ==========
+    // ========== Suggest Price ==========
 
+    /**
+     * Gợi ý giá cho sản phẩm dựa trên tiêu đề
+     *
+     * @param title           Tiêu đề sản phẩm
+     * @param vehicleModel    Tên model xe
+     * @param versionName     Phiên bản
+     * @param batteryHealth   Tình trạng pin
+     * @param mileageKm       Số km đã đi
+     * @param brand           Thương hiệu
+     * @param manufactureYear Năm sản xuất
+     * @return PriceSuggestion chứa giá và mô tả
+     */
     public PriceSuggestion suggestPrice(String title, String vehicleModel, String versionName,
-                                        String batteryHealth, String mileageKm,
-                                        String brand, String manufactureYear) {
+            String batteryHealth, String mileageKm,
+            String brand, String manufactureYear) {
 
-        if (vehicleModel == null || vehicleModel.trim().isEmpty()) {
-            log.warn("⚠️ `vehicleModel` is empty in the request. This will reduce suggestion accuracy.");
-        }
-
-        String prompt = buildPricePrompt(title, vehicleModel, versionName, batteryHealth, mileageKm, brand, manufactureYear);
+        String prompt = buildPricePrompt(title, vehicleModel, versionName, batteryHealth, mileageKm, brand,
+                manufactureYear);
 
         try {
-            log.info("=== GEMINI REST API REQUEST (Price, Title, Desc) ===");
-            log.info("Prompting for title: {}", title);
+            log.info("=== GEMINI REST API REQUEST ===");
+            log.info("Title: {}", title);
 
-            // <<< FIX #1: Corrected typo in URL >>>
             String url = String.format(
                     "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s",
-                    this.modelName, apiKey);
+                    this.modelName, apiKey); // ✅ Fixed: use this.modelName instead of parameter modelName
 
             Map<String, Object> requestBody = Map.of(
                     "contents", List.of(
@@ -93,7 +101,10 @@ public class GeminiRestService {
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
             ResponseEntity<String> response = restTemplate.exchange(
-                    url, HttpMethod.POST, request, String.class);
+                    url,
+                    HttpMethod.POST,
+                    request,
+                    String.class);
 
             log.info("✅ Response status: {}", response.getStatusCode());
 
@@ -111,162 +122,221 @@ public class GeminiRestService {
     }
 
     /**
-     * <<< PROMPT REFINED to enforce higher depreciation >>>
-     * Builds a highly-controlled prompt focused on "on-road costs" to ensure realistic used car pricing.
+     * Xây dựng prompt cho Gemini
      */
     private String buildPricePrompt(String title, String vehicleModel, String versionName,
-                                    String batteryHealth, String mileageKm,
-                                    String brand, String manufactureYear) {
+            String batteryHealth, String mileageKm,
+            String brand, String manufactureYear) {
+
         return String.format(
-                """
-                Bạn là chuyên gia thẩm định giá xe điện CŨ tại Việt Nam với 15+ năm kinh nghiệm, cực kỳ am hiểu về thị trường và tâm lý người mua.
-                
-                **QUY TẮC BẤT DI BẤT DỊCH (TUÂN THỦ TUYỆT ĐỐI):**
-                1.  **QUY TẮC "CHI PHÍ LĂN BÁNH"**: Ngay khi một chiếc xe mới được đăng ký ra biển số, nó đã mất ngay lập tức 10-15%% giá trị do các chi phí không thể thu hồi (thuế trước bạ, phí biển số, đăng kiểm...). Đây là mức khấu hao TỐI THIỂU cho bất kỳ chiếc xe nào đã qua sử dụng, dù chỉ mới đi 1km.
-                2.  **QUY TẮC "KHẤU HAO THỊ TRƯỜNG"**: Dựa trên Quy tắc 1, cộng thêm khấu hao do năm sử dụng, ODO, và tình trạng pin, giá bán cuối cùng của xe cũ PHẢI PHẢN ÁNH MỨC KHẤU HAO TỔNG CỘNG **ÍT NHẤT TỪ 15-25%%** so với giá xe mới. Người mua xe cũ tìm kiếm một món hời, không phải một chiếc xe mới rẻ hơn một chút.
-                
-                **NHIỆM VỤ:**
-                Dựa trên thông tin xe và 2 QUY TẮC VÀNG trên, hãy cung cấp các mục sau:
-                1.  **Tiêu đề bán hàng**: Hấp dẫn, SEO-friendly, tối đa 50 ký tự.
-                2.  **Giá xe mới tham khảo**: Nêu rõ giá xe mới nhất của phiên bản này để làm cơ sở.
-                3.  **Khoảng giá bán đề xuất**: BẮT BUỘC định dạng `[Giá thấp nhất] - [Giá cao nhất] VNĐ` và PHẢI THẤP HƠN GIÁ MỚI ít nhất 15-25%%.
-                4.  **Mô tả sản phẩm**: **Tối đa 5-7 câu**, tập trung vào các điểm nổi bật nhất.
-                5.  **Giải thích lý do định giá**: CỰC NGẮN GỌN, đề cập đến việc đã áp dụng "chi phí lăn bánh" và khấu hao thị trường.
-                6.  **Link tham khảo**: CUNG CẤP LINK TÌM KIẾM LÀ BẮT BUỘC.
-                
-                **THÔNG TIN XE:**
-                - Tiêu đề gốc: %s
-                - Hãng: %s
-                - Model: %s
-                - Phiên bản: %s
-                - Năm sản xuất: %s
-                - Tình trạng pin: %s
-                - Số km đã đi: %s
-                
-                **ĐỊNH DẠNG LINK THAM KHẢO (BẮT BUỘC):**
-                1. Chợ Tốt: https://www.chotot.com/mua-ban-oto?q=[Hãng]+[Model]
-                2. Bonbanh: https://bonbanh.com/tim-kiem?q=[Hãng]+[Model]
-                3. Oto.com.vn: https://oto.com.vn/mua-ban-xe-[hang]-[model]
-                
-                **===== ĐỊNH DẠNG OUTPUT (TUÂN THỦ NGHIÊM NGẶT) =====**
-                Tiêu đề gợi ý: [Nội dung]
-                Giá xe mới tham khảo: [Giá xe mới] VNĐ
-                Giá gợi ý: [Khoảng giá] VNĐ
-                Mô tả sản phẩm: [Nội dung mô tả ngắn gọn]
-                Giải thích lý do: [Nội dung giải thích]
-                Nguồn tham khảo:
-                [Link 1]
-                [Link 2]
-                [Link 3]
-                """,
-                title, brand, vehicleModel, versionName, manufactureYear, batteryHealth, mileageKm
-        );
+                "Bạn là chuyên gia thẩm định giá sản phẩm cũ tại Việt Nam. "
+                        + "Hãy dựa trên thông tin chi tiết của sản phẩm dưới đây để đưa ra:\n"
+                        + "1. Giá gợi ý hợp lý trên thị trường hiện nay (đơn vị: VNĐ)\n"
+                        + "2. Mô tả ngắn gọn tình trạng sản phẩm (1–2 câu).\n\n"
+                        + "Yêu cầu: Chỉ trả lời đúng theo định dạng sau, không thêm nội dung khác:\n"
+                        + "Giá gợi ý: [giá hoặc khoảng giá] VNĐ\n"
+                        + "Mô tả ngắn gọn trong 1–2 câu: [mô tả]\n\n"
+                        + "Thông tin sản phẩm:\n"
+                        + "- Tiêu đề: %s\n"
+                        + "- Hãng: %s\n"
+                        + "- Mẫu (Model): %s\n"
+                        + "- Phiên bản: %s\n"
+                        + "- Năm sản xuất: %s\n"
+                        + "- Tình trạng pin / năng lượng: %s\n"
+                        + "- Số km đã đi: %s",
+                title, brand, vehicleModel, versionName, manufactureYear, batteryHealth, mileageKm);
     }
 
+    /**
+     * Xử lý response thành công từ Gemini API
+     */
     private PriceSuggestion handleSuccessResponse(String responseBody, String title) {
         try {
             JsonNode root = objectMapper.readTree(responseBody);
+
+            // Kiểm tra lỗi trong response
             if (root.has("error")) {
-                log.error("API Error: {} - {}", root.path("error").path("code").asInt(), root.path("error").path("message").asText());
+                JsonNode error = root.get("error");
+                log.error("API Error: {} - {}",
+                        error.path("code").asInt(),
+                        error.path("message").asText());
                 return generateFallback(title);
             }
 
+            // Lấy candidates từ response
             JsonNode candidates = root.path("candidates");
-            if (candidates.isArray() && !candidates.isEmpty()) {
-                JsonNode firstCandidate = candidates.get(0);
-                String finishReason = firstCandidate.path("finishReason").asText("UNKNOWN");
-                log.info("Finish Reason: {}", finishReason);
 
-                if ("STOP".equals(finishReason) || "MAX_TOKENS".equals(finishReason)) {
-                    String text = firstCandidate.at("/content/parts/0/text").asText();
-                    if (!text.isEmpty()) {
-                        log.info("Gemini response text received (Finish Reason: {})", finishReason);
-                        if ("MAX_TOKENS".equals(finishReason)) {
-                            log.warn("⚠️ Response was cut short due to MAX_TOKENS limit. Results might be incomplete.");
+            if (candidates.isArray() && candidates.size() > 0) {
+                JsonNode firstCandidate = candidates.get(0);
+
+                // Kiểm tra finishReason để biết tại sao bị block
+                JsonNode finishReason = firstCandidate.path("finishReason");
+                if (!finishReason.isMissingNode()) {
+                    String reason = finishReason.asText();
+                    log.info("Finish Reason: {}", reason);
+
+                    // Nếu bị block bởi safety
+                    if (!"STOP".equals(reason)) {
+                        log.warn(" Response blocked/filtered. Reason: {}", reason);
+
+                        // Kiểm tra safety ratings nếu có
+                        JsonNode safetyRatings = firstCandidate.path("safetyRatings");
+                        if (safetyRatings.isArray()) {
+                            log.info("Safety ratings: {}", safetyRatings);
                         }
-                        return parseResponse(text, title);
+
+                        return generateFallback(title);
+                    }
+                }
+
+                // Lấy content
+                JsonNode content = firstCandidate.path("content");
+
+                if (!content.isMissingNode()) {
+                    JsonNode parts = content.path("parts");
+
+                    // Kiểm tra parts có phần tử không
+                    if (parts.isArray() && parts.size() > 0) {
+                        JsonNode textNode = parts.get(0).path("text");
+
+                        if (!textNode.isMissingNode() && !textNode.asText().isEmpty()) {
+                            String text = textNode.asText();
+                            log.info("Gemini response text received");
+                            return parseResponse(text, title);
+                        }
+                    } else {
+                        log.error("❌ Parts is empty or not an array");
                     }
                 } else {
-                    log.warn("⚠️ Response may be incomplete or blocked. Reason: {}", finishReason);
-                    return generateFallback(title);
+                    log.error("Content node is missing");
                 }
+            } else {
+                log.error("Candidates array is empty or missing");
             }
-            log.error("Unexpected response format: no valid content found");
+
+            log.error("Unexpected response format: no text content found");
             return generateFallback(title);
+
         } catch (Exception e) {
             log.error("Error parsing Gemini response: {}", e.getMessage(), e);
             return generateFallback(title);
         }
     }
 
-    private PriceSuggestion parseResponse(String rawText, String originalTitle) {
-        String nextHeadings = "\\s*Giá xe mới tham khảo:|\\s*Giá gợi ý:|\\s*Mô tả sản phẩm:|\\s*Giải thích lý do:|\\s*Nguồn tham khảo:|\\s*$";
-        Pattern titlePattern = Pattern.compile("Tiêu đề gợi ý:\\s*(.+?)(?=" + nextHeadings + ")", Pattern.DOTALL);
-        Pattern pricePattern = Pattern.compile("Giá gợi ý:\\s*(.+?)(?=" + nextHeadings + ")", Pattern.DOTALL);
-        Pattern descriptionPattern = Pattern.compile("Mô tả sản phẩm:\\s*(.+?)(?=" + nextHeadings + ")", Pattern.DOTALL);
-        Pattern reasonPattern = Pattern.compile("Giải thích lý do:\\s*(.+?)(?=" + nextHeadings + ")", Pattern.DOTALL);
-        Pattern sourcesPattern = Pattern.compile("Nguồn tham khảo:\\s*([\\s\\S]+)", Pattern.DOTALL);
+    /**
+     * Parse response text từ Gemini thành PriceSuggestion
+     */
+    private PriceSuggestion parseResponse(String rawText, String title) {
+        // Pattern để match "Giá gợi ý: ... VNĐ"
+        Pattern pricePattern = Pattern.compile(
+                "Giá gợi ý:\\s*(.+?VNĐ)",
+                Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
-        Matcher titleMatcher = titlePattern.matcher(rawText);
+        // Pattern để match "Mô tả ngắn gọn: ..."
+        Pattern reasonPattern = Pattern.compile(
+                "Mô tả ngắn gọn.*?:\\s*(.+?)(?=\\n|$)",
+                Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+
         Matcher priceMatcher = pricePattern.matcher(rawText);
-        Matcher descriptionMatcher = descriptionPattern.matcher(rawText);
         Matcher reasonMatcher = reasonPattern.matcher(rawText);
-        Matcher sourcesMatcher = sourcesPattern.matcher(rawText);
 
-        String title = titleMatcher.find() ? cleanText(titleMatcher.group(1)) : originalTitle;
-        String priceStr = priceMatcher.find() ? cleanPrice(priceMatcher.group(1)) : "Không xác định được giá";
-        String description = descriptionMatcher.find() ? cleanText(descriptionMatcher.group(1)) : "Chưa có mô tả chi tiết.";
-        String reason = reasonMatcher.find() ? cleanText(reasonMatcher.group(1)) : "Không có giải thích chi tiết.";
+        String priceStr = priceMatcher.find()
+                ? priceMatcher.group(1).trim()
+                : "Không xác định được giá";
 
-        List<String> sources = new ArrayList<>();
-        if (sourcesMatcher.find()) {
-            String sourcesText = sourcesMatcher.group(1).trim();
-            sources = Arrays.stream(sourcesText.split("\\n"))
-                    .map(String::trim)
-                    .filter(s -> s.startsWith("http"))
-                    .filter(this::isValidCarSalesSource)
-                    .collect(Collectors.toList());
-        } else {
-            log.warn("Could not find 'Nguồn tham khảo:' block in the response.");
-        }
+        String reason = reasonMatcher.find()
+                ? reasonMatcher.group(1).trim()
+                : "Chưa có mô tả chi tiết.";
 
-        log.info("✅ Parsed → Title: [{}], Price: [{}], Sources: {}", title, priceStr, sources.size());
-        return new PriceSuggestion(priceStr, reason, sources, description, title);
+        // Clean up markdown và ký tự không mong muốn
+        priceStr = cleanText(priceStr);
+        reason = cleanText(reason);
+
+        log.info("✅ Parsed → Price: {}, Reason: {}", priceStr, reason);
+        return new PriceSuggestion(priceStr, reason);
     }
 
-    private String cleanPrice(String priceText) {
-        String cleaned = priceText.replaceAll("[*`]", "").replaceAll("\\s{2,}", " ").trim();
-        if (!cleaned.toUpperCase().endsWith("VNĐ") && !cleaned.toUpperCase().endsWith("VND")) {
-            cleaned += " VNĐ";
-        }
-        return cleaned;
-    }
-
-    private boolean isValidCarSalesSource(String url) {
-        if (url == null || url.isEmpty()) return false;
-        String lowerUrl = url.toLowerCase();
-        List<String> validDomains = Arrays.asList("chotot.com", "bonbanh.com", "carmudi.vn", "oto.com.vn", "choxe.vn", "muaban.net");
-        List<String> invalidKeywords = Arrays.asList("facebook", "google", "support", "youtube", "zalo");
-        boolean isValid = validDomains.stream().anyMatch(lowerUrl::contains) && invalidKeywords.stream().noneMatch(lowerUrl::contains);
-        if (!isValid) {
-            log.debug("❌ Filtered invalid source: {}", url);
-        }
-        return isValid;
-    }
-
+    /**
+     * Làm sạch text: bỏ markdown, ký tự đặc biệt
+     */
     private String cleanText(String text) {
-        return text.replaceAll("[*`\n\r]", " ").replaceAll("\\s{2,}", " ").trim();
+        return text
+                .replaceAll("\\*+", "") // Bỏ dấu *
+                .replaceAll("\\n+", " ") // Thay newline bằng space
+                .replaceAll("\\s{2,}", " ") // Bỏ multiple spaces
+                .trim();
     }
 
+    /**
+     * Generate fallback price khi API fail hoặc không có response
+     */
     private PriceSuggestion generateFallback(String title) {
-        log.warn("⚠️ Using fallback response for: {}", title);
-        String priceStr = "Không thể gợi ý giá";
-        String reason = "Đã có lỗi xảy ra trong quá trình kết nối đến dịch vụ gợi ý. Vui lòng thử lại sau.";
-        String description = "Thông tin chi tiết đang được cập nhật.";
-        List<String> fallbackSources = Arrays.asList("https://www.chotot.com/mua-ban-oto", "https://bonbanh.com", "https://oto.com.vn");
-        return new PriceSuggestion(priceStr, reason, fallbackSources, description, title);
+        log.warn(" Using fallback pricing for: {}", title);
+
+        String lowerTitle = title.toLowerCase();
+
+        // Giá base theo loại sản phẩm
+        BigDecimal basePrice = determineBasePrice(lowerTitle);
+
+        // Factor điều chỉnh theo tình trạng
+        BigDecimal factor = determinePriceFactor(lowerTitle);
+
+        // Tính giá ước tính
+        BigDecimal estimated = basePrice
+                .multiply(factor)
+                .setScale(0, RoundingMode.HALF_UP);
+
+        String formatted = PriceSerializer.formatPrice(estimated);
+
+        String reason = String.format(
+                "Giá ước tính tham khảo cho '%s' (tình trạng khoảng %.0f%% giá gốc).",
+                title,
+                factor.multiply(BigDecimal.valueOf(100)).doubleValue());
+
+        return new PriceSuggestion("Khoảng " + formatted + " VNĐ", reason);
     }
 
+    /**
+     * Xác định giá base theo loại sản phẩm
+     */
+    private BigDecimal determineBasePrice(String lowerTitle) {
+        if (lowerTitle.contains("xe")) {
+            return BigDecimal.valueOf(30_000_000L);
+        } else if (lowerTitle.contains("pin") || lowerTitle.contains("battery")) {
+            return BigDecimal.valueOf(5_000_000L);
+        } else if (lowerTitle.contains("động cơ") || lowerTitle.contains("motor")) {
+            return BigDecimal.valueOf(3_000_000L);
+        } else if (lowerTitle.contains("bộ sạc") || lowerTitle.contains("charger")) {
+            return BigDecimal.valueOf(1_000_000L);
+        } else if (lowerTitle.contains("bình")) {
+            return BigDecimal.valueOf(1_500_000L);
+        } else if (lowerTitle.contains("linh kiện") || lowerTitle.contains("phụ tùng")) {
+            return BigDecimal.valueOf(800_000L);
+        }
+
+        return BigDecimal.valueOf(500_000L); // Mặc định
+    }
+
+    /**
+     * Xác định factor giá theo tình trạng
+     */
+    private BigDecimal determinePriceFactor(String lowerTitle) {
+        if (lowerTitle.contains("mới") || lowerTitle.contains("100%")) {
+            return BigDecimal.valueOf(0.95);
+        } else if (lowerTitle.contains("90%") || lowerTitle.contains("như mới")) {
+            return BigDecimal.valueOf(0.85);
+        } else if (lowerTitle.contains("80%")) {
+            return BigDecimal.valueOf(0.75);
+        } else if (lowerTitle.contains("70%")) {
+            return BigDecimal.valueOf(0.65);
+        } else if (lowerTitle.contains("60%") || lowerTitle.contains("trung bình")) {
+            return BigDecimal.valueOf(0.55);
+        } else if (lowerTitle.contains("cũ") || lowerTitle.contains("đã qua sử dụng")) {
+            return BigDecimal.valueOf(0.70);
+        }
+
+        return BigDecimal.ONE;
+    }
 
     // ========== Suggest Specs ==========
 
@@ -279,7 +349,7 @@ public class GeminiRestService {
                         Bạn là chuyên gia xe điện.
                         Hãy dựa vào tên sản phẩm "%s", model "%s", thương hiệu "%s", phiên bản "%s", và năm sản xuất "%d" để trả về thông số kỹ thuật chuẩn dưới dạng JSON.
                         KHÔNG thêm lời giải thích, markdown, hoặc bất kỳ ký tự nào ngoài JSON thuần túy.
-                        
+
                         Cấu trúc JSON cần có CHÍNH XÁC các trường sau:
                         {
                           "model": "Tên đầy đủ của model",
@@ -301,14 +371,14 @@ public class GeminiRestService {
                           "wheelbase_mm": "Chiều dài cơ sở (số mm, không có đơn vị)",
                           "features": ["Tính năng 1", "Tính năng 2", "Tính năng 3", "Tính năng 4", "Tính năng 5"]
                         }
-                        
+
                         QUY TẮC BẮT BUỘC:
                         - TẤT CẢ các trường số phải là số nguyên hoặc số thực, KHÔNG có đơn vị, KHÔNG có dấu phẩy phân cách hàng nghìn
                         - Trường "features" phải là mảng string, mỗi tính năng là 1 câu ngắn gọn, từ 5-10 tính năng
                         - Nếu không có thông tin chính xác, hãy ước lượng dựa trên xe cùng phân khúc và năm sản xuất
                         - Nếu là xe máy điện: để null cho "acceleration_0_100_s", điều chỉnh các thông số phù hợp
                         - CHỈ trả về JSON thuần túy, KHÔNG có ```json, KHÔNG có giải thích, KHÔNG có markdown
-                        
+
                         Ví dụ output mong muốn:
                         {
                           "model": "VF e34",
@@ -380,32 +450,36 @@ public class GeminiRestService {
         return "{}";
     }
 
-    /**
-     * Lấy thông số kỹ thuật xe và map thành VehicleCatalogDTO
-     */
     public VehicleCatalogDTO getVehicleSpecs(String productName, String vehicleModel, String brand, String version,
-                                             Short year) {
+            Short year) {
         try {
             String json = suggestSpecs(productName, vehicleModel, brand, version, year);
 
-            // Làm sạch dữ liệu Gemini trả về
-            if (json.startsWith("```")) {
-                json = json.replaceAll("```json", "")
-                        .replaceAll("```", "")
-                        .trim();
+            // Làm sạch fence code block của LLM
+            if (json != null) {
+                json = json.strip();
+                if (json.startsWith("```")) {
+                    json = json.replaceAll("(?s)```json\\s*|```", "").trim();
+                }
             }
 
-            Model model = vehicleModelRepository.findByName(productName);
+            // Parse trước (modelName là String, không lỗi)
             VehicleCatalogDTO dto = objectMapper.readValue(json, VehicleCatalogDTO.class);
-            dto.setModel(model);
+
+            // Ưu tiên tên từ JSON, fallback sang tham số vehicleModel
+            String modelName = (dto.getModelName() != null && !dto.getModelName().isBlank())
+                    ? dto.getModelName()
+                    : vehicleModel;
+
+            Model modelEntity = vehicleModelRepository.findByName(modelName);
+            dto.setModel(modelEntity);
 
             log.info("Cleaned JSON before parsing:\n{}", json);
-
             return dto;
 
         } catch (JsonProcessingException e) {
             log.error("Failed to parse specs JSON for '{}': {}", productName, e.getMessage());
-            Model model = vehicleModelRepository.findByName(productName);
+            Model model = vehicleModelRepository.findByName(vehicleModel); // dùng vehicleModel, không phải productName
             return VehicleCatalogDTO.builder()
                     .model(model)
                     .type("Cannot define")
@@ -413,7 +487,7 @@ public class GeminiRestService {
                     .build();
         } catch (Exception e) {
             log.error("Unexpected error while generating specs: {}", e.getMessage(), e);
-            Model model = vehicleModelRepository.findByName(productName);
+            Model model = vehicleModelRepository.findByName(vehicleModel);
             return VehicleCatalogDTO.builder()
                     .model(model)
                     .type("Cannot define")
@@ -421,4 +495,5 @@ public class GeminiRestService {
                     .build();
         }
     }
+
 }

@@ -1,6 +1,7 @@
 package com.evdealer.evdealermanagement.dto.vehicle.catalog;
 
 import com.evdealer.evdealermanagement.entity.vehicle.Model;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,7 +18,11 @@ public class VehicleCatalogDTO {
 
     private String id;
 
+    @JsonIgnore
     private Model model;
+
+    @JsonProperty("model") // nhận "Vinfast VF8 Eco" từ JSON
+    private String modelName;
 
     private String version;
 
