@@ -67,7 +67,7 @@ public class MemberProductController {
         return ResponseEntity.ok(productDetail);
     }
 
-    @PutMapping(value = "/update/{productId}/draft", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(value = "/battery/update/{productId}/draft", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('MEMBER')")
     public BatteryPostResponse updateBattery(
             @PathVariable String productId,
@@ -79,7 +79,7 @@ public class MemberProductController {
         return batteryService.updateBatteryPost(productId, request, images, imagesMetaJson);
     }
 
-    @PutMapping(value = "/update/{productId}/draft", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(value = "/vehicle/update/{productId}/draft", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('MEMBER')")
     public VehiclePostResponse updateVehicle(
             @PathVariable("productId") String productId,
