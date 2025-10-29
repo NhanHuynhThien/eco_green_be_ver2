@@ -36,18 +36,6 @@ public class BatteryController {
         return batteryService.listAllBatteryTypesSorted();
     }
 
-    @PutMapping(value = "/update/{productId}/draft", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('MEMBER')")
-    public BatteryPostResponse updateBattery(
-            @PathVariable String productId,
-            @RequestPart("data") String dataJson,
-            @RequestPart("images") List<MultipartFile> images,
-            @RequestPart(value = "imagesMeta", required = false) String imagesMetaJson,
-            @AuthenticationPrincipal CustomAccountDetails user) throws JsonProcessingException {
-        BatteryPostRequest request = new ObjectMapper().readValue(dataJson, BatteryPostRequest.class);
-        return batteryService.updateBatteryPost(productId, request, images, imagesMetaJson);
-    }
-
     @GetMapping("/{productId}/similar")
     public ResponseEntity<List<SimilarProductResponse>> getSimilarBatteries(@PathVariable String productId) {
         List<SimilarProductResponse> result = batteryService.getSimilarBatteries(productId);
