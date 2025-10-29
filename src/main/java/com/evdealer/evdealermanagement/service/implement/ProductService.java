@@ -68,7 +68,7 @@ public class ProductService implements IProductService {
 
             List<PostVerifyResponse> content = products.getContent().stream().map(
                     product -> {
-                        PostPayment payments = postPaymentRepository.findByProductId(product.getId());
+                        PostPayment payments = postPaymentRepository.findFirstByProductIdOrderByCreatedAtDesc(product.getId());
                         return PostVerifyMapper.mapToPostVerifyResponse(product, payments);
                     })
                     .toList();

@@ -26,4 +26,7 @@ public interface PostPaymentRepository extends JpaRepository<PostPayment, String
     List<PostPayment> findAllByOrderByCreatedAtDesc();
 
     PostPayment findByProductId(String productId);
+
+    PostPayment findFirstByProductIdOrderByCreatedAtDesc(String productId);
+
 }
