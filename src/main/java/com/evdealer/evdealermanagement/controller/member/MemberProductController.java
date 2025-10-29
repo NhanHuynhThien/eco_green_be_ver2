@@ -71,8 +71,8 @@ public class MemberProductController {
     @PreAuthorize("hasRole('MEMBER')")
     public BatteryPostResponse updateBattery(
             @PathVariable String productId,
-            @RequestPart("data") String dataJson,
-            @RequestPart("images") List<MultipartFile> images,
+            @RequestPart(value = "data", required = false) String dataJson,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @RequestPart(value = "imagesMeta", required = false) String imagesMetaJson,
             @AuthenticationPrincipal CustomAccountDetails user) throws JsonProcessingException {
         BatteryPostRequest request = new ObjectMapper().readValue(dataJson, BatteryPostRequest.class);
@@ -83,8 +83,8 @@ public class MemberProductController {
     @PreAuthorize("hasRole('MEMBER')")
     public VehiclePostResponse updateVehicle(
             @PathVariable("productId") String productId,
-            @RequestPart("data") String dataJson,
-            @RequestPart("images") List<MultipartFile> images,
+            @RequestPart(value = "data", required = false) String dataJson,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @RequestPart(value = "imagesMeta", required = false) String imagesMetaJson,
             @AuthenticationPrincipal CustomAccountDetails user) throws JsonProcessingException {
         VehiclePostRequest request = new ObjectMapper().readValue(dataJson, VehiclePostRequest.class);
