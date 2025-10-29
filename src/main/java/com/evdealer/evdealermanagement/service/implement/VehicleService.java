@@ -427,29 +427,34 @@ public class VehicleService {
             throw new AppException(ErrorCode.PRODUCT_NOT_DRAFT);
         }
 
-        product.setTitle(request.getTitle());
-        product.setDescription(request.getDescription());
-        product.setPrice(request.getPrice());
-        product.setCity(request.getCity());
-        product.setDistrict(request.getDistrict());
-        product.setWard(request.getWard());
-        product.setAddressDetail(request.getAddressDetail());
-        product.setManufactureYear(request.getYear());
-        product.setUpdatedAt(LocalDateTime.now());
-
         VehicleDetails details = vehicleDetailsRepository.findByProductId(product.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.VEHICLE_NOT_FOUND));
-        details.setProduct(product);
-        details.setBrand(vehicleBrandsRepository.findById(request.getBrandId())
-        .orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND)));
-        details.setCategory(vehicleCategoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND)));
-        details.setModel(vmRepository.findById(request.getModelId())
-                .orElseThrow(() -> new AppException(ErrorCode.MODEL_NOT_FOUND)));
-        details.setVersion(vmvRepository.findById(request.getVersionId())
-                .orElseThrow(() -> new AppException(ErrorCode.VERSION_NOT_FOUND)));
-        details.setMileageKm(request.getMileageKm());
-        details.setBatteryHealthPercent(request.getBatteryHealthPercent());
+
+        if (request != null) {
+            product.setTitle(request.getTitle());
+            product.setDescription(request.getDescription());
+            product.setPrice(request.getPrice());
+            product.setCity(request.getCity());
+            product.setDistrict(request.getDistrict());
+            product.setWard(request.getWard());
+            product.setAddressDetail(request.getAddressDetail());
+            product.setManufactureYear(request.getYear());
+            product.setUpdatedAt(LocalDateTime.now());
+
+            details.setProduct(product);
+            details.setBrand(vehicleBrandsRepository.findById(request.getBrandId())
+                    .orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND)));
+            details.setCategory(vehicleCategoryRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND)));
+            details.setModel(vmRepository.findById(request.getModelId())
+                    .orElseThrow(() -> new AppException(ErrorCode.MODEL_NOT_FOUND)));
+            details.setVersion(vmvRepository.findById(request.getVersionId())
+                    .orElseThrow(() -> new AppException(ErrorCode.VERSION_NOT_FOUND)));
+            details.setMileageKm(request.getMileageKm());
+            details.setBatteryHealthPercent(request.getBatteryHealthPercent());
+
+            vehicleDetailsRepository.save(details);
+        }
 
         if (images != null) {
             images = images.stream()
@@ -481,7 +486,6 @@ public class VehicleService {
         }
 
         productRepository.save(product);
-        vehicleDetailsRepository.save(details);
 
         return VehiclePostResponse.builder()
                 .productId(product.getId())
@@ -493,18 +497,18 @@ public class VehicleService {
                 .hasInsurance(details.getHasInsurance())
                 .warrantyMonths(details.getWarrantyMonths())
                 .hasRegistration(details.getHasRegistration())
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .price(request.getPrice())
-                .city(request.getCity())
-                .district(request.getDistrict())
-                .ward(request.getWard())
-                .addressDetail(request.getAddressDetail())
+                .title(request != null ? request.getTitle() : product.getTitle())
+                .description(request != null ? request.getDescription() : product.getDescription())
+                .price(request != null ? request.getPrice() : product.getPrice())
+                .city(request != null ? request.getCity() : product.getCity())
+                .district(request != null ? request.getDistrict() : product.getDistrict())
+                .ward(request != null ? request.getWard() : product.getWard())
+                .addressDetail(request != null ? request.getAddressDetail() : product.getAddressDetail())
                 .createdAt(LocalDateTime.now())
-                .brandId(request.getBrandId())
-                .categoryId(request.getCategoryId())
-                .batteryHealthPercent(request.getBatteryHealthPercent())
-                .mileageKm(request.getMileageKm())
+                .brandId(request != null ? request.getBrandId() : details.getBrand().getId())
+                .categoryId(request != null ? request.getCategoryId() : details.getCategory().getId())
+                .batteryHealthPercent(request != null ? request.getBatteryHealthPercent() : details.getBatteryHealthPercent())
+                .mileageKm(request != null ? request.getMileageKm() : details.getMileageKm())
                 .images(
                         (imageDtos!= null && !imageDtos.isEmpty())
                                 ? imageDtos
