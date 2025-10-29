@@ -164,19 +164,20 @@ public class StaffService {
 
     // Generate và Lưu thông số kỹ thuật
     private void generateAndSaveVehicleSpecs(Product product) {
-        // Lấy ModelVersion từ Product
-        ModelVersion version = product.getModelVersion();
-
-        if (version == null || version.getModel() == null) {
-            log.warn(" Product ID {} is missing ModelVersion or Model. Cannot generate specs.", product.getId());
-            return;
-        }
 
         // Lấy VehicleDetails
         VehicleDetails details = vehicleDetailsRepository.findByProductId(product.getId()).orElse(null);
 
         if (details == null) {
             log.warn("Product ID {} is missing VehicleDetails. Cannot link catalog.", product.getId());
+            return;
+        }
+
+        // Lấy Version từ Details
+        ModelVersion version = details.getVersion();
+
+        if (version == null || version.getModel() == null) {
+            log.warn(" Product ID {} is missing ModelVersion or Model. Cannot generate specs.", product.getId());
             return;
         }
 
@@ -209,7 +210,10 @@ public class StaffService {
         }
 
         // Kiểm tra VehicleCatalog đã có thông số cho ModelVersion này chưa
-        Optional<VehicleCatalog> existingCatalog = vehicleCatalogRepository.findByVersionId(version.getId());
+        // Optional<VehicleCatalog> existingCatalog =
+        // vehicleCatalogRepository.findByVersionId(version.getId());
+        Optional<VehicleCatalog> existingCatalog = vehicleCatalogRepository
+                .findByVersionIdAndBrandIdAndModelAndYear(version.getId(), brand.getId(), model, manufactureYear);
 
         if (existingCatalog.isEmpty()) {
             // Catalog chưa tồn tại → Generate mới bằng Gemini
