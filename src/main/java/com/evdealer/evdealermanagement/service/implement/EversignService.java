@@ -1,25 +1,49 @@
 package com.evdealer.evdealermanagement.service.implement;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.evdealer.evdealermanagement.dto.transactions.ContractInfoDTO;
 import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.entity.product.Product;
+import com.evdealer.evdealermanagement.entity.transactions.ContractDocument;
+import com.evdealer.evdealermanagement.entity.transactions.PurchaseRequest;
 import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
+import com.evdealer.evdealermanagement.repository.ContractDocumentRepository;
+import com.evdealer.evdealermanagement.utils.VietNamDatetime;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.math.BigDecimal;
+import java.io.*;
+import java.net.URL;
+import java.nio.file.Files;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class EversignService {
 
     private final RestTemplate restTemplate = new RestTemplate();
+    private final ContractDocumentRepository contractDocumentRepository;
+    private final EmailService emailService;
 
+    // CLoudinary config
+    @Value("${CLOUDINARY_CLOUD_NAME}")
+    private String cloudName;
+
+    @Value("${CLOUDINARY_API_KEY}")
+    private String cloudApiKey;
+
+    @Value("${CLOUDINARY_API_SECRET}")
+    private String cloudApiSecret;
+
+    // Eversign Config
     @Value("${EVERSIGN_API_KEY}")
     private String apiKey;
 
@@ -143,5 +167,58 @@ public class EversignService {
 
     private String buildContractViewUrl(String documentHash) {
         return String.format("https://eversign.com/documents/%s", documentHash);
+    }
+
+    // Download pdf, upload Cloudinary
+    public void saveContractToDatabase(PurchaseRequest request) {
+        try {
+            String documentHash = request.getContractId();
+            log.info("📑 [Eversign] Lưu hợp đồng PDF vào DB cho staff/admin, documentHash={}", documentHash);
+
+            String pdfUrl = String.format(
+                    "https://api.eversign.com/api/document/download_original?business_id=%s&access_key=%s&document_hash=%s",
+                    businessId, apiKey, documentHash
+            );
+
+            File tempFile = Files.createTempFile("contract_", ".pdf").toFile();
+            try (InputStream in = new URL(pdfUrl).openStream();
+                 OutputStream out = new FileOutputStream(tempFile)) {
+                in.transferTo(out);
+            }
+
+            // Up len Cloudinary
+            Cloudinary cloudinary = new Cloudinary(
+                    ObjectUtils.asMap(
+                            "cloud_name", cloudName,
+                            "api_key", cloudApiKey,
+                            "api_secret", cloudApiSecret
+                    )
+            );
+
+            Map uploadResult = cloudinary.uploader().upload(
+                    tempFile,
+                    ObjectUtils.asMap(
+                            "folder", "contracts",
+                            "resource_type", "raw"
+                    )
+            );
+
+            String cloudUrl = (String) uploadResult.get("secure_url");
+
+            // Luu vao DB
+            ContractDocument contract = new ContractDocument();
+            contract.setDocumentId(documentHash);
+            contract.setTitle("Hợp đồng mua bán - " + request.getProduct().getTitle());
+            contract.setPdfUrl(cloudUrl);
+            contract.setSignerEmail(request.getBuyer().getEmail());
+            contract.setSignedAt(VietNamDatetime.nowVietNam());
+
+            contractDocumentRepository.save(contract);
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+
     }
 }

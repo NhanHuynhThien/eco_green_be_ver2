@@ -2,6 +2,7 @@ package com.evdealer.evdealermanagement.controller.transactions;
 
 import com.evdealer.evdealermanagement.entity.transactions.PurchaseRequest;
 import com.evdealer.evdealermanagement.repository.PurchaseRequestRepository;
+import com.evdealer.evdealermanagement.service.implement.EversignService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -17,11 +18,11 @@ import java.util.Map;
 public class EversignWebhookController {
 
     private final PurchaseRequestRepository purchaseRequestRepository;
+    private final EversignService eversignService;
 
     /**
      * Webhook endpoint để Eversign gọi về khi có sự kiện
      * Config webhook URL trong Eversign Dashboard:
-     * https://yourdomain.com/api/webhooks/eversign/signature-complete
      */
     @PostMapping("/signature-complete")
     public ResponseEntity<?> handleSignatureComplete(@RequestBody Map<String, Object> payload) {
@@ -105,6 +106,9 @@ public class EversignWebhookController {
                 request.setContractStatus(PurchaseRequest.ContractStatus.COMPLETED);
                 request.setStatus(PurchaseRequest.RequestStatus.CONTRACT_SIGNED);
                 purchaseRequestRepository.save(request);
+
+                // Lưu hợp đồng vào DB
+                eversignService.saveContractToDatabase(request);
 
                 log.info("✅ Contract marked as completed: {}", request.getId());
             }

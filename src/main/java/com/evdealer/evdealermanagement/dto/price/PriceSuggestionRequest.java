@@ -1,10 +1,16 @@
-package com.evdealer.evdealermanagement.dto.price;
+package com.evdealer.evdealermanagement.dto.price; // or another appropriate package
 
-import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 public class PriceSuggestionRequest {
-    @NotBlank(message = "Title cannot be blank")
-    private String title;       // vd: "Xe ô tô điện VinFast VF 8
+    private String title;
+    private String model; // Matches the JSON key exactly
+    private String versionName;
+    private String batteryHealth;
+    private String mileageKm;
+    private String brand;
+    private String manufactureYear;
 }
