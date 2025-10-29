@@ -56,7 +56,7 @@ public class EversignService {
     @Value("${EVERSIGN_SANDBOX:true}") // ✅ mặc định sandbox
     private boolean sandboxMode;
 
-    @Value("${APP_BASE_URL:http://localhost:3000}")
+    @Value("${APP_BASE_URL:http://localhost:8080}")
     private String appBaseUrl;
 
     private static final String EVERSIGN_API_BASE = "https://api.eversign.com/api";
@@ -141,9 +141,12 @@ public class EversignService {
         body.put("title", "Hợp đồng mua bán xe điện (sandbox)");
         body.put("message", "Vui lòng điền thông tin và ký hợp đồng (sandbox).");
 //        body.put("embedded_signing_enabled", 1);
-//        body.put("use_signer_order", 1);
+        body.put("use_signer_order", 1);
 //        body.put("redirect", appBaseUrl + "/contract/completed");
 //        body.put("redirect_decline", appBaseUrl + "/contract/declined");
+
+        body.put("webhook_url", appBaseUrl+"/api/webhooks/eversign/document-complete");
+        log.info("📡 Webhook URL gửi lên Eversign: {}", appBaseUrl+"/api/webhooks/eversign/document-complete");
 
         // 👥 Người ký
         List<Map<String, Object>> signers = new ArrayList<>();
@@ -176,8 +179,8 @@ public class EversignService {
             log.info("📑 [Eversign] Lưu hợp đồng PDF vào DB cho staff/admin, documentHash={}", documentHash);
 
             String pdfUrl = String.format(
-                    "https://api.eversign.com/api/document/download_original?business_id=%s&access_key=%s&document_hash=%s",
-                    businessId, apiKey, documentHash
+                    "%s/download_raw_document?business_id=%s&access_key=%s&document_hash=%s",
+                    EVERSIGN_API_BASE, businessId, apiKey, documentHash
             );
 
             File tempFile = Files.createTempFile("contract_", ".pdf").toFile();
@@ -204,6 +207,9 @@ public class EversignService {
             );
 
             String cloudUrl = (String) uploadResult.get("secure_url");
+            log.info("🔗 PDF URL: {}", pdfUrl);
+            log.info("📁 Temp file path: {}", tempFile.getAbsolutePath());
+
 
             // Luu vao DB
             ContractDocument contract = new ContractDocument();
