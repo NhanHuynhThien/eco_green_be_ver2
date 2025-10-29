@@ -69,18 +69,6 @@ public class VehicleController {
         return vehicleService.listAllVehicleModelVersionsSorted(request);
     }
 
-    @PutMapping(value = "/update/{productId}/draft", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('MEMBER')")
-    public VehiclePostResponse updateVehicle(
-            @PathVariable("productId") String productId,
-            @RequestPart("data") String dataJson,
-            @RequestPart("images") List<MultipartFile> images,
-            @RequestPart(value = "imagesMeta", required = false) String imagesMetaJson,
-            @AuthenticationPrincipal CustomAccountDetails user) throws JsonProcessingException {
-        VehiclePostRequest request = new ObjectMapper().readValue(dataJson, VehiclePostRequest.class);
-        return vehicleService.updateVehiclePost(productId, request, images, imagesMetaJson);
-    }
-
     @GetMapping("/catalog/{id}")
     public VehicleDetailResponse getVehicleDetailResponse(@PathVariable String id) {
         return vehicleService.getVehicleDetailsInfo(id);
