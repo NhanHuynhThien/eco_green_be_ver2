@@ -5,7 +5,6 @@ import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
 import com.evdealer.evdealermanagement.entity.post.PostPayment;
 import com.evdealer.evdealermanagement.entity.vehicle.ModelVersion;
-
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
 import jakarta.persistence.*;
 import lombok.*;
@@ -23,7 +22,6 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
 @SuperBuilder
 public class Product extends BaseEntity {
 
@@ -33,7 +31,6 @@ public class Product extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    // ENUM('BATTERY','VEHICLE')
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 20)
     private ProductType type;
@@ -41,30 +38,24 @@ public class Product extends BaseEntity {
     @Column(precision = 15, scale = 2)
     private BigDecimal price;
 
-    // ENUM('NEW','USED')
     @Enumerated(EnumType.STRING)
     @Column(name = "condition_type", nullable = false, length = 10)
     private ConditionType conditionType;
 
-    // ENUM('ACTIVE','DRAFT','SOLD') theo DB hiện tại
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private Status status;
 
-    // seller_id CHAR(36)
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "seller_id", nullable = false)
     private Account seller;
 
-    // created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     @Column(name = "created_at", updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;
 
-    // updated_at DATETIME(6)
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Địa chỉ hiển thị
     @Column(name = "address_detail", columnDefinition = "TEXT")
     private String addressDetail;
 
@@ -126,13 +117,27 @@ public class Product extends BaseEntity {
     @Column(name = "is_hot")
     private Boolean isHot = false;
 
+    // ============== EQUALS & HASHCODE - FIX STACKOVERFLOW ==============
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Product)) return false;
+        Product product = (Product) o;
+        return getId() != null && getId().equals(product.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
+    // ==================================================================
+
     public enum ProductType {
         BATTERY, VEHICLE
     }
 
     public enum ConditionType {
-        NEW, // ← THÊM DÒNG NÀY
-        USED
+        NEW, USED
     }
 
     public enum Status {
@@ -149,5 +154,4 @@ public class Product extends BaseEntity {
             createdAt = LocalDateTime.now();
         }
     }
-
 }
