@@ -7,6 +7,6 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface ContractDocumentRepository extends JpaRepository<ContractDocument, Long> {
+public interface ContractDocumentRepository extends JpaRepository<ContractDocument, String> {
     Optional<ContractDocument> findByDocumentId(String documentId);
 }
