@@ -1,5 +1,6 @@
 package com.evdealer.evdealermanagement.dto.product.detail;
 
+import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.product.ProductImages;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
@@ -72,17 +73,37 @@ public class ProductDetail {
         String brandName = null;
         String modelName = null;
         String version = null;
+        String batteryType = null;
 
-        VehicleDetails vehicleDetails = product.getVehicleDetails();
+        if (product.getType() == Product.ProductType.VEHICLE) {
 
-        if (vehicleDetails != null && vehicleDetails.getVersion() != null) {
-            version = vehicleDetails.getVersion().getName();
+            Hibernate.initialize(product.getVehicleDetails());
 
-            if (vehicleDetails.getBrand() != null && vehicleDetails.getBrand().getName() != null) {
-                brandName = vehicleDetails.getBrand().getName();
+            VehicleDetails vehicleDetails = product.getVehicleDetails();
+
+            if (vehicleDetails != null && vehicleDetails.getVersion() != null) {
+                version = vehicleDetails.getVersion().getName();
+
+                if (vehicleDetails.getBrand() != null && vehicleDetails.getBrand().getName() != null) {
+                    brandName = vehicleDetails.getBrand().getName();
+                }
+                if (vehicleDetails.getModel() != null && vehicleDetails.getModel().getName() != null) {
+                    modelName = vehicleDetails.getModel().getName();
+                }
             }
-            if (vehicleDetails.getModel() != null && vehicleDetails.getModel().getName() != null) {
-                modelName = vehicleDetails.getModel().getName();
+        } else if (product.getType() == Product.ProductType.BATTERY) {
+
+            Hibernate.initialize(product.getBatteryDetails());
+
+            BatteryDetails batteryDetails = product.getBatteryDetails();
+
+            if (batteryDetails != null && batteryDetails.getBrand() != null) {
+
+                brandName = batteryDetails.getBrand().getName();
+
+                if (batteryDetails.getBatteryType() != null) {
+                    batteryType = batteryDetails.getBatteryType().getName();
+                }
             }
         }
 
@@ -106,6 +127,7 @@ public class ProductDetail {
                 .modelName(modelName)
                 .version(version)
                 .brandName(brandName)
+                .batteryType(batteryType)
                 .isHot(product.getIsHot() != null ? product.getIsHot() : false)
                 .build();
     }
