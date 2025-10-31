@@ -29,9 +29,8 @@ Gửi cho Seller khi có người muốn mua
         <h3 th:text="${productTitle}"></h3>
         <p>Giá đề nghị: <strong th:text="${offeredPrice}"></strong></p>
         <p>Vui lòng đăng nhập vào hệ thống để xem chi tiết và phản hồi yêu cầu này.</p>
-        <a href="https://evdealer.com/seller/requests" class="button">Xem yêu cầu</a>
+        <a th:href="${viewRequestUrl}" class="button">Xem yêu cầu</a>
     </div>
-
 
     <div class="footer">
         <p>© 2025 EV Dealer. All rights reserved.</p>

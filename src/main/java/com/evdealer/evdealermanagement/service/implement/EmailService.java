@@ -75,12 +75,9 @@ public class EmailService {
     // 1️⃣ PURCHASE REQUEST → SELLER
     // ==============================================
     @Async
-    public void sendPurchaseRequestNotification(
-            String sellerEmail,
-            String buyerName,
-            String productTitle,
-            BigDecimal offeredPrice,
-            String requestId) {
+    public void sendPurchaseRequestNotification(String sellerEmail, String buyerName, String productTitle, BigDecimal offeredPrice, String requestId) {
+
+        String viewRequestUrl = "http://localhost:5173/seller/purchase-requests/" + requestId;
 
         String respondEndpoint = appBaseUrl + "/member/purchase-request/respond/email?";
         String acceptUrl = respondEndpoint + "requestId=" + requestId + "&accept=true";
@@ -92,6 +89,7 @@ public class EmailService {
         context.setVariable("offeredPrice", formatCurrency(offeredPrice));
         context.setVariable("acceptUrl", acceptUrl);
         context.setVariable("rejectUrl", rejectUrl);
+        context.setVariable("viewRequestUrl", viewRequestUrl); // <-- thêm dòng này
 
         String htmlContent = templateEngine.process("email/purchase-request-notification", context);
         sendEmail(sellerEmail, "Có người muốn mua sản phẩm của bạn!", htmlContent);
@@ -102,11 +100,7 @@ public class EmailService {
     // 2️⃣ PURCHASE ACCEPTED → BUYER
     // ==============================================
     @Async
-    public void sendPurchaseAcceptedNotification(
-            String buyerEmail,
-            String sellerName,
-            String productTitle,
-            String contractUrl) {
+    public void sendPurchaseAcceptedNotification(String buyerEmail, String sellerName, String productTitle, String contractUrl) {
 
         Context context = new Context();
         context.setVariable("sellerName", sellerName);
@@ -122,11 +116,7 @@ public class EmailService {
     // 3️⃣ PURCHASE REJECTED → BUYER
     // ==============================================
     @Async
-    public void sendPurchaseRejectedNotification(
-            String buyerEmail,
-            String sellerName,
-            String productTitle,
-            String rejectReason) {
+    public void sendPurchaseRejectedNotification(String buyerEmail, String sellerName, String productTitle, String rejectReason) {
 
         Context context = new Context();
         context.setVariable("sellerName", sellerName);
@@ -142,12 +132,7 @@ public class EmailService {
     // 4️⃣ CONTRACT → BUYER
     // ==============================================
     @Async
-    public void sendContractToBuyer(
-            String buyerEmail,
-            String buyerName,
-            String sellerName,
-            String productTitle,
-            String buyerSignUrl) {
+    public void sendContractToBuyer(String buyerEmail, String buyerName, String sellerName, String productTitle, String buyerSignUrl) {
 
         Context context = new Context();
         context.setVariable("buyerName", buyerName);
@@ -164,12 +149,7 @@ public class EmailService {
     // 5️⃣ CONTRACT → SELLER
     // ==============================================
     @Async
-    public void sendContractToSeller(
-            String sellerEmail,
-            String sellerName,
-            String buyerName,
-            String productTitle,
-            String sellerSignUrl) {
+    public void sendContractToSeller(String sellerEmail, String sellerName, String buyerName, String productTitle, String sellerSignUrl) {
 
         Context context = new Context();
         context.setVariable("sellerName", sellerName);
@@ -186,10 +166,7 @@ public class EmailService {
     // 6️⃣ CONTRACT COMPLETED
     // ==============================================
     @Async
-    public void sendContractCompletedNotification(
-            String buyerEmail,
-            String sellerEmail,
-            String productTitle) {
+    public void sendContractCompletedNotification(String buyerEmail, String sellerEmail, String productTitle) {
 
         Context context = new Context();
         context.setVariable("productTitle", productTitle);
@@ -263,10 +240,8 @@ public class EmailService {
 
     private void sendViaSendGrid(String to, String subject, String htmlContent) {
         try {
-            com.sendgrid.helpers.mail.objects.Email from =
-                    new com.sendgrid.helpers.mail.objects.Email(sendGridFrom, sendGridFromName);
-            com.sendgrid.helpers.mail.objects.Email toEmail =
-                    new com.sendgrid.helpers.mail.objects.Email(to);
+            com.sendgrid.helpers.mail.objects.Email from = new com.sendgrid.helpers.mail.objects.Email(sendGridFrom, sendGridFromName);
+            com.sendgrid.helpers.mail.objects.Email toEmail = new com.sendgrid.helpers.mail.objects.Email(to);
 
             Content content = new Content("text/html", htmlContent);
             Mail mail = new Mail(from, subject, toEmail, content);
