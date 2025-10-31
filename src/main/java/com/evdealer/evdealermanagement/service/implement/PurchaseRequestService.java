@@ -37,6 +37,11 @@ public class PurchaseRequestService {
         Account buyer = userContextService.getCurrentUser()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized"));
 
+        if (buyer.getEmail() == null || buyer.getEmail().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Bạn phải cập nhật địa chỉ email trước khi có thể gửi yêu cầu mua hàng.");
+        }
+
         Product product = productRepository.findById(dto.getProductId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
 

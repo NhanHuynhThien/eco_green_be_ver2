@@ -10,6 +10,7 @@ import com.evdealer.evdealermanagement.entity.transactions.PurchaseRequest;
 import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import com.evdealer.evdealermanagement.repository.ContractDocumentRepository;
+import com.evdealer.evdealermanagement.repository.ProductRepository;
 import com.evdealer.evdealermanagement.repository.PurchaseRequestRepository;
 import com.evdealer.evdealermanagement.utils.VietNamDatetime;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class EversignService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ContractDocumentRepository contractDocumentRepository;
     private final PurchaseRequestRepository purchaseRequestRepository;
+    private final ProductRepository productRepository;
     private final EmailService emailService;
 
     // CLoudinary config
@@ -195,11 +197,12 @@ public class EversignService {
             );
 
             ContractDocument contract = new ContractDocument();
+            contract.setPurchaseRequest(request);
             contract.setDocumentId(documentHash);
             contract.setTitle("Hợp đồng mua bán - " + request.getProduct().getTitle());
             contract.setPdfUrl(finalDocUrl);
             contract.setSignerEmail(request.getBuyer().getEmail());
-            contract.setSignedAt(null); // Chính xác, chưa ký nên để null
+            contract.setSignedAt(VietNamDatetime.nowVietNam()); // Chính xác, chưa ký nên để null
 
             contractDocumentRepository.save(contract);
             log.info("✅ [DB] Đã lưu ContractDocument thành công với URL: {}", finalDocUrl);
@@ -237,6 +240,15 @@ public class EversignService {
 
         purchaseRequestRepository.save(request);
         log.info("✅ Cập nhật trạng thái hợp đồng thành COMPLETED cho request: {}", request.getId());
+
+        Product product = request.getProduct();
+        if (product != null) {
+            product.setStatus(Product.Status.SOLD); // Đổi trạng thái thành SOLD
+            productRepository.save(product); // Lưu lại sản phẩm
+            log.info("✅ Cập nhật trạng thái sản phẩm ID {} thành SOLD.", product.getId());
+        } else {
+            log.warn("⚠️ Không tìm thấy sản phẩm liên quan đến request ID {}.", request.getId());
+        }
 
         // 2. Gọi phương thức lưu trữ file PDF (tên mới rõ ràng hơn)
         // Phương thức này giờ là một phần của cùng một transaction

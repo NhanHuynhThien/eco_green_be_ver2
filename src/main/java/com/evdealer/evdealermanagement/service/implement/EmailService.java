@@ -223,7 +223,6 @@ public class EmailService {
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(htmlContent, true);
-            helper.setFrom("noreply@evdealer.com");
 
             mailSender.send(message);
             log.info("Email sent successfully to: {}", to);
