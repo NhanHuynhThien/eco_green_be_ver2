@@ -2,10 +2,14 @@ package com.evdealer.evdealermanagement.service.implement;
 
 import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
 import com.evdealer.evdealermanagement.dto.rate.ApprovalRateResponse;
+import com.evdealer.evdealermanagement.dto.transactions.ContractInfoDTO;
 import com.evdealer.evdealermanagement.dto.vehicle.catalog.VehicleCatalogDTO;
 import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.entity.post.PostPayment;
 import com.evdealer.evdealermanagement.entity.product.Product;
+import com.evdealer.evdealermanagement.entity.transactions.ContractDocument;
+import com.evdealer.evdealermanagement.entity.transactions.PurchaseRequest;
+import com.evdealer.evdealermanagement.entity.transactions.TransactionsHistory;
 import com.evdealer.evdealermanagement.entity.vehicle.Model;
 import com.evdealer.evdealermanagement.entity.vehicle.ModelVersion;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleBrands;
@@ -16,10 +20,7 @@ import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import com.evdealer.evdealermanagement.mapper.post.PostVerifyMapper;
 import com.evdealer.evdealermanagement.mapper.vehicle.VehicleCatalogMapper;
-import com.evdealer.evdealermanagement.repository.PostPaymentRepository;
-import com.evdealer.evdealermanagement.repository.ProductRepository;
-import com.evdealer.evdealermanagement.repository.VehicleCatalogRepository;
-import com.evdealer.evdealermanagement.repository.VehicleDetailsRepository;
+import com.evdealer.evdealermanagement.repository.*;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,8 +29,10 @@ import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -56,6 +59,11 @@ public class StaffService {
     private GeminiRestService geminiRestService;
     @Autowired
     private VehicleDetailsRepository vehicleDetailsRepository;
+    @Autowired
+    private PurchaseRequestRepository purchaseRequestRepository;
+    @Autowired
+    private ContractDocumentRepository contractDocumentRepository;
+
 
     private LocalDateTime nowVietNam() {
         return ZonedDateTime.now(VIETNAM_ZONE).toLocalDateTime();
@@ -311,5 +319,49 @@ public class StaffService {
                 .rate(rate)
                 .rateText(rateText)
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TransactionsHistory> getAllTransactionHistory() {
+        // Lấy tất cả ContractDocument
+        List<ContractDocument> contractDocumentList = contractDocumentRepository.findAll();
+
+        // Chuyển đổi (map) từ List<ContractDocument> sang List<TransactionsHistory>
+        return contractDocumentList.stream()
+                .map(this::mapToHistoryDTO) // Gọi hàm helper để chuyển đổi
+                .collect(Collectors.toList());
+    }
+
+    private TransactionsHistory mapToHistoryDTO(ContractDocument contractDocument) {
+        TransactionsHistory history = new TransactionsHistory();
+
+        history.setTitle(contractDocument.getTitle());
+        history.setSignedAt(contractDocument.getSignedAt());
+        history.setContractUrl(contractDocument.getPdfUrl());
+
+        PurchaseRequest request = contractDocument.getPurchaseRequest();
+
+        if (request != null) {
+            // Lấy tên người bán
+            if (request.getSeller() != null) {
+                history.setSellerName(request.getSeller().getFullName());
+            } else {
+                history.setSellerName("N/A");
+            }
+
+            // Lấy tên người mua
+            if (request.getBuyer() != null) {
+                history.setBuyerName(request.getBuyer().getFullName());
+            } else {
+                history.setBuyerName("N/A");
+            }
+        } else {
+            // Fallback nếu không có PurchaseRequest liên kết
+            log.warn("ContractDocument ID {} không có PurchaseRequest liên kết.", contractDocument.getId());
+            history.setSellerName("N/A");
+            history.setBuyerName("N/A");
+        }
+
+        return history;
     }
 }

@@ -3,7 +3,9 @@
     import com.evdealer.evdealermanagement.dto.common.PageResponse;
     import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
     import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
+    import com.evdealer.evdealermanagement.entity.transactions.TransactionsHistory;
     import com.evdealer.evdealermanagement.service.implement.ProductService;
+    import com.evdealer.evdealermanagement.service.implement.StaffService;
     import lombok.RequiredArgsConstructor;
     import lombok.extern.slf4j.Slf4j;
     import org.springframework.data.domain.Pageable;
@@ -25,6 +27,7 @@
     public class StaffProductManagementController {
 
         private final ProductService productService;
+        private final StaffService staffService;
 
         @GetMapping("/by-status")
         @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
@@ -67,5 +70,29 @@
             }
 
         }
+
+        /**
+         * Lấy lịch sử giao dịch (các hợp đồng đã hoàn thành)
+         */
+        @GetMapping("/transaction/history")
+        @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+        public ResponseEntity<List<TransactionsHistory>> getTransactionHistory() {
+            try {
+                log.info("Request → Get all transaction history");
+                List<TransactionsHistory> historyList = staffService.getAllTransactionHistory();
+
+                if (historyList.isEmpty()) {
+                    log.info("No transaction history found");
+                    return ResponseEntity.noContent().build();
+                }
+
+                log.info("Found {} transaction history records", historyList.size());
+                return ResponseEntity.ok(historyList);
+            } catch (Exception e) {
+                log.error("Error getting transaction history", e);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            }
+        }
+
 
     }
