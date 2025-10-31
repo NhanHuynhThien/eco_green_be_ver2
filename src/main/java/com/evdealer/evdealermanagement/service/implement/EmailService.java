@@ -12,6 +12,7 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import jakarta.mail.internet.MimeMessage;
+
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.Duration;
@@ -37,7 +38,7 @@ public class EmailService {
     private String appBaseUrl;
 
     /**
-     *  Gửi email thông báo cho Seller khi có Buyer gửi yêu cầu mua
+     * Gửi email thông báo cho Seller khi có Buyer gửi yêu cầu mua
      */
     @Async
     public void sendPurchaseRequestNotification(
@@ -72,7 +73,7 @@ public class EmailService {
     }
 
     /**
-     *  Khi Seller chấp nhận yêu cầu -> gửi cho Buyer thông báo & link ký hợp đồng
+     * Khi Seller chấp nhận yêu cầu -> gửi cho Buyer thông báo & link ký hợp đồng
      */
     @Async
     public void sendPurchaseAcceptedNotification(
@@ -100,7 +101,7 @@ public class EmailService {
     }
 
     /**
-     *  Khi Seller từ chối yêu cầu -> gửi thông báo cho Buyer
+     * Khi Seller từ chối yêu cầu -> gửi thông báo cho Buyer
      */
     @Async
     public void sendPurchaseRejectedNotification(
@@ -128,7 +129,7 @@ public class EmailService {
     }
 
     /**
-     *  Gửi hợp đồng đến Buyer để ký
+     * Gửi hợp đồng đến Buyer để ký
      */
     @Async
     public void sendContractToBuyer(
@@ -138,27 +139,23 @@ public class EmailService {
             String productTitle,
             String buyerSignUrl) {
 
-        try {
-            Context context = new Context();
-            context.setVariable("buyerName", buyerName);
-            context.setVariable("sellerName", sellerName);
-            context.setVariable("productTitle", productTitle);
-            context.setVariable("signUrl", buyerSignUrl);
+        Context context = new Context();
+        context.setVariable("buyerName", buyerName);
+        context.setVariable("sellerName", sellerName);
+        context.setVariable("productTitle", productTitle);
+        context.setVariable("signUrl", buyerSignUrl);
 
-            String htmlContent = templateEngine.process("email/contract-signing", context);
+        String htmlContent = templateEngine.process("email/contract-signing", context);
 
-            sendEmail(buyerEmail,
-                    " Hợp đồng mua bán đã sẵn sàng - Vui lòng ký điện tử",
-                    htmlContent);
+        sendEmail(buyerEmail,
+                " Hợp đồng mua bán đã sẵn sàng - Vui lòng ký điện tử",
+                htmlContent);
 
-            log.info(" Contract signing email sent to buyer: {}", buyerEmail);
-        } catch (Exception e) {
-            log.error("Failed to send contract to buyer: {}", e.getMessage(), e);
-        }
+        log.info(" Contract signing email sent to buyer: {}", buyerEmail);
     }
 
     /**
-     *  Gửi hợp đồng đến Seller để ký
+     * Gửi hợp đồng đến Seller để ký
      * (Dùng chung template contract-signing.html)
      */
     @Async
@@ -169,27 +166,24 @@ public class EmailService {
             String productTitle,
             String sellerSignUrl) {
 
-        try {
-            Context context = new Context();
-            context.setVariable("sellerName", sellerName);
-            context.setVariable("buyerName", buyerName);
-            context.setVariable("productTitle", productTitle);
-            context.setVariable("signUrl", sellerSignUrl);
+        Context context = new Context();
+        context.setVariable("sellerName", sellerName);
+        context.setVariable("buyerName", buyerName);
+        context.setVariable("productTitle", productTitle);
+        context.setVariable("signUrl", sellerSignUrl);
 
-            String htmlContent = templateEngine.process("email/contract-signing", context);
+        String htmlContent = templateEngine.process("email/contract-signing", context);
 
-            sendEmail(sellerEmail,
-                    "Hợp đồng bán hàng đã sẵn sàng - Vui lòng ký điện tử",
-                    htmlContent);
+        sendEmail(sellerEmail,
+                "Hợp đồng bán hàng đã sẵn sàng - Vui lòng ký điện tử",
+                htmlContent);
 
-            log.info("Contract signing email sent to seller: {}", sellerEmail);
-        } catch (Exception e) {
-            log.error("Failed to send contract to seller: {}", e.getMessage(), e);
-        }
+        log.info("Contract signing email sent to seller: {}", sellerEmail);
+
     }
 
     /**
-     *  Gửi thông báo hoàn tất hợp đồng đến cả Buyer & Seller
+     * Gửi thông báo hoàn tất hợp đồng đến cả Buyer & Seller
      */
     @Async
     public void sendContractCompletedNotification(
@@ -251,7 +245,7 @@ public class EmailService {
     }
 
     /**
-     *  Format số tiền sang định dạng VND
+     * Format số tiền sang định dạng VND
      */
     private String formatCurrency(Object amount) {
         if (amount == null) return "0 VND";
