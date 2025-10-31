@@ -10,6 +10,7 @@ import com.evdealer.evdealermanagement.entity.transactions.PurchaseRequest;
 import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import com.evdealer.evdealermanagement.repository.ContractDocumentRepository;
+import com.evdealer.evdealermanagement.repository.PurchaseRequestRepository;
 import com.evdealer.evdealermanagement.utils.VietNamDatetime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,7 @@ public class EversignService {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final ContractDocumentRepository contractDocumentRepository;
+    private final PurchaseRequestRepository purchaseRequestRepository;
     private final EmailService emailService;
 
     // CLoudinary config
@@ -226,6 +228,79 @@ public class EversignService {
         } catch (Exception e) {
             log.error("❌ [Eversign] Lỗi nghiêm trọng khi lưu/upload hợp đồng: {}", e.getMessage(), e);
             // Ném lại exception để transaction có thể rollback nếu cần
+            throw new RuntimeException("Lỗi khi xử lý và lưu file hợp đồng từ Eversign: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public void processDocumentCompletion(String documentHash) {
+        log.info("🔍 Bắt đầu xử lý webhook cho document hash: {}", documentHash);
+
+        PurchaseRequest request = purchaseRequestRepository.findByContractId(documentHash)
+                .orElse(null);
+
+        if (request == null) {
+            log.warn("⚠️ Webhook được nhận nhưng không tìm thấy request nào cho contract hash: {}", documentHash);
+            return; // Dừng xử lý nếu không tìm thấy request
+        }
+
+        // Chỉ cập nhật nếu trạng thái chưa phải là COMPLETED để tránh xử lý nhiều lần
+        if (request.getContractStatus() == PurchaseRequest.ContractStatus.COMPLETED) {
+            log.warn("⚠️ Webhook cho hợp đồng đã hoàn thành được nhận lại, bỏ qua. Hash: {}", documentHash);
+            return;
+        }
+
+        // 1. Cập nhật trạng thái cho PurchaseRequest
+        request.setContractStatus(PurchaseRequest.ContractStatus.COMPLETED);
+        request.setStatus(PurchaseRequest.RequestStatus.CONTRACT_SIGNED);
+        // Có thể cập nhật thời gian ký ở đây nếu cần
+        if (request.getBuyerSignedAt() == null) request.setBuyerSignedAt(LocalDateTime.now());
+        if (request.getSellerSignedAt() == null) request.setSellerSignedAt(LocalDateTime.now());
+
+        purchaseRequestRepository.save(request);
+        log.info("✅ Cập nhật trạng thái hợp đồng thành COMPLETED cho request: {}", request.getId());
+
+        // 2. Gọi phương thức lưu trữ file PDF (tên mới rõ ràng hơn)
+        // Phương thức này giờ là một phần của cùng một transaction
+        saveFinalContract(request);
+    }
+
+    // Đổi tên phương thức cũ để rõ ràng hơn, logic bên trong giữ nguyên
+    // Phương thức này giờ sẽ được gọi bởi processDocumentCompletion
+    private void saveFinalContract(PurchaseRequest request) {
+        try {
+            String documentHash = request.getContractId();
+            log.info("📑 [Eversign] Bắt đầu tải và lưu file hợp đồng, documentHash={}", documentHash);
+
+            // ... (toàn bộ logic tải file, upload Cloudinary và lưu ContractDocument của bạn)
+            // ... (giữ nguyên như trong code cũ của bạn)
+
+            String downloadUrl = String.format(
+                    "https://api.eversign.com/download_final_document?access_key=%s&business_id=%s&document_hash=%s&audit_trail=1",
+                    apiKey, businessId, documentHash
+            );
+            byte[] pdfBytes = restTemplate.getForObject(downloadUrl, byte[].class);
+            if (pdfBytes == null || pdfBytes.length == 0) {
+                throw new IOException("Tải file PDF từ Eversign thất bại (file rỗng).");
+            }
+            Cloudinary cloudinary = new Cloudinary(ObjectUtils.asMap("cloud_name", cloudName, "api_key", cloudApiKey, "api_secret", cloudApiSecret, "secure", true));
+            String publicId = "contracts/" + documentHash;
+            Map uploadResult = cloudinary.uploader().upload(pdfBytes, ObjectUtils.asMap("resource_type", "raw", "public_id", publicId, "format", "pdf"));
+            String cloudinaryUrl = (String) uploadResult.get("secure_url");
+
+            ContractDocument contract = contractDocumentRepository.findByDocumentId(documentHash).orElse(new ContractDocument());
+            contract.setDocumentId(documentHash);
+            contract.setTitle("Hợp đồng mua bán - " + request.getProduct().getTitle());
+            contract.setPdfUrl(cloudinaryUrl);
+            contract.setSignerEmail(request.getBuyer().getEmail());
+            contract.setSignedAt(VietNamDatetime.nowVietNam());
+            contractDocumentRepository.save(contract);
+
+            log.info("✅ [DB] Lưu thông tin hợp đồng vào DB thành công!");
+
+        } catch (Exception e) {
+            log.error("❌ [Eversign] Lỗi nghiêm trọng khi lưu/upload hợp đồng: {}", e.getMessage(), e);
+            // Ném lại exception để transaction có thể rollback
             throw new RuntimeException("Lỗi khi xử lý và lưu file hợp đồng từ Eversign: " + e.getMessage());
         }
     }
