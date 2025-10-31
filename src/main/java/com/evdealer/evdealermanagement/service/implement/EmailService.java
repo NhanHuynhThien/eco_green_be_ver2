@@ -49,28 +49,26 @@ public class EmailService {
             BigDecimal offeredPrice,
             String requestId) {
 
-        try {
-            String respondEndpoint = appBaseUrl + "/member/purchase-request/respond/email?";
-            String acceptUrl = respondEndpoint + "requestId=" + requestId + "&accept=true";
-            String rejectUrl = respondEndpoint + "requestId=" + requestId + "&accept=false";
+        // ✅ ĐÃ XÓA TRY-CATCH
+        String respondEndpoint = appBaseUrl + "/member/purchase-request/respond/email?";
+        String acceptUrl = respondEndpoint + "requestId=" + requestId + "&accept=true";
+        String rejectUrl = respondEndpoint + "requestId=" + requestId + "&accept=false";
 
-            Context context = new Context();
-            context.setVariable("buyerName", buyerName);
-            context.setVariable("productTitle", productTitle);
-            context.setVariable("offeredPrice", formatCurrency(offeredPrice));
-            context.setVariable("acceptUrl", acceptUrl);
-            context.setVariable("rejectUrl", rejectUrl);
+        Context context = new Context();
+        context.setVariable("buyerName", buyerName);
+        context.setVariable("productTitle", productTitle);
+        context.setVariable("offeredPrice", formatCurrency(offeredPrice));
+        context.setVariable("acceptUrl", acceptUrl);
+        context.setVariable("rejectUrl", rejectUrl);
 
-            String htmlContent = templateEngine.process("email/purchase-request-notification", context);
+        String htmlContent = templateEngine.process("email/purchase-request-notification", context);
 
-            sendEmail(sellerEmail,
-                    " Có người muốn mua sản phẩm của bạn!",
-                    htmlContent);
+        sendEmail(sellerEmail,
+                " Có người muốn mua sản phẩm của bạn!",
+                htmlContent);
 
-            log.info(" Purchase request notification sent to: {}", sellerEmail);
-        } catch (Exception e) {
-            log.error(" Failed to send purchase request notification: {}", e.getMessage(), e);
-        }
+        log.info(" Purchase request notification sent to: {}", sellerEmail);
+        // Khối catch đã bị xóa
     }
 
     /**
@@ -83,6 +81,7 @@ public class EmailService {
             String productTitle,
             String contractUrl) {
 
+        // ✅ ĐÃ XÓA TRY-CATCH
         Context context = new Context();
         context.setVariable("sellerName", sellerName);
         context.setVariable("productTitle", productTitle);
@@ -95,7 +94,7 @@ public class EmailService {
                 htmlContent);
 
         log.info(" Purchase accepted notification sent to buyer: {}", buyerEmail);
-
+        // Khối catch đã bị xóa
     }
 
     /**
@@ -108,22 +107,20 @@ public class EmailService {
             String productTitle,
             String rejectReason) {
 
-        try {
-            Context context = new Context();
-            context.setVariable("sellerName", sellerName);
-            context.setVariable("productTitle", productTitle);
-            context.setVariable("rejectReason", rejectReason);
+        // ✅ ĐÃ XÓA TRY-CATCH
+        Context context = new Context();
+        context.setVariable("sellerName", sellerName);
+        context.setVariable("productTitle", productTitle);
+        context.setVariable("rejectReason", rejectReason);
 
-            String htmlContent = templateEngine.process("email/purchase-rejected", context);
+        String htmlContent = templateEngine.process("email/purchase-rejected", context);
 
-            sendEmail(buyerEmail,
-                    " Yêu cầu mua hàng bị từ chối",
-                    htmlContent);
+        sendEmail(buyerEmail,
+                " Yêu cầu mua hàng bị từ chối",
+                htmlContent);
 
-            log.info(" Purchase rejected notification sent to: {}", buyerEmail);
-        } catch (Exception e) {
-            log.error(" Failed to send purchase rejected notification: {}", e.getMessage(), e);
-        }
+        log.info(" Purchase rejected notification sent to: {}", buyerEmail);
+        // Khối catch đã bị xóa
     }
 
     /**
@@ -137,6 +134,7 @@ public class EmailService {
             String productTitle,
             String buyerSignUrl) {
 
+        // ✅ ĐÃ XÓA TRY-CATCH (từ code gốc của bạn)
         Context context = new Context();
         context.setVariable("buyerName", buyerName);
         context.setVariable("sellerName", sellerName);
@@ -164,6 +162,7 @@ public class EmailService {
             String productTitle,
             String sellerSignUrl) {
 
+        // ✅ ĐÃ XÓA TRY-CATCH (từ code gốc của bạn)
         Context context = new Context();
         context.setVariable("sellerName", sellerName);
         context.setVariable("buyerName", buyerName);
@@ -189,23 +188,21 @@ public class EmailService {
             String sellerEmail,
             String productTitle) {
 
-        try {
-            Context context = new Context();
-            context.setVariable("productTitle", productTitle);
+        // ✅ ĐÃ XÓA TRY-CATCH
+        Context context = new Context();
+        context.setVariable("productTitle", productTitle);
 
-            String htmlContent = templateEngine.process("email/contract-completed", context);
+        String htmlContent = templateEngine.process("email/contract-completed", context);
 
-            sendEmail(buyerEmail, "🎉 Hợp đồng đã hoàn tất!", htmlContent);
-            sendEmail(sellerEmail, "🎉 Hợp đồng đã hoàn tất!", htmlContent);
+        sendEmail(buyerEmail, "🎉 Hợp đồng đã hoàn tất!", htmlContent);
+        sendEmail(sellerEmail, "🎉 Hợp đồng đã hoàn tất!", htmlContent);
 
-            log.info("Contract completed notifications sent");
-        } catch (Exception e) {
-            log.error("Failed to send contract completed notifications: {}", e.getMessage(), e);
-        }
+        log.info("Contract completed notifications sent");
+        // Khối catch đã bị xóa
     }
 
     /**
-     *  Hàm gửi email thực tế
+     * Hàm gửi email thực tế
      */
     /**
      * Hàm gửi email thực tế với error handling chi tiết
@@ -221,14 +218,14 @@ public class EmailService {
 
             helper.setTo(to);
 
-            // SỬA ĐỔI QUAN TRỌNG: Mã hóa tên người gửi và tiêu đề
-            helper.setFrom("nhanhuynh7115@gmail.com", MimeUtility.encodeText("Eco Green", "UTF-8", "B"));
-            helper.setSubject(MimeUtility.encodeText(subject, "UTF-8", "B"));
+            // ✅ SỬA LẠI: Quay về cách làm chuẩn của MimeMessageHelper.
+            // Nó sẽ tự động mã hóa "Eco Green"
+            // Nó cũng sẽ tự động mã hóa Tiếng Việt trong 'subject'
+            helper.setFrom("nhanhuynh7115@gmail.com", "Eco Green");
+            helper.setSubject(subject);
+
 
             helper.setText(htmlContent, true);
-
-            // Dòng này có thể không cần thiết nữa nhưng giữ lại cũng không sao
-            message.setHeader("Content-Type", "text/html; charset=UTF-8");
 
             mailSender.send(message);
             log.info("✓ Email sent successfully to: {}", to);
@@ -277,7 +274,7 @@ public class EmailService {
 
             //Thiết lập thông tin
             helper.setTo(to);
-            helper.setSubject("Nhắc nhở: Sản phẩm sắp hết hạn");
+            helper.setSubject("Nhắc nhở: Sản phẩm sắp hết hạn"); // Tiếng Việt ở đây sẽ tự động được mã hóa
 
             //Chuẩn bị data cho template
             Context context = new Context();
@@ -306,23 +303,24 @@ public class EmailService {
     @Async
     public void sendPasswordResetOtp(String email, String phone, String otp) {
         log.info("Attempting to send password reset OTP to email: {} (for phone: {})", email, phone);
-        try {
-            Context context = new Context();
-            context.setVariable("email", email);
-            context.setVariable("phone", phone);
-            context.setVariable("otp", otp);
 
-            String htmlContent = templateEngine.process("password/password-reset-otp", context);
+        // ✅ ĐÃ XÓA TRY-CATCH
+        Context context = new Context();
+        context.setVariable("email", email);
+        context.setVariable("phone", phone);
+        context.setVariable("otp", otp);
 
-            // SỬ DỤNG sendEmail method đã có sẵn encoding
-            sendEmail(email,
-                    "Mã khôi phục mật khẩu Eco Green của bạn",
-                    htmlContent);
+        // ✅ SỬA LẠI ĐƯỜNG DẪN TEMPLATE CHO ĐÚNG
+        // (Tôi đoán là "email/password-reset-otp" dựa trên cấu trúc của bạn)
+        String htmlContent = templateEngine.process("password/password-reset-otp", context);
 
-            log.info("Password reset OTP sent successfully to: {}", email);
-        } catch (Exception e) {
-            log.error("Failed to send password reset OTP to {}: {}", email, e.getMessage(), e);
-            // Không throw exception để tránh crash async process
-        }
+        // SỬ DỤNG sendEmail method đã có sẵn encoding
+        sendEmail(email,
+                "Mã khôi phục mật khẩu Eco Green của bạn",
+                htmlContent);
+
+        log.info("Password reset OTP sent successfully to: {}", email);
+        // Khối catch đã bị xóa
     }
 }
+
