@@ -16,7 +16,7 @@ public class RecentViewController {
     private final RecentViewService recentViewService;
 
     @PostMapping("/{productId}")
-    public void addRecent (@PathVariable String productId) {
+    public void addRecent(@PathVariable String productId) {
         recentViewService.addRecentView(productId);
     }
 
