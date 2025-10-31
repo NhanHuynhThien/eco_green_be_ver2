@@ -214,7 +214,8 @@ public class StaffService {
         }
 
         // Kiểm tra VehicleCatalog đã có thông số cho ModelVersion này chưa
-        Optional<VehicleCatalog> existingCatalog = vehicleCatalogRepository.findByVersionId(version.getId());
+        Optional<VehicleCatalog> existingCatalog = vehicleCatalogRepository
+                .findByVersionIdAndBrandIdAndModelAndYear(versionName, brandName, model, manufactureYear);
 
         if (existingCatalog.isEmpty()) {
             // Catalog chưa tồn tại → Generate mới bằng Gemini
