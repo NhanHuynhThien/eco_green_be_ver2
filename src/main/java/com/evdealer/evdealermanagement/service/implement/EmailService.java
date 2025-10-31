@@ -1,5 +1,6 @@
 package com.evdealer.evdealermanagement.service.implement;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeUtility;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,26 @@ public class EmailService {
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
     @Value("${APP_BASE_URL:http://localhost:8080}")
     private String appBaseUrl;
+
+    @Value("${spring.mail.from}")
+    private String mailFrom;
+
+    @Value("${spring.mail.from.name}")
+    private String mailFromName;
+
+    // ✅ THÊM @PostConstruct để debug
+    @PostConstruct
+    public void init() {
+        log.info("=== EMAIL CONFIG LOADED ===");
+        log.info("MAIL_FROM: [{}]", mailFrom);
+        log.info("MAIL_FROM length: {}", mailFrom.length());
+        log.info("MAIL_FROM_NAME: [{}]", mailFromName);
+        log.info("===========================");
+
+        // ✅ TRIM để đảm bảo không có whitespace
+        mailFrom = mailFrom.trim();
+        mailFromName = mailFromName.trim();
+    }
 
     /**
      * Gửi email thông báo cho Seller khi có Buyer gửi yêu cầu mua
@@ -209,32 +230,19 @@ public class EmailService {
      */
     private void sendEmail(String to, String subject, String htmlContent) {
         try {
-            log.info("=== SENDING EMAIL ===");
-            log.info("To: {}", to);
-            log.info("Subject: {}", subject);
-
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setTo(to);
-
-            // ✅ SỬA LẠI: Quay về cách làm chuẩn của MimeMessageHelper.
-            // Nó sẽ tự động mã hóa "Eco Green"
-            // Nó cũng sẽ tự động mã hóa Tiếng Việt trong 'subject'
-            helper.setFrom("nhanhuynh7115@gmail.com", "Eco Green");
+            // ✅ SỬ DỤNG CONFIG THAY VÌ HARDCODE
+            helper.setFrom(mailFrom, mailFromName);
             helper.setSubject(subject);
-
-
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
             log.info("✓ Email sent successfully to: {}", to);
-
-        } catch (org.springframework.mail.MailAuthenticationException e) {
-            log.error("✗ Authentication failed: {}", e.getMessage());
-            throw new RuntimeException("Email authentication failed", e);
         } catch (Exception e) {
-            log.error("✗ Failed to send email: {}", e.getMessage(), e);
+            log.error("✗ Failed to send email to {}: {}", to, e.getMessage(), e);
             throw new RuntimeException("Failed to send email", e);
         }
     }
