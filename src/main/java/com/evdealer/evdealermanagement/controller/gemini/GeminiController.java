@@ -21,20 +21,18 @@ public class GeminiController {
     public ResponseEntity<PriceSuggestion> suggestPrice(@RequestBody PriceSuggestionRequest request) {
 
         log.info("Received price suggestion request for title: {}, brand: {}, model: {}, version: {}, year: {}",
-                request.getTitle(),
-                request.getBrand(),
-                request.getModel(), // Use the getter from the DTO
+                request.getBrandName(),
+                request.getModelName(), // Use the getter from the DTO
                 request.getVersionName(),
                 request.getManufactureYear());
 
         // Pass the values from the DTO to the service
         PriceSuggestion suggestion = geminiRestService.suggestPrice(
-                request.getTitle(),
-                request.getModel(),
+                request.getModelName(),
                 request.getVersionName(),
                 request.getBatteryHealth(),
                 request.getMileageKm(),
-                request.getBrand(),
+                request.getBrandName(),
                 request.getManufactureYear()
         );
 

@@ -64,13 +64,21 @@ public class EversignWebhookController {
             }
 
             // Check if both signed
+            // Check if both signed
             if (request.getBuyerSignedAt() != null && request.getSellerSignedAt() != null) {
                 request.setContractStatus(PurchaseRequest.ContractStatus.COMPLETED);
                 request.setStatus(PurchaseRequest.RequestStatus.CONTRACT_SIGNED);
                 log.info("🎉 CONTRACT FULLY SIGNED! Request: {}", request.getId());
 
-                // TODO: Trigger next steps (payment, delivery, etc.)
+                // ✅ Upload hợp đồng và lưu DB
+                try {
+                    eversignService.saveContractToDatabase(request);
+                    log.info("☁️ Contract PDF uploaded and saved successfully!");
+                } catch (Exception ex) {
+                    log.error("❌ Failed to upload or save contract: {}", ex.getMessage(), ex);
+                }
             }
+
 
             purchaseRequestRepository.save(request);
 
@@ -93,6 +101,7 @@ public class EversignWebhookController {
      */
     @PostMapping("/document-complete")
     public ResponseEntity<?> handleDocumentComplete(@RequestBody Map<String, Object> payload) {
+        log.warn("📡 RAW WEBHOOK BODY: {}", payload);
         try {
             log.info("🎉 Document completed webhook: {}", payload);
 
