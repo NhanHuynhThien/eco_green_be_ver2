@@ -101,6 +101,7 @@ public class ProductMapper {
                 .modelName(modelName)
                 .version(version)
                 .batteryType(batteryType)
+                .isHot(product.getIsHot() != null ? product.getIsHot() : false)
                 .build();
     }
 
@@ -173,6 +174,7 @@ public class ProductMapper {
                 .city(dto.getCity())
                 .district(dto.getDistrict())
                 .ward(dto.getWard())
+                .isHot(dto.getIsHot() != null ? dto.getIsHot() : false)
                 .build();
     }
 }

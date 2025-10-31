@@ -4,6 +4,7 @@ import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
 import com.evdealer.evdealermanagement.dto.rate.ApprovalRateResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.catalog.VehicleCatalogDTO;
 import com.evdealer.evdealermanagement.entity.account.Account;
+import com.evdealer.evdealermanagement.entity.post.PostPackage;
 import com.evdealer.evdealermanagement.entity.post.PostPayment;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.vehicle.Model;
@@ -102,6 +103,16 @@ public class StaffService {
         product.setRejectReason(null);
         product.setApprovedBy(currentUser);
 
+        PostPackage postPackage = payment.getPostPackage();
+        boolean isHot = false;
+
+        if (postPackage != null) {
+            if ("HOT".equalsIgnoreCase(postPackage.getBadgeLabel()) || Boolean.TRUE.equals(postPackage.getShowTopSearch())) {
+                isHot = true;
+            }
+        }
+        product.setIsHot(isHot);
+
         // Xử lý thông số kỹ thuật xe sau khi DUYỆT BÀI
         if (isVehicleProduct(product)) {
             generateAndSaveVehicleSpecs(product);
@@ -110,10 +121,11 @@ public class StaffService {
         // Lưu product
         Product savedProduct = productRepository.save(product);
 
-        log.info("Product {} approved successfully. FeaturedEndAt: {}, ExpiresAt: {}",
+        log.info("Product {} approved successfully. FeaturedEndAt: {}, ExpiresAt: {}, isHot: {} ",
                 savedProduct.getId(),
                 savedProduct.getFeaturedEndAt(),
-                savedProduct.getExpiresAt());
+                savedProduct.getExpiresAt(),
+                savedProduct.getIsHot());
 
         return PostVerifyMapper.mapToPostVerifyResponse(savedProduct, payment);
     }

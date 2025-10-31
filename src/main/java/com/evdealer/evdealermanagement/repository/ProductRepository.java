@@ -65,4 +65,12 @@ public interface ProductRepository extends JpaRepository<Product, String>, JpaSp
     long countBySeller_Id(String sellerId);
 
     long countByStatus(Product.Status status);
+
+    @Query("""
+        SELECT p FROM Product p
+        WHERE p.status = 'ACTIVE'
+          AND LOWER(p.title) LIKE LOWER(CONCAT('%', :name, '%'))
+        ORDER BY p.isHot DESC, p.createdAt DESC
+    """)
+    Page<Product> findByNameOrderByHotFirst(String name, Pageable pageable);
 }
