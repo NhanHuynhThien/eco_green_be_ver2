@@ -26,10 +26,10 @@ import com.evdealer.evdealermanagement.utils.ProductSpecs;
 import com.evdealer.evdealermanagement.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -166,6 +166,12 @@ public class ProductService implements IProductService {
                     .hasPreviousPage(false)
                     .build();
         }
+
+        Sort sort = Sort.by(
+                Sort.Order.desc("isHot"),
+                Sort.Order.desc("createdAt")
+        );
+        pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
 
         Specification<Product> spec = Specification
                 .where(ProductSpecs.hasStatus(Product.Status.ACTIVE))

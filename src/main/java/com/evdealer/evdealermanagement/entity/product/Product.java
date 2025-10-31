@@ -117,7 +117,8 @@ public class Product extends BaseEntity {
             cascade = CascadeType.ALL, orphanRemoval = false)
     private Set<PostPayment> postPayments = new HashSet<>();
 
-    @Column(name = "is_hot")
+    @Column(name = "is_hot", nullable = false)
+    @Builder.Default
     private Boolean isHot = false;
 
     // ============== EQUALS & HASHCODE - FIX STACKOVERFLOW ==============

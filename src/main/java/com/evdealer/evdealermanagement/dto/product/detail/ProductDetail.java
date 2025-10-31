@@ -48,7 +48,7 @@ public class ProductDetail {
     private String version;
     private String batteryType;
 
-    private String isHot;
+    private Boolean isHot;
 
     private Boolean isWishlisted;
 
@@ -104,7 +104,7 @@ public class ProductDetail {
                 .modelName(modelName)
                 .version(version)
                 .brandName(brandName)
-                .isHot(String.valueOf(product.getIsHot()))
+                .isHot(product.getIsHot() != null ? product.getIsHot() : false)
                 .build();
     }
 }
