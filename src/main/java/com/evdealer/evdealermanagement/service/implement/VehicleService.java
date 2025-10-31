@@ -10,11 +10,17 @@ import com.cloudinary.utils.ObjectUtils;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleCategoriesResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.catalog.VehicleCatalogResponse;
+import com.evdealer.evdealermanagement.dto.vehicle.create.CreateVehicleRequest;
+import com.evdealer.evdealermanagement.dto.vehicle.create.CreateVehicleResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.detail.VehicleDetailResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelRequest;
 import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelVersionRequest;
 import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelVersionResponse;
+import com.evdealer.evdealermanagement.dto.vehicle.update.UpdateModelRequest;
+import com.evdealer.evdealermanagement.dto.vehicle.update.UpdateVehicleModelResponse;
+import com.evdealer.evdealermanagement.dto.vehicle.update.UpdateVehicleVersionResponse;
+import com.evdealer.evdealermanagement.dto.vehicle.update.UpdateVersionRequest;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.product.ProductImages;
 import com.evdealer.evdealermanagement.entity.vehicle.*;
@@ -341,7 +347,7 @@ public class VehicleService {
     }
 
     public List<VehicleModelResponse> listAllVehicleModelsSorted(VehicleModelRequest request) {
-        var all = vmRepository.findAllByBrand_IdAndVehicleType_Id( request.getBrandId(), request.getCategoryId());
+        var all = vmRepository.findAllByBrand_IdAndVehicleType_Id(request.getBrandId(), request.getCategoryId());
         return all.stream().map(m -> VehicleModelResponse.builder()
                 .modelId(m.getId())
                 .modelName(m.getName())
@@ -416,14 +422,13 @@ public class VehicleService {
                 .build();
     }
 
-
     @Transactional
     public VehiclePostResponse updateVehiclePost(String productId, VehiclePostRequest request,
-                                                 List<MultipartFile> images, String imagesMetaJson) {
+            List<MultipartFile> images, String imagesMetaJson) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
-        if(product.getStatus() != Product.Status.DRAFT) {
+        if (product.getStatus() != Product.Status.DRAFT) {
             throw new AppException(ErrorCode.PRODUCT_NOT_DRAFT);
         }
 
@@ -464,23 +469,23 @@ public class VehicleService {
 
         List<ProductImageResponse> imageDtos = null;
 
-        if(images != null && !images.isEmpty()) {
+        if (images != null && !images.isEmpty()) {
 
-            //xóa ảnh cũ trong database
+            // xóa ảnh cũ trong database
             productImagesRepository.deleteAllByProduct(product);
             productImagesRepository.flush();
 
-            imageDtos = postService.uploadAndSaveImages(product, images,  imagesMetaJson);
+            imageDtos = postService.uploadAndSaveImages(product, images, imagesMetaJson);
 
             product.getImages().clear();
 
             List<ProductImages> newImages = imageDtos.stream()
-                            .map(dto -> ProductImages.builder()
-                                    .product(product)
-                                    .imageUrl(dto.getUrl())
-                                    .isPrimary(dto.isPrimary())
-                                    .build())
-                            .collect(Collectors.toList());
+                    .map(dto -> ProductImages.builder()
+                            .product(product)
+                            .imageUrl(dto.getUrl())
+                            .isPrimary(dto.isPrimary())
+                            .build())
+                    .collect(Collectors.toList());
 
             product.getImages().addAll(newImages);
         }
@@ -507,20 +512,21 @@ public class VehicleService {
                 .createdAt(LocalDateTime.now())
                 .brandId(request != null ? request.getBrandId() : details.getBrand().getId())
                 .categoryId(request != null ? request.getCategoryId() : details.getCategory().getId())
-                .batteryHealthPercent(request != null ? request.getBatteryHealthPercent() : details.getBatteryHealthPercent())
+                .batteryHealthPercent(
+                        request != null ? request.getBatteryHealthPercent() : details.getBatteryHealthPercent())
                 .mileageKm(request != null ? request.getMileageKm() : details.getMileageKm())
                 .images(
-                        (imageDtos!= null && !imageDtos.isEmpty())
+                        (imageDtos != null && !imageDtos.isEmpty())
                                 ? imageDtos
                                 : product.getImages().stream()
-                                .map(img -> ProductImageResponse.builder()
-                                        .url(img.getImageUrl())
-                                        .width(img.getWidth())
-                                        .position(img.getPosition())
-                                        .height(img.getHeight())
-                                        .isPrimary(img.getIsPrimary())
-                                        .build())
-                                .toList())
+                                        .map(img -> ProductImageResponse.builder()
+                                                .url(img.getImageUrl())
+                                                .width(img.getWidth())
+                                                .position(img.getPosition())
+                                                .height(img.getHeight())
+                                                .isPrimary(img.getIsPrimary())
+                                                .build())
+                                        .toList())
                 .build();
     }
 
@@ -533,13 +539,14 @@ public class VehicleService {
         String modelId = details.getModel().getId();
         String brandId = details.getBrand().getId();
 
-        List<Product> similar = new ArrayList<>(vehicleDetailsRepository.findSimilarVehiclesByModel(modelId, productId));
+        List<Product> similar = new ArrayList<>(
+                vehicleDetailsRepository.findSimilarVehiclesByModel(modelId, productId));
         List<Product> similarBrand = vehicleDetailsRepository.findSimilarVehiclesByBrand(brandId, modelId, productId);
 
         for (Product p : similarBrand) {
             boolean alreadyExisted = similar.stream()
                     .anyMatch(sp -> sp.getId().equals(p.getId()));
-            if(!alreadyExisted) {
+            if (!alreadyExisted) {
                 similar.add(p);
             }
         }
@@ -557,10 +564,253 @@ public class VehicleService {
                             .modelName(v != null && v.getModel() != null ? v.getModel().getName() : null)
                             .images(
                                     p.getImages() != null && !p.getImages().isEmpty()
-                                        ? p.getImages().get(0).getImageUrl() : null
-                            )
+                                            ? p.getImages().get(0).getImageUrl()
+                                            : null)
                             .build();
                 })
                 .collect(Collectors.toList());
+    }
+
+    public CreateVehicleResponse createBrandModelVersion(CreateVehicleRequest req, MultipartFile logoFile) {
+        // Validate vehicle type
+        VehicleCategories cate = vehicleCategoryRepository.findById(req.getVehicleCategoryId())
+                .orElseThrow(() -> new AppException(ErrorCode.VEHICLE_CATEGORY_NOT_FOUND));
+
+        String brandName = req.getBrandName() == null ? null : req.getBrandName().trim();
+        if (brandName == null || brandName.isBlank()) {
+            throw new AppException(ErrorCode.BRAND_NOT_FOUND);
+        }
+        String modelName = req.getModelName() == null ? null : req.getModelName().trim();
+        String versionName = req.getVersionName() == null ? null : req.getVersionName().trim();
+        if (modelName == null || modelName.isBlank()) {
+            throw new AppException(ErrorCode.MODEL_NAME_REQUIRED);
+        }
+        if (versionName == null || versionName.isBlank()) {
+            throw new AppException(ErrorCode.VERSION_NAME_REQUIRED);
+        }
+
+        Optional<VehicleBrands> existedBrandOpt = vehicleBrandsRepository.findByNameIgnoreCase(brandName);
+
+        final VehicleBrands brand;
+        final boolean brandCreated;
+
+        if (existedBrandOpt.isPresent()) {
+            // Đã tồn tại -> dùng lại
+            brand = existedBrandOpt.get();
+            brandCreated = false;
+        } else {
+            // Tạo mới -> cần logoFile
+            validateLogo(logoFile);
+
+            Map<String, Object> uploaded;
+            try {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> up = (Map<String, Object>) cloudinary.uploader().upload(
+                        logoFile.getBytes(),
+                        ObjectUtils.asMap(
+                                "folder", "eco-green/brands/vehicle",
+                                "resource_type", "image",
+                                "overwrite", true,
+                                "unique_filename", true));
+                uploaded = up;
+            } catch (Exception e) {
+                log.error("Cloudinary upload error: {}", e.getMessage(), e);
+                throw new AppException(ErrorCode.IMAGE_UPLOAD_FAILED);
+            }
+
+            String secureUrl = (String) uploaded.get("secure_url");
+
+            VehicleBrands entity = new VehicleBrands();
+            entity.setName(brandName);
+            entity.setLogoUrl(secureUrl);
+            brand = vehicleBrandsRepository.save(entity);
+            brandCreated = true;
+        }
+
+        // 2) Model: get or create (brand + vehicleType)
+        final Model model;
+        final boolean modelCreated;
+        Optional<Model> modelOpt = vmRepository.findByNameIgnoreCaseAndBrandIdAndVehicleTypeId(
+                modelName, brand.getId(), cate.getId());
+
+        if (modelOpt.isPresent()) {
+            model = modelOpt.get();
+            modelCreated = false;
+        } else {
+            Model m = new Model();
+            m.setName(modelName);
+            m.setBrand(brand);
+            m.setVehicleType(cate);
+            model = vmRepository.save(m);
+            modelCreated = true;
+        }
+
+        // 3) Version: get or create (by model)
+        final ModelVersion version;
+        final boolean versionCreated;
+        Optional<ModelVersion> verOpt = vmvRepository.findByNameIgnoreCaseAndModelId(
+                versionName, model.getId());
+
+        if (verOpt.isPresent()) {
+            version = verOpt.get();
+            versionCreated = false;
+        } else {
+            ModelVersion v = new ModelVersion();
+            v.setName(versionName);
+            v.setModel(model);
+            version = vmvRepository.save(v);
+            versionCreated = true;
+        }
+        CreateVehicleResponse resp = new CreateVehicleResponse();
+        resp.setBrandId(brand.getId());
+        resp.setModelId(model.getId());
+        resp.setVersionId(version.getId());
+        resp.setBrandCreated(brandCreated);
+        resp.setModelCreated(modelCreated);
+        resp.setVersionCreated(versionCreated);
+        return resp;
+    }
+
+    @Transactional
+    public VehicleBrandsResponse updateBrand(String brandId, String brandName, MultipartFile logoFile) {
+        VehicleBrands brand = vehicleBrandsRepository.findById(brandId)
+                .orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND));
+
+        boolean changed = false;
+
+        // đổi tên (nếu có)
+        if (brandName != null) {
+            String newName = normalize(brandName);
+            if (newName.isBlank())
+                throw new AppException(ErrorCode.BRAND_NAME_REQUIRED);
+
+            // chống trùng tên với brand khác
+            vehicleBrandsRepository.findByNameIgnoreCase(newName).ifPresent(other -> {
+                if (!other.getId().equals(brand.getId())) {
+                    throw new AppException(ErrorCode.BRAND_EXISTS);
+                }
+            });
+
+            if (!newName.equalsIgnoreCase(brand.getName())) {
+                brand.setName(newName);
+                changed = true;
+            }
+        }
+
+        // đổi logo (nếu có)
+        if (logoFile != null && !logoFile.isEmpty()) {
+            validateLogo(logoFile);
+            String url = uploadToCloudinary(logoFile, "eco-green/brands/vehicle");
+            brand.setLogoUrl(url);
+            changed = true;
+        }
+
+        if (changed)
+            vehicleBrandsRepository.save(brand);
+
+        return VehicleBrandsResponse.builder()
+                .brandId(brand.getId())
+                .brandName(brand.getName())
+                .logoUrl(brand.getLogoUrl())
+                .created(false)
+                .build();
+    }
+
+    @Transactional
+    public UpdateVehicleModelResponse updateModel(String modelId, UpdateModelRequest req) {
+        Model model = vmRepository.findById(modelId)
+                .orElseThrow(() -> new AppException(ErrorCode.MODEL_NOT_FOUND));
+
+        VehicleCategories cate = vehicleCategoryRepository.findById(req.getVehicleCategoryId())
+                .orElseThrow(() -> new AppException(ErrorCode.VEHICLE_CATEGORY_NOT_FOUND));
+
+        String newName = normalize(req.getModelName());
+        if (newName.isBlank())
+            throw new AppException(ErrorCode.MODEL_NAME_REQUIRED);
+
+        boolean nameChanged = !newName.equalsIgnoreCase(model.getName());
+        boolean categoryChanged = !cate.getId().equals(model.getVehicleType());
+
+        // Nếu đổi tên hoặc category -> phải check trùng theo (brand_id, category_id,
+        // name)
+        if (nameChanged || categoryChanged) {
+            vmRepository.findByNameIgnoreCaseAndBrandIdAndVehicleTypeId(
+                    newName, model.getBrand().getId(), cate.getId())
+                    .ifPresent(conflict -> {
+                        if (!conflict.getId().equals(model.getId())) {
+                            throw new AppException(ErrorCode.MODEL_EXISTS);
+                        }
+                    });
+        }
+
+        if (nameChanged)
+            model.setName(newName);
+        if (categoryChanged)
+            model.setVehicleType(cate);
+        if (nameChanged || categoryChanged)
+            vmRepository.save(model);
+
+        return UpdateVehicleModelResponse.builder()
+                .id(model.getId())
+                .name(model.getName())
+                .brandId(model.getBrand().getId())
+                .vehicleTypeId(model.getVehicleType().getId())
+                .nameChanged(nameChanged)
+                .categoryChanged(categoryChanged)
+                .build();
+    }
+
+    @Transactional
+    public UpdateVehicleVersionResponse updateVersion(String versionId, UpdateVersionRequest req) {
+        ModelVersion ver = vmvRepository.findById(versionId)
+                .orElseThrow(() -> new AppException(ErrorCode.VERSION_NOT_FOUND));
+
+        String newName = normalize(req.getVersionName());
+        if (newName.isBlank())
+            throw new AppException(ErrorCode.VERSION_NAME_REQUIRED);
+
+        boolean nameChanged = !newName.equalsIgnoreCase(ver.getName());
+        if (nameChanged) {
+            // chống trùng trong cùng model
+            vmvRepository.findByNameIgnoreCaseAndModelId(newName, ver.getModel().getId())
+                    .ifPresent(conflict -> {
+                        if (!conflict.getId().equals(ver.getId())) {
+                            throw new AppException(ErrorCode.VERSION_EXISTS);
+                        }
+                    });
+            ver.setName(newName);
+            vmvRepository.save(ver);
+        }
+
+        return UpdateVehicleVersionResponse.builder()
+                .id(ver.getId())
+                .name(ver.getName())
+                .modelId(ver.getModel().getId())
+                .nameChanged(nameChanged)
+                .build();
+    }
+
+    // --- helpers ---
+    private String normalize(String s) {
+        if (s == null)
+            return "";
+        String t = s.trim().replaceAll("\\s+", " ");
+        return java.text.Normalizer.normalize(t, java.text.Normalizer.Form.NFC);
+    }
+
+    private String uploadToCloudinary(MultipartFile file, String folder) {
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> up = (Map<String, Object>) cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "folder", folder,
+                            "resource_type", "image",
+                            "overwrite", true,
+                            "unique_filename", true));
+            return (String) up.get("secure_url");
+        } catch (Exception e) {
+            throw new AppException(ErrorCode.IMAGE_UPLOAD_FAILED);
+        }
     }
 }

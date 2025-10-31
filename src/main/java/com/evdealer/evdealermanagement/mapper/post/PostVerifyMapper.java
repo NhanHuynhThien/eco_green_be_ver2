@@ -11,6 +11,7 @@ import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 
 public class PostVerifyMapper {
 
@@ -82,6 +83,32 @@ public class PostVerifyMapper {
             expiresAt = now.plusDays(30);
         }
 
+        // ====== NEW: Tính featuredDays & postDays ======
+        Integer featuredDays = null;
+        Integer postDays = null;
+
+        if (p.getStatus() == Product.Status.PENDING_REVIEW && payment != null) {
+
+            // Lấy trực tiếp từ package option + rule 30 ngày
+            if (payment.getPostPackageOption() != null &&
+                    payment.getPostPackageOption().getDurationDays() != null) {
+                featuredDays = payment.getPostPackageOption().getDurationDays();
+            }
+            postDays = 30;
+        } else {
+            // Đã duyệt/đang chạy: trả số ngày còn lại (không âm)
+            LocalDateTime now = ZonedDateTime.now(VIETNAM_ZONE).toLocalDateTime();
+            if (featuredEndAt != null) {
+                long d = ChronoUnit.DAYS.between(now, featuredEndAt);
+                featuredDays = (int) Math.max(d, 0);
+            }
+            if (expiresAt != null) {
+                long d = ChronoUnit.DAYS.between(now, expiresAt);
+                postDays = (int) Math.max(d, 0);
+            }
+        }
+        // ===============================================
+
         return PostVerifyResponse.builder()
                 .id(p.getId())
                 .status(p.getStatus())
@@ -99,6 +126,8 @@ public class PostVerifyMapper {
                 .versionName(version)
                 .featuredEndAt(featuredEndAt) // Sử dụng giá trị đã tính toán
                 .expiresAt(expiresAt) // Sử dụng giá trị đã tính toán
+                .postDays(postDays)
+                .featuredDays(featuredDays)
                 .packageName(payment != null && payment.getPostPackage() != null
                         ? payment.getPostPackage().getName()
                         : null)
