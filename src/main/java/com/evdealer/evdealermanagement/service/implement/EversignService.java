@@ -172,63 +172,41 @@ public class EversignService {
         return String.format("https://eversign.com/documents/%s", documentHash);
     }
 
-    // Download pdf, upload Cloudinary
+    // ✅ CHỈ CẦN DUY NHẤT PHƯƠNG THỨC NÀY ĐỂ LÀM VIỆC LƯU TRỮ
     @Transactional
-    public void saveContractToDatabase(PurchaseRequest request) {
+    public void createAndSaveContractDocument(PurchaseRequest request) {
         try {
             String documentHash = request.getContractId();
-            log.info("📑 [Eversign] Bắt đầu xử lý lưu hợp đồng, documentHash={}", documentHash);
+            if (documentHash == null) {
+                log.error("❌ Không thể lưu ContractDocument vì request ID {} thiếu contractId.", request.getId());
+                return;
+            }
 
-            // 1. Lấy URL download từ Eversign
-            String downloadUrl = String.format(
+            if (contractDocumentRepository.findByDocumentId(documentHash).isPresent()) {
+                log.warn("⚠️ ContractDocument cho hash {} đã tồn tại. Bỏ qua.", documentHash);
+                return;
+            }
+
+            log.info("📑 Bắt đầu tạo bản ghi ContractDocument cho documentHash: {}", documentHash);
+
+            String finalDocUrl = String.format(
                     "https://api.eversign.com/download_final_document?access_key=%s&business_id=%s&document_hash=%s&audit_trail=1",
                     apiKey, businessId, documentHash
             );
 
-            // 2. Dùng RestTemplate để tải file PDF về dưới dạng byte array
-            byte[] pdfBytes = restTemplate.getForObject(downloadUrl, byte[].class);
-
-            if (pdfBytes == null || pdfBytes.length == 0) {
-                throw new IOException("Tải file PDF từ Eversign thất bại (file rỗng).");
-            }
-            log.info("✅ Tải file PDF từ Eversign thành công ({} bytes).", pdfBytes.length);
-
-            // 3. Upload file lên Cloudinary
-            Cloudinary cloudinary = new Cloudinary(ObjectUtils.asMap(
-                    "cloud_name", cloudName,
-                    "api_key", cloudApiKey,
-                    "api_secret", cloudApiSecret,
-                    "secure", true
-            ));
-
-            // Upload với public_id duy nhất để tránh trùng lặp và dễ quản lý
-            String publicId = "contracts/" + documentHash;
-            Map uploadResult = cloudinary.uploader().upload(pdfBytes, ObjectUtils.asMap(
-                    "resource_type", "raw", // Dùng 'raw' cho file PDF, hoặc 'image' nếu bạn muốn preview
-                    "public_id", publicId,
-                    "format", "pdf"
-            ));
-
-            String cloudinaryUrl = (String) uploadResult.get("secure_url");
-            log.info("☁️ Upload hợp đồng lên Cloudinary thành công: {}", cloudinaryUrl);
-
-            // 4. Lưu URL của Cloudinary vào DB
-            ContractDocument contract = contractDocumentRepository.findByDocumentId(documentHash)
-                    .orElse(new ContractDocument()); // Tìm hoặc tạo mới để tránh trùng lặp
-
+            ContractDocument contract = new ContractDocument();
             contract.setDocumentId(documentHash);
             contract.setTitle("Hợp đồng mua bán - " + request.getProduct().getTitle());
-            contract.setPdfUrl(cloudinaryUrl); // <-- Lưu URL của Cloudinary
+            contract.setPdfUrl(finalDocUrl);
             contract.setSignerEmail(request.getBuyer().getEmail());
-            contract.setSignedAt(VietNamDatetime.nowVietNam());
+            contract.setSignedAt(null); // Chính xác, chưa ký nên để null
 
             contractDocumentRepository.save(contract);
-            log.info("✅ [DB] Lưu thông tin hợp đồng vào DB thành công!");
+            log.info("✅ [DB] Đã lưu ContractDocument thành công với URL: {}", finalDocUrl);
 
         } catch (Exception e) {
-            log.error("❌ [Eversign] Lỗi nghiêm trọng khi lưu/upload hợp đồng: {}", e.getMessage(), e);
-            // Ném lại exception để transaction có thể rollback nếu cần
-            throw new RuntimeException("Lỗi khi xử lý và lưu file hợp đồng từ Eversign: " + e.getMessage());
+            log.error("❌ [Eversign] Lỗi nghiêm trọng khi lưu ContractDocument: {}", e.getMessage(), e);
+            throw new RuntimeException("Lỗi khi tạo và lưu ContractDocument: " + e.getMessage());
         }
     }
 

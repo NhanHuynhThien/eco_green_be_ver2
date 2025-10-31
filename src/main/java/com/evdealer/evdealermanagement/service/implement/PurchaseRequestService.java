@@ -169,6 +169,7 @@ public class PurchaseRequestService {
                 request.setStatus(PurchaseRequest.RequestStatus.CONTRACT_SENT);
 
                 PurchaseRequest saved = purchaseRequestRepository.save(request);
+                eversignService.createAndSaveContractDocument(saved);
                 sendContractEmails(saved, contractInfo);
                 return mapToResponse(saved);
             } else {
