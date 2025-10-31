@@ -60,19 +60,18 @@ public class PaymentService {
             throw new AppException(ErrorCode.PRODUCT_NOT_DRAFT);
         }
 
-        PostPackage pkg = packageRepo.findById(request.getPackageId())
+        PostPackage pkg = packageRepo.findById(request.getPackageId()) // THƯỜNG OR ĐB
                 .orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
 
         if (pkg.getStatus() != PostPackage.Status.ACTIVE) {
             throw new AppException(ErrorCode.PACKAGE_INACTIVE);
         }
 
-        int desiredDays;
+
         BigDecimal totalPayable;
 
         if (pkg.getBillingMode() == PostPackage.BillingMode.FIXED) {
-            desiredDays = pkg.getBaseDurationDays() != null ? pkg.getBaseDurationDays() : 30;
-            totalPayable = pkg.getPrice();
+            totalPayable = pkg.getPrice(); //10.000đ
         } else if (pkg.getBillingMode() == PostPackage.BillingMode.PER_DAY) {
             if (request.getOptionId() == null) {
                 throw new AppException(ErrorCode.PACKAGE_OPTION_REQUIRED);
@@ -84,8 +83,7 @@ public class PaymentService {
                 throw new AppException(ErrorCode.PACKAGE_OPTION_NOT_BELONG_TO_PACKAGE);
             }
 
-            desiredDays = option.getDurationDays();
-            totalPayable = pkg.getPrice().add(option.getPrice());
+            totalPayable = option.getPrice().add(packageRepo.getPriceByCode("STANDARD", PostPackage.Status.ACTIVE));
         } else {
             throw new AppException(ErrorCode.PACKAGE_BILLING_MODE_INVALID);
         }
