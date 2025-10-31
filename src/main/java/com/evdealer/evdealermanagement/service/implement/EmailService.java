@@ -23,6 +23,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.Properties;
 
 @Service
 @Slf4j
@@ -255,16 +256,22 @@ public class EmailService {
             log.info("From configured: [{}]", mailFrom);
             log.info("From name: [{}]", mailFromName);
 
+            // ✅ LẤY RA mailSender dưới dạng JavaMailSenderImpl
+            if (mailSender instanceof org.springframework.mail.javamail.JavaMailSenderImpl mailSenderImpl) {
+                Properties props = mailSenderImpl.getJavaMailProperties();
+                props.put("mail.debug", "true");  // 👈 BẬT DEBUG
+                props.put("mail.smtp.starttls.enable", "true");
+                props.put("mail.smtp.auth", "true");
+                props.put("mail.transport.protocol", "smtp");
+            } else {
+                log.warn("⚠️ mailSender is not an instance of JavaMailSenderImpl");
+            }
+
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setTo(to);
-
-            // ✅ THÊM LOG TRƯỚC KHI SET FROM
-            log.info("Setting from address...");
             helper.setFrom(mailFrom, mailFromName);
-            log.info("From address set successfully");
-
             helper.setSubject(subject);
             helper.setText(htmlContent, true);
 
@@ -283,6 +290,7 @@ public class EmailService {
             throw new RuntimeException("Failed to send email", e);
         }
     }
+
 
     /**
      * Format số tiền sang định dạng VND
