@@ -70,7 +70,7 @@
                         .requestMatchers(
                                 "/api/vnpayment", "/api/vnpayment/return",
                                 "/api/vnpayment/vnpay_ipn",
-                                "/api/momo", "/api/momo/return", "/api/momo/ipn")
+                                "/api/momo", "/api/momo/return", "/api/momo/ipn","/api/webhooks/eversign/document-complete")
                         .permitAll()
                         .requestMatchers("battery/brands/all", "battery/types/all",
                                 "vehicle/brands/all", "vehicle/categories/all",

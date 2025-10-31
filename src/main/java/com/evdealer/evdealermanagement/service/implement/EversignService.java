@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.*;
@@ -142,11 +143,8 @@ public class EversignService {
         body.put("message", "Vui lòng điền thông tin và ký hợp đồng (sandbox).");
 //        body.put("embedded_signing_enabled", 1);
         body.put("use_signer_order", 1);
-//        body.put("redirect", appBaseUrl + "/contract/completed");
-//        body.put("redirect_decline", appBaseUrl + "/contract/declined");
-
-        body.put("webhook_url", appBaseUrl+"/api/webhooks/eversign/document-complete");
-        log.info("📡 Webhook URL gửi lên Eversign: {}", appBaseUrl+"/api/webhooks/eversign/document-complete");
+        body.put("webhook_url", appBaseUrl + "/api/webhooks/eversign/document-complete");
+        log.info("📡 Webhook URL gửi lên Eversign: {}", appBaseUrl + "/api/webhooks/eversign/document-complete");
 
         // 👥 Người ký
         List<Map<String, Object>> signers = new ArrayList<>();
@@ -173,32 +171,62 @@ public class EversignService {
     }
 
     // Download pdf, upload Cloudinary
+    @Transactional
     public void saveContractToDatabase(PurchaseRequest request) {
         try {
             String documentHash = request.getContractId();
-            log.info("📑 [Eversign] Lưu hợp đồng PDF vào DB cho staff/admin, documentHash={}", documentHash);
+            log.info("📑 [Eversign] Bắt đầu xử lý lưu hợp đồng, documentHash={}", documentHash);
 
-            String finalDocUrl = String.format(
+            // 1. Lấy URL download từ Eversign
+            String downloadUrl = String.format(
                     "https://api.eversign.com/download_final_document?access_key=%s&business_id=%s&document_hash=%s&audit_trail=1",
                     apiKey, businessId, documentHash
             );
 
+            // 2. Dùng RestTemplate để tải file PDF về dưới dạng byte array
+            byte[] pdfBytes = restTemplate.getForObject(downloadUrl, byte[].class);
 
-            // Luu vao DB
-            ContractDocument contract = new ContractDocument();
+            if (pdfBytes == null || pdfBytes.length == 0) {
+                throw new IOException("Tải file PDF từ Eversign thất bại (file rỗng).");
+            }
+            log.info("✅ Tải file PDF từ Eversign thành công ({} bytes).", pdfBytes.length);
+
+            // 3. Upload file lên Cloudinary
+            Cloudinary cloudinary = new Cloudinary(ObjectUtils.asMap(
+                    "cloud_name", cloudName,
+                    "api_key", cloudApiKey,
+                    "api_secret", cloudApiSecret,
+                    "secure", true
+            ));
+
+            // Upload với public_id duy nhất để tránh trùng lặp và dễ quản lý
+            String publicId = "contracts/" + documentHash;
+            Map uploadResult = cloudinary.uploader().upload(pdfBytes, ObjectUtils.asMap(
+                    "resource_type", "raw", // Dùng 'raw' cho file PDF, hoặc 'image' nếu bạn muốn preview
+                    "public_id", publicId,
+                    "format", "pdf"
+            ));
+
+            String cloudinaryUrl = (String) uploadResult.get("secure_url");
+            log.info("☁️ Upload hợp đồng lên Cloudinary thành công: {}", cloudinaryUrl);
+
+            // 4. Lưu URL của Cloudinary vào DB
+            ContractDocument contract = contractDocumentRepository.findByDocumentId(documentHash)
+                    .orElse(new ContractDocument()); // Tìm hoặc tạo mới để tránh trùng lặp
+
             contract.setDocumentId(documentHash);
             contract.setTitle("Hợp đồng mua bán - " + request.getProduct().getTitle());
-            contract.setPdfUrl(finalDocUrl);
+            contract.setPdfUrl(cloudinaryUrl); // <-- Lưu URL của Cloudinary
             contract.setSignerEmail(request.getBuyer().getEmail());
             contract.setSignedAt(VietNamDatetime.nowVietNam());
 
             contractDocumentRepository.save(contract);
-            log.info("✅ [Eversign] Contract document saved successfully with finalDocUrl={}", finalDocUrl);
+            log.info("✅ [DB] Lưu thông tin hợp đồng vào DB thành công!");
 
         } catch (Exception e) {
-            log.error("❌ [Eversign] Error saving final document: {}", e.getMessage(), e);
-            throw new RuntimeException("Error saving final Eversign document: " + e.getMessage());
+            log.error("❌ [Eversign] Lỗi nghiêm trọng khi lưu/upload hợp đồng: {}", e.getMessage(), e);
+            // Ném lại exception để transaction có thể rollback nếu cần
+            throw new RuntimeException("Lỗi khi xử lý và lưu file hợp đồng từ Eversign: " + e.getMessage());
         }
-
     }
 }
