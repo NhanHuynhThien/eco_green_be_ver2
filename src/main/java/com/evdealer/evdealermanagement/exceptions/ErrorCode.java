@@ -15,6 +15,7 @@ public enum ErrorCode {
     BAD_REQUEST(400, "Bad request", HttpStatus.BAD_REQUEST),
     UNAUTHORIZED(401, "Invalid or expired token", HttpStatus.UNAUTHORIZED),
     FORBIDDEN(403, "You do not have permission to access this resource", HttpStatus.FORBIDDEN),
+    INVALID_CAPTCHA(404, "Invalid captcha", HttpStatus.BAD_REQUEST),
 
     // Adjusted 404 codes to ensure uniqueness for specific resource types
     USER_NOT_FOUND(4040, "User not found", HttpStatus.NOT_FOUND),
