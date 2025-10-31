@@ -9,6 +9,7 @@ import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import com.evdealer.evdealermanagement.repository.AccountRepository;
 import com.evdealer.evdealermanagement.utils.Utils;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -31,9 +32,9 @@ public class AuthService {
     }
 
     // ======================= LOGIN =======================
-    public AccountLoginResponse login(String phone, String password, String gRecaptchaResponse) {
+    public AccountLoginResponse login(String phone, String password, String gRecaptchaResponse, HttpServletRequest request) {
 
-        if(!recaptchaService.verifyRecaptcha(gRecaptchaResponse)) {
+        if(!recaptchaService.verifyRecaptcha(gRecaptchaResponse, request)) {
             throw new AppException(ErrorCode.INVALID_CAPTCHA);
         }
 

@@ -15,6 +15,4 @@ public class RecaptchaConfiguration {
     @Value("${RECAPTCHA_VERIFY_URL}")
     public String verifyUrl;
 
-    @Value("${spring.profiles.active:dev}")
-    public String activeProfile;
 }

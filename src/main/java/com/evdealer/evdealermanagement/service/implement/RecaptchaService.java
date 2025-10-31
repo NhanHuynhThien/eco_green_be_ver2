@@ -1,6 +1,7 @@
 package com.evdealer.evdealermanagement.service.implement;
 
 import com.evdealer.evdealermanagement.configurations.recaptcha.RecaptchaConfiguration;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,10 +16,13 @@ public class RecaptchaService {
 
     private final RecaptchaConfiguration recaptchaConfiguration;
 
-    public boolean verifyRecaptcha(String gRecaptchaResponse) {
+    public boolean verifyRecaptcha(String gRecaptchaResponse, HttpServletRequest request) {
 
         try {
-            if("dev".equalsIgnoreCase(recaptchaConfiguration.activeProfile)) {
+            String host = request.getServerName();
+
+            // ⚙️ Bỏ qua khi test local (localhost hoặc 127.0.0.1)
+            if (host.equals("localhost" ) || host.equals("127.0.0.1")) {
                 log.warn("Skipping reCAPTCHA verification in DEV mode");
                 return true;
             }
