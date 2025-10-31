@@ -1,4 +1,4 @@
-package com.evdealer.evdealermanagement.controller.auth;
+package com.evdealer.evdealermanagement.controller.password;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -15,7 +15,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/password")
 @RequiredArgsConstructor
 public class PasswordController {
 
