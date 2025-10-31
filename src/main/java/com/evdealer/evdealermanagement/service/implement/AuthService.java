@@ -9,6 +9,7 @@ import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import com.evdealer.evdealermanagement.repository.AccountRepository;
 import com.evdealer.evdealermanagement.utils.Utils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -18,17 +19,23 @@ public class AuthService {
     private final JwtService jwtService;
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RecaptchaService recaptchaService;
 
     public AuthService(JwtService jwtService,
                        AccountRepository accountRepository,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder, RecaptchaService recaptchaService) {
         this.jwtService = jwtService;
         this.accountRepository = accountRepository;
         this.passwordEncoder = passwordEncoder;
+        this.recaptchaService = recaptchaService;
     }
 
     // ======================= LOGIN =======================
-    public AccountLoginResponse login(String phone, String password) {
+    public AccountLoginResponse login(String phone, String password, String gRecaptchaResponse) {
+
+        if(!recaptchaService.verifyRecaptcha(gRecaptchaResponse)) {
+            throw new AppException(ErrorCode.INVALID_CAPTCHA);
+        }
 
         String username = accountRepository.findUsernameByPhone(phone);
 
