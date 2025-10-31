@@ -16,4 +16,5 @@ public class VehicleBrandsResponse {
     String brandId;
     String brandName;
     String logoUrl;
+    boolean created;
 }

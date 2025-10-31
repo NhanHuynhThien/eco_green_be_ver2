@@ -90,7 +90,6 @@ public enum ErrorCode {
     PURCHASE_REQUEST_NOT_FOUND(1550, "Purchase request not found", HttpStatus.NOT_FOUND),
     PAYMENT_NOT_RETRIABLE(1010, "Payment cannot be retried", HttpStatus.BAD_REQUEST),
 
-
     // --- Wishlist Errors (Codes 1600 - 1699) ---
     WISHLIST_NOT_FOUND(1601, "Wishlist not found", HttpStatus.NOT_FOUND),
     DUPLICATE_RESOURCE(1602, "Resource already exists", HttpStatus.CONFLICT),
@@ -118,8 +117,14 @@ public enum ErrorCode {
     INVALID_COMPARE(4010, "Cannot compare different products type", HttpStatus.NOT_FOUND),
     INVALID_REQUEST(4011, "Unsupported product type", HttpStatus.BAD_REQUEST),
     NO_SUGGESTIONS_FOUND(4012, "No suggestions found", HttpStatus.NOT_FOUND),
+    MODEL_NAME_REQUIRED(4013, "Model not found", HttpStatus.NOT_FOUND),
+    VERSION_NAME_REQUIRED(4014, "Version Name Is Required", HttpStatus.BAD_REQUEST),
+    BRAND_NAME_REQUIRED(4015, "Brand Name Is Required", HttpStatus.BAD_REQUEST),
+    MODEL_EXISTS(4016, "Model Exists", HttpStatus.BAD_REQUEST),
+    VERSION_EXISTS(4017, "Version Exists", HttpStatus.BAD_REQUEST),
 
     REPORT_NOT_FOUND(4000, "Report not found", HttpStatus.NOT_FOUND),
+    VEHICLE_CATEGORY_NOT_FOUND(4001, "Category not found", HttpStatus.NOT_FOUND),
 
     // --- OAuth2 / External Errors (Codes 1900 - 1999) ---
     UNSUPPORTED_OAUTH2_PROVIDER(1900, "Unsupported OAuth2 provider", HttpStatus.BAD_REQUEST),
