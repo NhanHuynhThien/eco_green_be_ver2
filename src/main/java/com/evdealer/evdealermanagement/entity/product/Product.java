@@ -87,7 +87,7 @@ public class Product extends BaseEntity {
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
-    @Column(name="remind_before2_sent")
+    @Column(name = "remind_before2_sent")
     private boolean remindBefore2Sent;
 
     @ManyToOne(fetch = FetchType.EAGER)
@@ -96,10 +96,6 @@ public class Product extends BaseEntity {
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ProductImages> images;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "model_version_id")
-    private ModelVersion modelVersion;
 
     @Column(name = "manufacture_year")
     private Short manufactureYear;
@@ -113,8 +109,7 @@ public class Product extends BaseEntity {
     @OneToOne(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private BatteryDetails batteryDetails;
 
-    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY,
-            cascade = CascadeType.ALL, orphanRemoval = false)
+    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)
     private Set<PostPayment> postPayments = new HashSet<>();
 
     @Column(name = "is_hot", nullable = false)
@@ -124,8 +119,10 @@ public class Product extends BaseEntity {
     // ============== EQUALS & HASHCODE - FIX STACKOVERFLOW ==============
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Product)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof Product))
+            return false;
         Product product = (Product) o;
         return getId() != null && getId().equals(product.getId());
     }
