@@ -3,6 +3,7 @@ package com.evdealer.evdealermanagement.service.implement;
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -32,7 +33,8 @@ public class EmailService {
     private static final ZoneId VN = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
-    private static final String APP_BASE_URL = "https://evdealer.com";
+    @Value("${APP_BASE_URL:http://localhost:8080}")
+    private String appBaseUrl;
 
     /**
      *  Gửi email thông báo cho Seller khi có Buyer gửi yêu cầu mua
@@ -46,7 +48,7 @@ public class EmailService {
             String requestId) {
 
         try {
-            String respondEndpoint = APP_BASE_URL + "/member/purchase-request/respond/email?";
+            String respondEndpoint = appBaseUrl + "/member/purchase-request/respond/email?";
             String acceptUrl = respondEndpoint + "requestId=" + requestId + "&accept=true";
             String rejectUrl = respondEndpoint + "requestId=" + requestId + "&accept=false";
 
