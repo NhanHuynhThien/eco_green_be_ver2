@@ -50,7 +50,7 @@ public class NotificationService {
 
     @Transactional
     public void createAndPush(String accountId, String title, String content,Notification.NotificationType type, String refId) {
-        Notification n = create(accountId, title, content, type, refId);
+        create(accountId, title, content, type, refId);
 
     }
 
