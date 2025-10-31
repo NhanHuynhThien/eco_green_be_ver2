@@ -2,6 +2,7 @@ package com.evdealer.evdealermanagement.dto.product.detail;
 
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.product.ProductImages;
+import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
 import com.evdealer.evdealermanagement.utils.PriceSerializer;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
@@ -53,7 +54,8 @@ public class ProductDetail {
     private Boolean isWishlisted;
 
     public static ProductDetail fromEntity(Product product) {
-        if (product == null) return null;
+        if (product == null)
+            return null;
 
         Hibernate.initialize(product.getImages());
 
@@ -62,8 +64,7 @@ public class ProductDetail {
             imagesList = product.getImages().stream()
                     .sorted(Comparator.comparing(
                             ProductImages::getPosition,
-                            Comparator.nullsLast(Integer::compareTo)
-                    ))
+                            Comparator.nullsLast(Integer::compareTo)))
                     .map(ProductImageDto::fromEntity)
                     .collect(Collectors.toList());
         }
@@ -72,15 +73,16 @@ public class ProductDetail {
         String modelName = null;
         String version = null;
 
-        if (product.getModelVersion() != null) {
-            version = product.getModelVersion().getName();
+        VehicleDetails vehicleDetails = product.getVehicleDetails();
 
-            if (product.getModelVersion().getModel() != null) {
-                modelName = product.getModelVersion().getModel().getName();
+        if (vehicleDetails != null && vehicleDetails.getVersion() != null) {
+            version = vehicleDetails.getVersion().getName();
 
-                if (product.getModelVersion().getModel().getBrand() != null) {
-                    brandName = product.getModelVersion().getModel().getBrand().getName();
-                }
+            if (vehicleDetails.getBrand() != null && vehicleDetails.getBrand().getName() != null) {
+                brandName = vehicleDetails.getBrand().getName();
+            }
+            if (vehicleDetails.getModel() != null && vehicleDetails.getModel().getName() != null) {
+                modelName = vehicleDetails.getModel().getName();
             }
         }
 
@@ -100,7 +102,7 @@ public class ProductDetail {
                 .city(product.getCity())
                 .district(product.getDistrict())
                 .ward(product.getWard())
-                .productImagesList(imagesList)  // Dùng biến đã được infer đúng type
+                .productImagesList(imagesList) // Dùng biến đã được infer đúng type
                 .modelName(modelName)
                 .version(version)
                 .brandName(brandName)
