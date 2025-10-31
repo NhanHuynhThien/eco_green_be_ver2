@@ -48,15 +48,34 @@ public class EmailService {
     // ✅ THÊM @PostConstruct để debug
     @PostConstruct
     public void init() {
-        log.info("=== EMAIL CONFIG LOADED ===");
-        log.info("MAIL_FROM: [{}]", mailFrom);
-        log.info("MAIL_FROM length: {}", mailFrom.length());
-        log.info("MAIL_FROM_NAME: [{}]", mailFromName);
-        log.info("===========================");
+        log.info("╔════════════════════════════════════════════");
+        log.info("║ EMAIL SERVICE INITIALIZATION");
+        log.info("╠════════════════════════════════════════════");
+        log.info("║ MAIL_FROM: [{}]", mailFrom);
+        log.info("║ MAIL_FROM length: {}", mailFrom.length());
+        log.info("║ MAIL_FROM_NAME: [{}]", mailFromName);
+        log.info("║ APP_BASE_URL: {}", appBaseUrl);
 
-        // ✅ TRIM để đảm bảo không có whitespace
-        mailFrom = mailFrom.trim();
-        mailFromName = mailFromName.trim();
+        // ✅ Check for hidden characters
+        for (int i = 0; i < mailFrom.length(); i++) {
+            char c = mailFrom.charAt(i);
+            if (c < 32 || c > 126) {
+                log.error("║ ⚠️  HIDDEN CHARACTER at position {}: code={}", i, (int)c);
+            }
+        }
+
+        // ✅ TRIM để loại bỏ whitespace
+        if (!mailFrom.equals(mailFrom.trim())) {
+            log.warn("║ ⚠️  MAIL_FROM has whitespace! Trimming...");
+            mailFrom = mailFrom.trim();
+        }
+
+        if (!mailFromName.equals(mailFromName.trim())) {
+            log.warn("║ ⚠️  MAIL_FROM_NAME has whitespace! Trimming...");
+            mailFromName = mailFromName.trim();
+        }
+
+        log.info("╚════════════════════════════════════════════");
     }
 
     /**
@@ -230,19 +249,37 @@ public class EmailService {
      */
     private void sendEmail(String to, String subject, String htmlContent) {
         try {
+            log.info("=== STARTING EMAIL SEND ===");
+            log.info("To: {}", to);
+            log.info("Subject: {}", subject);
+            log.info("From configured: [{}]", mailFrom);
+            log.info("From name: [{}]", mailFromName);
+
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setTo(to);
-            // ✅ SỬ DỤNG CONFIG THAY VÌ HARDCODE
+
+            // ✅ THÊM LOG TRƯỚC KHI SET FROM
+            log.info("Setting from address...");
             helper.setFrom(mailFrom, mailFromName);
+            log.info("From address set successfully");
+
             helper.setSubject(subject);
             helper.setText(htmlContent, true);
 
+            log.info("Sending email via mailSender...");
             mailSender.send(message);
             log.info("✓ Email sent successfully to: {}", to);
+
+        } catch (MessagingException e) {
+            log.error("✗ MessagingException: {}", e.getMessage());
+            log.error("Full exception:", e);
+            throw new RuntimeException("Failed to send email - MessagingException", e);
         } catch (Exception e) {
-            log.error("✗ Failed to send email to {}: {}", to, e.getMessage(), e);
+            log.error("✗ Generic Exception: {}", e.getMessage());
+            log.error("Exception type: {}", e.getClass().getName());
+            log.error("Full exception:", e);
             throw new RuntimeException("Failed to send email", e);
         }
     }
