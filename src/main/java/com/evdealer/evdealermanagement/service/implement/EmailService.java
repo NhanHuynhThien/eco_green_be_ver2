@@ -215,9 +215,15 @@ public class EmailService {
     /**
      *  Hàm gửi email thực tế
      */
+    /**
+     * Hàm gửi email thực tế với error handling chi tiết
+     */
     private void sendEmail(String to, String subject, String htmlContent) {
         try {
-            log.info("Attempting to send email to: {}", to);
+            log.info("=== SENDING EMAIL ===");
+            log.info("To: {}", to);
+            log.info("Subject: {}", subject);
+            log.info("SMTP Host: {}", mailSender.getClass().getSimpleName());
 
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -226,11 +232,32 @@ public class EmailService {
             helper.setSubject(subject);
             helper.setText(htmlContent, true);
 
+            // CRITICAL: Set FROM address
+            helper.setFrom("nhanhuynh7115@gmail.com", "Eco Green");
+
             mailSender.send(message);
-            log.info("Email sent successfully to: {}", to);
+            log.info("✓ Email sent successfully to: {}", to);
+
+        } catch (org.springframework.mail.MailAuthenticationException e) {
+            log.error("✗ SMTP Authentication failed - Check username/password");
+            log.error("Error: {}", e.getMessage());
+            throw new RuntimeException("Email authentication failed", e);
+
+        } catch (org.springframework.mail.MailSendException e) {
+            log.error("✗ Failed to send email - SMTP connection issue");
+            log.error("Error: {}", e.getMessage());
+            throw new RuntimeException("Email send failed", e);
+
+        } catch (jakarta.mail.MessagingException e) {
+            log.error("✗ Message creation failed");
+            log.error("Error: {}", e.getMessage());
+            throw new RuntimeException("Email message creation failed", e);
+
         } catch (Exception e) {
-            log.error("Failed to send email to {}: {}", to, e.getMessage(), e);
-            throw new RuntimeException("Failed to send email", e);
+            log.error("✗ Unexpected error sending email");
+            log.error("Error type: {}", e.getClass().getName());
+            log.error("Error: {}", e.getMessage(), e);
+            throw new RuntimeException("Unexpected email error", e);
         }
     }
 
