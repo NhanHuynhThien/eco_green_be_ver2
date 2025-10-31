@@ -1,54 +1,55 @@
-        package com.evdealer.evdealermanagement.configurations;
+package com.evdealer.evdealermanagement.configurations;
 
-        import com.evdealer.evdealermanagement.service.implement.AccountDetailsService;
-        import jakarta.servlet.http.HttpServletResponse;
-        import lombok.RequiredArgsConstructor;
-        import org.springframework.context.annotation.Bean;
-        import org.springframework.context.annotation.Configuration;
-        import org.springframework.security.authentication.AuthenticationManager;
-        import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-        import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-        import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
-        import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-        import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-        import org.springframework.security.config.http.SessionCreationPolicy;
-        import org.springframework.security.crypto.password.PasswordEncoder;
-        import org.springframework.security.web.SecurityFilterChain;
-        import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-        import org.springframework.web.cors.CorsConfiguration;
-        import org.springframework.web.cors.CorsConfigurationSource;
-        import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import com.evdealer.evdealermanagement.service.implement.AccountDetailsService;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-        import java.util.List;
+import java.security.SecureRandom;
+import java.util.List;
 
-        @Configuration
-        @RequiredArgsConstructor
-        @EnableMethodSecurity(prePostEnabled = true)
-        public class WebSecurityConfigs {
+@Configuration
+@RequiredArgsConstructor
+@EnableMethodSecurity(prePostEnabled = true)
+public class WebSecurityConfigs {
 
-            private final JwtAuthenticationFilter jwtAuthenticationFilter;
-            private final AccountDetailsService userDetailsService;
-            private final PasswordEncoder passwordEncoder;
-            private final CustomOAuth2SuccessHandler successHandler;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final AccountDetailsService userDetailsService;
+    private final PasswordEncoder passwordEncoder;
+    private final CustomOAuth2SuccessHandler successHandler;
 
-            @Bean
-            public CorsConfigurationSource corsConfigurationSource() {
-                CorsConfiguration config = new CorsConfiguration();
-                config.setAllowedOrigins(List.of("http://localhost:5173",
-                        "http://localhost:5174",
-                        "http://localhost:5175",
-                        "http://localhost:5185",
-                        "http://localhost:4173",
-                        "api-eco-green-be.huanops.com", "https://d3k8h5w5waqdh2.cloudfront.net"));
-                config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-                config.setAllowedHeaders(List.of("*"));
-                config.setExposedHeaders(List.of("Authorization"));
-                config.setAllowCredentials(true);
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("http://localhost:5173",
+                "http://localhost:5174",
+                "http://localhost:5175",
+                "http://localhost:5185",
+                "http://localhost:4173",
+                "api-eco-green-be.huanops.com", "https://d3k8h5w5waqdh2.cloudfront.net"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("Authorization"));
+        config.setAllowCredentials(true);
 
-                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-                source.registerCorsConfiguration("/**", config);
-                return source;
-            }
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
 
 
     @Bean
@@ -59,9 +60,9 @@
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/oauth2/**","/login/oauth2/**", "/vehicle/**", "/battery/**",
+                        .requestMatchers("/auth/**", "/oauth2/**", "/login/oauth2/**", "/vehicle/**", "/battery/**",
                                 "/product/**",
-                                "/gemini/**")
+                                "/gemini/**", "/api/password/**")
                         .permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/staff/**", "/revenue/**").hasAnyRole("STAFF", "ADMIN")
@@ -70,7 +71,7 @@
                         .requestMatchers(
                                 "/api/vnpayment", "/api/vnpayment/return",
                                 "/api/vnpayment/vnpay_ipn",
-                                "/api/momo", "/api/momo/return", "/api/momo/ipn","/api/webhooks/eversign/document-complete")
+                                "/api/momo", "/api/momo/return", "/api/momo/ipn", "/api/webhooks/eversign/document-complete")
                         .permitAll()
                         .requestMatchers("battery/brands/all", "battery/types/all",
                                 "vehicle/brands/all", "vehicle/categories/all",
@@ -96,21 +97,26 @@
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
 
-                return http.build();
-            }
+        return http.build();
+    }
 
-            @Bean
-            public DaoAuthenticationProvider authenticationProvider() {
-                DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-                authProvider.setUserDetailsService(userDetailsService);
-                authProvider.setPasswordEncoder(passwordEncoder);
-                authProvider.setHideUserNotFoundExceptions(false);
-                return authProvider;
-            }
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder);
+        authProvider.setHideUserNotFoundExceptions(false);
+        return authProvider;
+    }
 
-            @Bean
-            public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
-                    throws Exception {
-                return authenticationConfiguration.getAuthenticationManager();
-            }
-        }
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
+            throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    @Bean
+    public SecureRandom secureRandom() {
+        return new SecureRandom();
+    }
+}

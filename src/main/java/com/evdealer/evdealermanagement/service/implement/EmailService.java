@@ -1,6 +1,7 @@
 package com.evdealer.evdealermanagement.service.implement;
 
 import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeUtility;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -82,22 +83,19 @@ public class EmailService {
             String productTitle,
             String contractUrl) {
 
-        try {
-            Context context = new Context();
-            context.setVariable("sellerName", sellerName);
-            context.setVariable("productTitle", productTitle);
-            context.setVariable("contractUrl", contractUrl);
+        Context context = new Context();
+        context.setVariable("sellerName", sellerName);
+        context.setVariable("productTitle", productTitle);
+        context.setVariable("contractUrl", contractUrl);
 
-            String htmlContent = templateEngine.process("email/purchase-accepted", context);
+        String htmlContent = templateEngine.process("email/purchase-accepted", context);
 
-            sendEmail(buyerEmail,
-                    " Yêu cầu mua hàng được chấp nhận",
-                    htmlContent);
+        sendEmail(buyerEmail,
+                " Yêu cầu mua hàng được chấp nhận",
+                htmlContent);
 
-            log.info(" Purchase accepted notification sent to buyer: {}", buyerEmail);
-        } catch (Exception e) {
-            log.error(" Failed to send purchase accepted notification: {}", e.getMessage(), e);
-        }
+        log.info(" Purchase accepted notification sent to buyer: {}", buyerEmail);
+
     }
 
     /**
@@ -222,15 +220,15 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setTo(to);
-            helper.setFrom("nhanhuynh7115@gmail.com", "Eco Green");
 
-            // FIX: Encode subject properly for Vietnamese
-            helper.setSubject(subject);
-
-            // Set encoding explicitly
-            message.setHeader("Content-Type", "text/html; charset=UTF-8");
+            // SỬA ĐỔI QUAN TRỌNG: Mã hóa tên người gửi và tiêu đề
+            helper.setFrom("nhanhuynh7115@gmail.com", MimeUtility.encodeText("Eco Green", "UTF-8", "B"));
+            helper.setSubject(MimeUtility.encodeText(subject, "UTF-8", "B"));
 
             helper.setText(htmlContent, true);
+
+            // Dòng này có thể không cần thiết nữa nhưng giữ lại cũng không sao
+            message.setHeader("Content-Type", "text/html; charset=UTF-8");
 
             mailSender.send(message);
             log.info("✓ Email sent successfully to: {}", to);
@@ -305,5 +303,26 @@ public class EmailService {
         }
     }
 
+    @Async
+    public void sendPasswordResetOtp(String email, String phone, String otp) {
+        log.info("Attempting to send password reset OTP to email: {} (for phone: {})", email, phone);
+        try {
+            Context context = new Context();
+            context.setVariable("email", email);
+            context.setVariable("phone", phone);
+            context.setVariable("otp", otp);
 
+            String htmlContent = templateEngine.process("password/password-reset-otp", context);
+
+            // SỬ DỤNG sendEmail method đã có sẵn encoding
+            sendEmail(email,
+                    "Mã khôi phục mật khẩu Eco Green của bạn",
+                    htmlContent);
+
+            log.info("Password reset OTP sent successfully to: {}", email);
+        } catch (Exception e) {
+            log.error("Failed to send password reset OTP to {}: {}", email, e.getMessage(), e);
+            // Không throw exception để tránh crash async process
+        }
+    }
 }

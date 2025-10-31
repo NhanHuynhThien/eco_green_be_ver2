@@ -2,24 +2,38 @@ package com.evdealer.evdealermanagement.service.implement;
 
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
 import com.evdealer.evdealermanagement.dto.product.status.ProductStatusResponse;
+import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import com.evdealer.evdealermanagement.mapper.product.ProductMapper;
+import com.evdealer.evdealermanagement.repository.AccountRepository;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
+import com.evdealer.evdealermanagement.utils.VietNamDatetime;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MemberService {
 
     private final ProductRepository productRepository;
     private final AuthenticationManager authentication;
+    private final PasswordEncoder passwordEncoder;
+    private final AccountRepository accountRepository;
+    private final EmailService emailService;
+
 
     /**
      * ✅ Lấy danh sách sản phẩm của 1 seller theo trạng thái (ACTIVE, SOLD,...)
@@ -79,4 +93,6 @@ public class MemberService {
         // Dùng mapper chuẩn để convert entity → dto
         return ProductMapper.toDetailDto(product);
     }
+
+
 }

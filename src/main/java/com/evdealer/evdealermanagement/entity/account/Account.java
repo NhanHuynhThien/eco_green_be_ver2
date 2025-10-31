@@ -63,6 +63,12 @@ public class Account extends BaseEntity {
     @Column(name = "ban_reason", length = 255)
     private String banReason;
 
+    @Column(name = "reset_password_otp")
+    private String resetPasswordOtp;
+
+    @Column(name = "reset_password_otp_expiry")
+    private LocalDateTime resetPasswordOtpExpiry;
+
     // === giới tính (MALE, FEMALE, OTHER) ===
     @Enumerated(EnumType.STRING)
     @Column(name = "gender", length = 10)
