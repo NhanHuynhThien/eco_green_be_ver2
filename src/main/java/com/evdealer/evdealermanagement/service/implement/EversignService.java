@@ -178,53 +178,27 @@ public class EversignService {
             String documentHash = request.getContractId();
             log.info("📑 [Eversign] Lưu hợp đồng PDF vào DB cho staff/admin, documentHash={}", documentHash);
 
-            String pdfUrl = String.format(
-                    "%s/download_raw_document?business_id=%s&access_key=%s&document_hash=%s",
-                    EVERSIGN_API_BASE, businessId, apiKey, documentHash
+            String finalDocUrl = String.format(
+                    "https://api.eversign.com/download_final_document?access_key=%s&business_id=%s&document_hash=%s&audit_trail=1",
+                    apiKey, businessId, documentHash
             );
-
-            File tempFile = Files.createTempFile("contract_", ".pdf").toFile();
-            try (InputStream in = new URL(pdfUrl).openStream();
-                 OutputStream out = new FileOutputStream(tempFile)) {
-                in.transferTo(out);
-            }
-
-            // Up len Cloudinary
-            Cloudinary cloudinary = new Cloudinary(
-                    ObjectUtils.asMap(
-                            "cloud_name", cloudName,
-                            "api_key", cloudApiKey,
-                            "api_secret", cloudApiSecret
-                    )
-            );
-
-            Map uploadResult = cloudinary.uploader().upload(
-                    tempFile,
-                    ObjectUtils.asMap(
-                            "folder", "contracts",
-                            "resource_type", "raw"
-                    )
-            );
-
-            String cloudUrl = (String) uploadResult.get("secure_url");
-            log.info("🔗 PDF URL: {}", pdfUrl);
-            log.info("📁 Temp file path: {}", tempFile.getAbsolutePath());
 
 
             // Luu vao DB
             ContractDocument contract = new ContractDocument();
             contract.setDocumentId(documentHash);
             contract.setTitle("Hợp đồng mua bán - " + request.getProduct().getTitle());
-            contract.setPdfUrl(cloudUrl);
+            contract.setPdfUrl(finalDocUrl);
             contract.setSignerEmail(request.getBuyer().getEmail());
             contract.setSignedAt(VietNamDatetime.nowVietNam());
 
             contractDocumentRepository.save(contract);
+            log.info("✅ [Eversign] Contract document saved successfully with finalDocUrl={}", finalDocUrl);
 
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            log.error("❌ [Eversign] Error saving final document: {}", e.getMessage(), e);
+            throw new RuntimeException("Error saving final Eversign document: " + e.getMessage());
         }
-
 
     }
 }

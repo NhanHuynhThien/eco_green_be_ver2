@@ -64,7 +64,6 @@ public class EversignWebhookController {
             }
 
             // Check if both signed
-            // Check if both signed
             if (request.getBuyerSignedAt() != null && request.getSellerSignedAt() != null) {
                 request.setContractStatus(PurchaseRequest.ContractStatus.COMPLETED);
                 request.setStatus(PurchaseRequest.RequestStatus.CONTRACT_SIGNED);

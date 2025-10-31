@@ -4,7 +4,6 @@ import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
 import com.evdealer.evdealermanagement.dto.rate.ApprovalRateResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.catalog.VehicleCatalogDTO;
 import com.evdealer.evdealermanagement.entity.account.Account;
-import com.evdealer.evdealermanagement.entity.post.PostPackage;
 import com.evdealer.evdealermanagement.entity.post.PostPayment;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.vehicle.Model;
@@ -103,16 +102,6 @@ public class StaffService {
         product.setRejectReason(null);
         product.setApprovedBy(currentUser);
 
-        PostPackage postPackage = payment.getPostPackage();
-        boolean isHot = false;
-
-        if (postPackage != null) {
-            if ("HOT".equalsIgnoreCase(postPackage.getBadgeLabel()) || Boolean.TRUE.equals(postPackage.getShowTopSearch())) {
-                isHot = true;
-            }
-        }
-        product.setIsHot(isHot);
-
         // Xử lý thông số kỹ thuật xe sau khi DUYỆT BÀI
         if (isVehicleProduct(product)) {
             generateAndSaveVehicleSpecs(product);
@@ -121,11 +110,10 @@ public class StaffService {
         // Lưu product
         Product savedProduct = productRepository.save(product);
 
-        log.info("Product {} approved successfully. FeaturedEndAt: {}, ExpiresAt: {}, isHot: {} ",
+        log.info("Product {} approved successfully. FeaturedEndAt: {}, ExpiresAt: {}",
                 savedProduct.getId(),
                 savedProduct.getFeaturedEndAt(),
-                savedProduct.getExpiresAt(),
-                savedProduct.getIsHot());
+                savedProduct.getExpiresAt());
 
         return PostVerifyMapper.mapToPostVerifyResponse(savedProduct, payment);
     }
@@ -176,20 +164,19 @@ public class StaffService {
 
     // Generate và Lưu thông số kỹ thuật
     private void generateAndSaveVehicleSpecs(Product product) {
+        //  Lấy ModelVersion từ Product
+        ModelVersion version = product.getModelVersion();
+
+        if (version == null || version.getModel() == null) {
+            log.warn(" Product ID {} is missing ModelVersion or Model. Cannot generate specs.", product.getId());
+            return;
+        }
 
         // Lấy VehicleDetails
         VehicleDetails details = vehicleDetailsRepository.findByProductId(product.getId()).orElse(null);
 
         if (details == null) {
             log.warn("Product ID {} is missing VehicleDetails. Cannot link catalog.", product.getId());
-            return;
-        }
-
-        // Lấy Version từ Details
-        ModelVersion version = details.getVersion();
-
-        if (version == null || version.getModel() == null) {
-            log.warn(" Product ID {} is missing ModelVersion or Model. Cannot generate specs.", product.getId());
             return;
         }
 
@@ -222,10 +209,7 @@ public class StaffService {
         }
 
         // Kiểm tra VehicleCatalog đã có thông số cho ModelVersion này chưa
-        // Optional<VehicleCatalog> existingCatalog =
-        // vehicleCatalogRepository.findByVersionId(version.getId());
-        Optional<VehicleCatalog> existingCatalog = vehicleCatalogRepository
-                .findByVersionIdAndBrandIdAndModelAndYear(version.getId(), brand.getId(), model, manufactureYear);
+        Optional<VehicleCatalog> existingCatalog = vehicleCatalogRepository.findByVersionId(version.getId());
 
         if (existingCatalog.isEmpty()) {
             // Catalog chưa tồn tại → Generate mới bằng Gemini
