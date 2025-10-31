@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -66,11 +67,22 @@ public interface ProductRepository extends JpaRepository<Product, String>, JpaSp
 
     long countByStatus(Product.Status status);
 
-    @Query("""
-        SELECT p FROM Product p
-        WHERE p.status = 'ACTIVE'
-          AND LOWER(p.title) LIKE LOWER(CONCAT('%', :name, '%'))
-        ORDER BY p.isHot DESC, p.createdAt DESC
-    """)
-    Page<Product> findByNameOrderByHotFirst(String name, Pageable pageable);
+    @Query("SELECT p FROM Product p WHERE p.status = :status AND p.remindBefore2Sent = false AND p.expiresAt BETWEEN :start AND :end")
+    List<Product> findExpiringBetween(@Param("status") Product.Status status, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    // tìm để gửi thông báo
+    @Query("SELECT p FROM Product p " +
+            "WHERE p.expiresAt BETWEEN :start AND :end " +
+            "AND (p.remindBefore2Sent = false OR p.remindBefore2Sent IS NULL) " +
+            "AND p.status = 'ACTIVE'")
+    List<Product> findExpiringBetweenAndNotReminded(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
+
+    //tìm để ẩn đi vì hết hạn
+    @Query("SELECT p FROM Product p " +
+            "WHERE p.expiresAt < :now " +
+            "AND p.status = 'ACTIVE'")
+    List<Product> findExpiredAndActive(@Param("now") LocalDateTime now);
 }

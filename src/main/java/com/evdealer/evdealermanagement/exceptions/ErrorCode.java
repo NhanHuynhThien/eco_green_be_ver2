@@ -129,7 +129,11 @@ public enum ErrorCode {
     // --- OAuth2 / External Errors (Codes 1900 - 1999) ---
     UNSUPPORTED_OAUTH2_PROVIDER(1900, "Unsupported OAuth2 provider", HttpStatus.BAD_REQUEST),
     OAUTH2_GOOGLE_PROCESS_FAILED(1901, "Error processing Google login", HttpStatus.BAD_REQUEST),
-    OAUTH2_FACEBOOK_PROCESS_FAILED(1902, "Error processing Facebook login", HttpStatus.BAD_REQUEST);
+    OAUTH2_FACEBOOK_PROCESS_FAILED(1902, "Error processing Facebook login", HttpStatus.BAD_REQUEST),
+
+    //-NOTIFICATION (2000-3000)
+    NO_READ_NOTIFICATIONS(2000, "Unread notifications", HttpStatus.BAD_REQUEST);
+
 
     private final int code;
     private final String message;

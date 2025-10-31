@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: linear-gradient(135deg, #f0fdf9 0%, #f5f9f7 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(11, 132, 92, 0.08);
+        }
+
+        /* <CHANGE> Updated header with custom green color gradient */
+        .header {
+            background: linear-gradient(135deg, #0b845c 0%, #12bd95 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
+            letter-spacing: -0.5px;
+        }
+
+        .header-subtitle {
+            font-size: 14px;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .greeting {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 25px;
+            font-weight: 500;
+        }
+
+        /* <CHANGE> New alert box styling with teal accent */
+        .alert-box {
+            background: linear-gradient(135deg, #f0fdf9 0%, #e8faf5 100%);
+            border-left: 5px solid #12bd95;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+            position: relative;
+        }
+
+        .alert-box strong {
+            color: #0b845c;
+            font-size: 15px;
+        }
+
+        .alert-box-text {
+            color: #2d5a4a;
+            font-size: 15px;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        /* <CHANGE> Enhanced product info section */
+        .product-info {
+            background: linear-gradient(135deg, #f8fffe 0%, #f3fcf9 100%);
+            border: 1px solid #d4f0e8;
+            padding: 28px;
+            border-radius: 10px;
+            margin: 30px 0;
+        }
+
+        .product-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0b845c;
+            margin-bottom: 20px;
+            letter-spacing: -0.3px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid #e0ede8;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .label {
+            font-weight: 600;
+            color: #0b845c;
+            font-size: 14px;
+        }
+
+        .value {
+            color: #1a1a1a;
+            font-weight: 500;
+            font-size: 15px;
+        }
+
+        /* <CHANGE> Warning text highlighting */
+        .warning-text {
+            color: #d94a38;
+            font-weight: 700;
+            background: rgba(217, 74, 56, 0.08);
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+
+        .description {
+            font-size: 15px;
+            color: #555;
+            line-height: 1.7;
+            margin: 28px 0;
+            padding: 0;
+        }
+
+        /* <CHANGE> Beautiful CTA button */
+        .button-container {
+            text-align: center;
+            margin: 35px 0;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 16px 48px;
+            background: linear-gradient(135deg, #12bd95 0%, #17e5ae 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(18, 189, 149, 0.3);
+            transition: all 0.3s ease;
+            letter-spacing: -0.3px;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(18, 189, 149, 0.4);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .footer-note {
+            font-size: 14px;
+            color: #666;
+            background: #f9fafb;
+            padding: 16px;
+            border-radius: 6px;
+            margin-top: 25px;
+            line-height: 1.6;
+            border-left: 3px solid #12bd95;
+        }
+
+        /* <CHANGE> Professional footer */
+        .footer {
+            background: linear-gradient(135deg, #0b845c 0%, #0d6d4c 100%);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .footer-logo {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .footer-text {
+            font-size: 13px;
+            opacity: 0.9;
+            margin: 6px 0;
+            line-height: 1.5;
+        }
+
+        .footer-link {
+            color: #17e5ae;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .footer-link:hover {
+            text-decoration: underline;
+        }
+
+        /* <CHANGE> Responsive design */
+        @media (max-width: 600px) {
+            .container {
+                border-radius: 8px;
+            }
+
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .content {
+                padding: 25px 20px;
+            }
+
+            .product-info {
+                padding: 20px;
+            }
+
+            .button {
+                padding: 14px 40px;
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <h1>⏰ Thông báo tin đăng sắp hết hạn</h1>
+        <div class="header-subtitle">Vui lòng kiểm tra chi tiết bên dưới</div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+        <p class="greeting">👋 Xin chào,</p>
+
+        <!-- Alert Box -->
+        <div class="alert-box">
+            <strong>⚠️ Thông báo quan trọng:</strong>
+            <div class="alert-box-text">Bài đăng của bạn sắp hết hạn hiển thị trên hệ thống!</div>
+        </div>
+
+        <!-- Product Information -->
+        <div class="product-info">
+            <div class="product-title" th:text="${productTitle}">Tên sản phẩm của bạn</div>
+
+            <div class="info-row">
+                <span class="label">📅 Ngày hết hạn:</span>
+                <span class="value" th:text="${expiryDate}">01/01/2025</span>
+            </div>
+
+            <div class="info-row">
+                <span class="label">🕐 Thời gian hết hạn:</span>
+                <span class="value" th:text="${expiryTime}">23:59</span>
+            </div>
+
+            <div class="info-row">
+                <span class="label">⏳ Thời gian còn lại:</span>
+                <span class="value"><span class="warning-text" th:text="${daysLeft}">7</span> ngày</span>
+            </div>
+        </div>
+
+        <!-- Description -->
+        <p class="description">
+            Để sản phẩm của bạn tiếp tục hiển thị và thu hút khách hàng, vui lòng <strong>gia hạn trước khi hết hạn</strong>. Bài đăng gia hạn sẽ có cơ hội tiếp cận khách hàng tiềm năng một cách tối ưu nhất.
+        </p>
+
+        <!-- CTA Button -->
+        <div class="button-container">
+            <a href="#" class="button">Gia hạn ngay</a>
+        </div>
+
+        <!-- Footer Note -->
+        <div class="footer-note">
+            ℹ️ Nếu bạn không thực hiện gia hạn, bài đăng sẽ tự động bị ẩn khỏi hệ thống sau ngày hết hạn. Bạn vẫn có thể kích hoạt lại bài đăng bất kỳ lúc nào.
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="footer-logo">🌿 Eco-Green Team</div>
+        <p class="footer-text">Email này được gửi tự động, vui lòng không trả lời.</p>
+        <p class="footer-text">Hỗ trợ: <a href="nhanhuynh7115@gmail.comm" class="footer-link">nhanhuynh7115@gmail.com</a></p>
+        <p class="footer-text">© 2025 EV Dealer Management. All rights reserved.</p>
+    </div>
+</div>
+</body>
+</html>

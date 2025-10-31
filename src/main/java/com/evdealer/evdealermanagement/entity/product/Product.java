@@ -87,6 +87,9 @@ public class Product extends BaseEntity {
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
+    @Column(name="remind_before2_sent")
+    private boolean remindBefore2Sent;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "approved_by")
     private Account approvedBy;
