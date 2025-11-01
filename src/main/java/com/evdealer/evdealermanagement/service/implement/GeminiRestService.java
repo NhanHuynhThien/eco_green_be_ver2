@@ -124,6 +124,10 @@ public class GeminiRestService {
     private String buildPricePrompt(String vehicleModel, String versionName,
                                     String batteryHealth, String mileageKm,
                                     String brandName, String manufactureYear) {
+        if (versionName == null) {
+            versionName = "Phiên bản tiêu chuẩn, mặc định của nhà sản xuất";
+        }
+
         return String.format("""
                 Bạn là chuyên gia định giá xe điện cũ tại Việt Nam.
                 
