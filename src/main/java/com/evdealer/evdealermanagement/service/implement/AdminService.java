@@ -102,6 +102,7 @@ public class AdminService {
         if (account != null) {
             log.warn("Account with id: {}", id);
             account.setStatus(status);
+            accountRepository.save(account);
             return true;
         }
         else {
