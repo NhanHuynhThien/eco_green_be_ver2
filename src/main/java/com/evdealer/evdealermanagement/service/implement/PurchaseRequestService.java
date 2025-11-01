@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -47,6 +48,21 @@ public class PurchaseRequestService {
 
         if (product.getStatus() != Product.Status.ACTIVE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product not available for purchase");
+        }
+
+        boolean alreadyRequest = purchaseRequestRepository.existsByBuyerIdAndProductIdAndStatusIn(
+                buyer.getId(),
+                product.getId(),
+                List.of(
+                        PurchaseRequest.RequestStatus.PENDING,
+                        PurchaseRequest.RequestStatus.CONTRACT_SENT,
+                        PurchaseRequest.RequestStatus.ACCEPTED
+                )
+        );
+
+        if (alreadyRequest) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Bạn đã gửi yêu cầu mua sản phẩm này rồi. Vui lòng chờ người bán phản hồi.");
         }
 
         PurchaseRequest request = new PurchaseRequest();

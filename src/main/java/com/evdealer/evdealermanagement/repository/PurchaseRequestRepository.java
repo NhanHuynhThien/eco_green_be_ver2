@@ -43,4 +43,10 @@ public interface PurchaseRequestRepository extends JpaRepository<PurchaseRequest
     @Query("SELECT pr FROM PurchaseRequest pr " +
             "WHERE pr.contractId = :contractId")
     Optional<PurchaseRequest> findByContractId(@Param("contractId") String contractId);
+
+    boolean existsByBuyerIdAndProductIdAndStatusIn(
+            String buyerId,
+            String productId,
+            java.util.List<PurchaseRequest.RequestStatus> statuses
+    );
 }
